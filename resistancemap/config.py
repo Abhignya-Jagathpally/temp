@@ -47,10 +47,14 @@ class DataConfig:
     val_fraction: float = 0.15
     random_seed: int = 42
 
-    # Drug targets for trajectory modeling
+    # Drug targets for trajectory modeling.
+    # Restricted to MM-relevant compounds that exist in the GDSC cell-line
+    # screen; see configs/default.yaml for the rationale and the standard-
+    # of-care drugs that intentionally cannot live here.
     target_drugs: list[str] = field(default_factory=lambda: [
-        "Bortezomib", "Lenalidomide", "Dexamethasone",
-        "Carfilzomib", "Pomalidomide", "Daratumumab",
+        "Bortezomib", "Lenalidomide", "Panobinostat", "Vorinostat",
+        "Romidepsin", "Venetoclax", "Dinaciclib", "Palbociclib",
+        "Doxorubicin", "Etoposide", "Cyclophosphamide",
     ])
 
 

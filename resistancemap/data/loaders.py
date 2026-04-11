@@ -48,6 +48,9 @@ class MultiOmicsDataset(Dataset):
         ppi_edges: Optional[list[tuple[str, str]]] = None,
         ppi_scores: Optional[list[float]] = None,
         source: str = "ccle_cell_line",
+        drug_names: Optional[list[str]] = None,
+        drug_target_mean: Optional[torch.Tensor] = None,
+        drug_target_std: Optional[torch.Tensor] = None,
     ) -> None:
         """Initialize MultiOmicsDataset.
 
@@ -74,6 +77,12 @@ class MultiOmicsDataset(Dataset):
         self.ppi_edges = ppi_edges
         self.ppi_scores = ppi_scores
         self.source = source
+        # Optional drug-sensitivity bookkeeping. ``drug_sensitivity`` may be
+        # standardised (z-scored) for training; mean/std vectors let
+        # downstream consumers undo the transform when reporting metrics.
+        self.drug_names = drug_names
+        self.drug_target_mean = drug_target_mean
+        self.drug_target_std = drug_target_std
 
     def __len__(self) -> int:
         return self.proteomics.shape[0]
@@ -100,6 +109,9 @@ class MultiOmicsDataset(Dataset):
             ppi_edges=self.ppi_edges,
             ppi_scores=self.ppi_scores,
             source=self.source,
+            drug_names=self.drug_names,
+            drug_target_mean=self.drug_target_mean,
+            drug_target_std=self.drug_target_std,
         )
 
 
@@ -147,6 +159,23 @@ def load_ccle_proteomics(config: DataConfig) -> dict[str, Any]:
         df.columns = new_cols
         df = df.loc[:, ~df.columns.duplicated()]
         logger.info(f"Mapped {n_mapped}/{len(old_cols)} UniProt IDs to gene symbols")
+
+    # Strip "GENE_SYMBOL (entrez_id)" decoration if present so that protein
+    # names are clean HGNC symbols. This is the format DepMap ships for
+    # CCLE expression data, and the trailing "(NNN)" makes naive PPI joins
+    # fail silently. The regex anchors on a trailing space + parenthesised
+    # numeric id so legitimate symbols containing spaces are left alone.
+    import re as _re
+    _entrez_decoration = _re.compile(r"\s*\(\d+\)\s*$")
+    cleaned = [_entrez_decoration.sub("", str(c)).strip() for c in df.columns]
+    n_stripped = sum(1 for o, n in zip(df.columns, cleaned) if o != n)
+    if n_stripped:
+        logger.info(
+            f"Stripped '(entrez_id)' decoration from {n_stripped}/{len(cleaned)} protein names"
+        )
+        df.columns = cleaned
+        # Drop any duplicates the strip introduced (e.g. paralog name collisions)
+        df = df.loc[:, ~df.columns.duplicated()]
 
     return {
         "data": df,
@@ -261,6 +290,31 @@ def load_string_ppi(config: DataConfig) -> dict[str, Any]:
         f"PPI edges after confidence filter (>={threshold}): {len(df)}"
     )
 
+    # ── ENSP -> gene-symbol translation ──────────────────────────────────
+    # STRING ships PPI edges keyed by Ensembl protein IDs (e.g.
+    # "9606.ENSP00000000233") but the rest of the pipeline (proteomics,
+    # drug-sensitivity, ESM2 embeddings) keys on HGNC gene symbols. Without
+    # an explicit translation, the edge intersection with proteomics is
+    # empty and the GNN degenerates to self-loops. We try a small list of
+    # canonical info-file paths and fall back to the raw ENSP ids only if
+    # nothing matches.
+    ensp_to_symbol = _load_string_protein_info(path)
+    if ensp_to_symbol:
+        before = len(df)
+        df = df.assign(
+            protein1=df["protein1"].map(ensp_to_symbol),
+            protein2=df["protein2"].map(ensp_to_symbol),
+        ).dropna(subset=["protein1", "protein2"])
+        logger.info(
+            f"Translated STRING ENSP -> gene symbols: "
+            f"{len(df)}/{before} edges retained after mapping"
+        )
+    else:
+        logger.warning(
+            "No STRING protein.info file found; PPI edges will remain "
+            "ENSP-keyed and will likely not match proteomics gene symbols"
+        )
+
     edges = list(zip(df["protein1"], df["protein2"]))
     scores = df["combined_score"].tolist()
     proteins = set(df["protein1"]) | set(df["protein2"])
@@ -272,6 +326,62 @@ def load_string_ppi(config: DataConfig) -> dict[str, Any]:
         "num_edges": len(edges),
         "num_proteins": len(proteins),
     }
+
+
+def _load_string_protein_info(ppi_path: Path) -> dict[str, str]:
+    """Locate the STRING protein.info file and build an ENSP -> gene_symbol map.
+
+    The info file ships separately from the links file. We probe a list of
+    plausible locations relative to ``ppi_path`` (sibling, parent's
+    ``string/`` subdir, parent itself) and accept the first one that
+    parses. Returns an empty dict if nothing is found.
+
+    File schema (whitespace-separated, .gz allowed):
+        #string_protein_id  preferred_name  protein_size  annotation
+    """
+    candidates: list[Path] = []
+    for parent in (ppi_path.parent, ppi_path.parent / "string", ppi_path.parent.parent / "string"):
+        for name in (
+            "9606.protein.info.v12.0.txt.gz",
+            "9606.protein.info.v12.0.txt",
+            "9606.protein.info.v11.5.txt.gz",
+            "9606.protein.info.v11.0.txt.gz",
+            "protein.info.txt.gz",
+        ):
+            candidates.append(parent / name)
+
+    for cand in candidates:
+        if not cand.exists():
+            continue
+        try:
+            info_df = pd.read_csv(
+                cand,
+                sep="\t",
+                comment=None,
+                compression="infer",
+                low_memory=False,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"  Could not parse STRING info file {cand}: {exc}")
+            continue
+        # The header line starts with '#'; pandas keeps it but the first column
+        # may be named '#string_protein_id'. Normalise both forms.
+        cols = {c.lstrip("#").strip(): c for c in info_df.columns}
+        if "string_protein_id" not in cols or "preferred_name" not in cols:
+            logger.warning(
+                f"  STRING info file {cand} missing expected columns; got {list(info_df.columns)}"
+            )
+            continue
+        sp_col = cols["string_protein_id"]
+        gn_col = cols["preferred_name"]
+        mapping = dict(zip(info_df[sp_col].astype(str), info_df[gn_col].astype(str)))
+        logger.info(
+            f"  Loaded STRING protein info from {cand.name}: "
+            f"{len(mapping)} ENSP -> gene_symbol entries"
+        )
+        return mapping
+
+    return {}
 
 
 def load_scrna_h5ad(path: Path, config: DataConfig) -> dict[str, Any]:

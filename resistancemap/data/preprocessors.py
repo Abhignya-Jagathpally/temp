@@ -384,11 +384,43 @@ def harmonize_omics(
                     logger.info(f"  Drug sensitivity ID mapping via {nc}: {overlap} matches")
                     break
     drug_df = drug_df.reindex(common_ids)
-    drug_tensor = torch.tensor(drug_df.values, dtype=torch.float32)
-    drug_tensor = torch.where(
-        torch.isnan(drug_tensor),
+    drug_names = drug_df.columns.tolist()
+    raw_drug_tensor = torch.tensor(drug_df.values, dtype=torch.float32)
+    raw_drug_tensor = torch.where(
+        torch.isnan(raw_drug_tensor),
         torch.tensor(float("nan")),
-        drug_tensor,
+        raw_drug_tensor,
+    )
+
+    # Per-drug NaN-aware z-score so the regression losses are interpretable
+    # and on a comparable scale across drugs. We log-transform first when
+    # the source uses LN/log IC50 (handled by the loader) so the values are
+    # already in log space; here we just standardise. Drugs with fewer than
+    # two non-NaN observations are passed through unscaled with mean=0,
+    # std=1 sentinels (the model will see them as zero-mean noise rather
+    # than as exploded outliers).
+    drug_target_mean = torch.zeros(raw_drug_tensor.shape[1])
+    drug_target_std = torch.ones(raw_drug_tensor.shape[1])
+    drug_tensor = raw_drug_tensor.clone()
+    for j in range(raw_drug_tensor.shape[1]):
+        col = raw_drug_tensor[:, j]
+        valid = ~torch.isnan(col)
+        n_valid = int(valid.sum().item())
+        if n_valid >= 2:
+            mu = float(col[valid].mean().item())
+            sd = float(col[valid].std(unbiased=False).item())
+            if sd > 1e-8:
+                drug_target_mean[j] = mu
+                drug_target_std[j] = sd
+                drug_tensor[:, j] = (col - mu) / sd
+            else:
+                drug_target_mean[j] = mu
+                # leave drug_tensor as-is (constant column → unrecoverable signal)
+        # else: keep raw column; mean=0, std=1 sentinel
+    n_scaled = int((drug_target_std != 1.0).sum().item())
+    logger.info(
+        f"Drug-sensitivity targets z-scored: {n_scaled}/{drug_tensor.shape[1]} drugs "
+        f"with usable variance"
     )
 
     # Load lineage labels
@@ -417,6 +449,9 @@ def harmonize_omics(
         ppi_edges=ppi_graph["edges"],
         ppi_scores=ppi_graph["scores"],
         source="ccle_cell_line",
+        drug_names=drug_names,
+        drug_target_mean=drug_target_mean,
+        drug_target_std=drug_target_std,
     )
 
     logger.info(

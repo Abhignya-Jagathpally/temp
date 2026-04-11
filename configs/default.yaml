@@ -33,14 +33,27 @@ data:
   val_fraction: 0.15
   random_seed: 42
 
-  # Drug targets for trajectory modeling
+  # Drug targets for trajectory modeling.
+  # NOTE: this list is restricted to drugs that (a) are clinically relevant
+  # to multiple myeloma OR a closely related hematologic mechanism, and
+  # (b) actually exist in the GDSC small-molecule screen we load. The MM
+  # standard-of-care backbone (Dexamethasone, Carfilzomib, Pomalidomide,
+  # Daratumumab) is intentionally absent because GDSC does not test
+  # corticosteroids, second-generation PIs, IMiDs beyond Lenalidomide, or
+  # monoclonal antibodies in cell-line dose-response screens. Adding them
+  # back requires CTRPv2, beatAML, or trial-derived data.
   target_drugs:
-    - Bortezomib
-    - Lenalidomide
-    - Dexamethasone
-    - Carfilzomib
-    - Pomalidomide
-    - Daratumumab
+    - Bortezomib       # proteasome inhibitor (canonical PI for MM)
+    - Lenalidomide     # CRBN / IMiD (canonical IMiD for MM)
+    - Panobinostat     # pan-HDAC inhibitor (FDA-approved in MM)
+    - Vorinostat       # HDAC inhibitor (class I / IIb)
+    - Romidepsin       # HDAC1/2/3/8 inhibitor
+    - Venetoclax       # BCL2 inhibitor (active in t(11;14) MM)
+    - Dinaciclib       # CDK1/2/5/9 inhibitor (cell-cycle / MYC axis)
+    - Palbociclib      # CDK4/6 inhibitor
+    - Doxorubicin      # anthracycline (legacy MM regimens)
+    - Etoposide        # TOP2 inhibitor (high-dose salvage MM)
+    - Cyclophosphamide # alkylating agent (CyBorD backbone)
 
 # Proteome-to-Epigenome Conditional VAE
 vae:
