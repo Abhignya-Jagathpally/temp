@@ -252,6 +252,17 @@ mcp:
     enabled: false
     rate_limit_per_sec: 10
 
+# Evaluation Governance Layer (orthogonal to the training DAG)
+evaluation:
+  enabled: true
+  log_root: logs/evaluation
+  run_id: null               # null -> UTC timestamp on each run
+  rubric_path: null          # null -> resistancemap/evaluation/rubric.yaml
+  tier_a_hard_stop: true     # FAIL in Tier A blocks downstream tiers
+  skip_tier_b: false
+  skip_tier_c: false
+  skip_tier_d: false
+
 # Latent Compute Scheduling
 latent_compute:
   enabled: true

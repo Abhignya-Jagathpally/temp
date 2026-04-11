@@ -146,7 +146,7 @@ class ForecastingUncertaintyAgent(EvalAgent):
             return EvalFinding(
                 agent_name=self.name,
                 tier=self.tier,
-                verdict=Verdict.SKIP,
+                verdict=Verdict.SKIPPED,
                 score=None,
                 criteria_results=criteria_results,
                 evidence=evidence,
@@ -354,9 +354,9 @@ class ForecastingUncertaintyAgent(EvalAgent):
         if hard_failures:
             verdict = Verdict.FAIL
         elif n_perturbation < MIN_PERTURBATION_BUDGET:
-            verdict = Verdict.CONDITIONAL_PASS
+            verdict = Verdict.CONDITIONAL
         else:
-            verdict = Verdict.CONDITIONAL_PASS
+            verdict = Verdict.CONDITIONAL
 
         return EvalFinding(
             agent_name=self.name,

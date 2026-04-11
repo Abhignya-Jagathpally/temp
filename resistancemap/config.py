@@ -214,6 +214,40 @@ class HardwareConfig:
 
 
 @dataclass
+class EvaluationConfig:
+    """Evaluation governance layer settings.
+
+    These flags only affect the orthogonal evaluation governance layer
+    under :mod:`resistancemap.evaluation`; they have no effect on the
+    training DAG. The training pipeline runs unchanged regardless of how
+    these are set.
+    """
+
+    enabled: bool = True
+
+    # Audit trail destination (one subdirectory per run_id).
+    log_root: Path = Path("logs/evaluation")
+
+    # Optional explicit run identifier; defaults to a UTC timestamp.
+    run_id: Optional[str] = None
+
+    # Rubric source. None falls back to the default rubric.yaml shipped
+    # with the evaluation package.
+    rubric_path: Optional[Path] = None
+
+    # Tier gating: a Tier A FAIL always hard-stops downstream tiers. Set
+    # to False to *demote* a Tier A FAIL into a CONDITIONAL warning
+    # (intended only for offline rubric debugging — never for releases).
+    tier_a_hard_stop: bool = True
+
+    # Tier opt-outs (use to skip tiers when the necessary intake is not
+    # yet available; the chair downgrades the report accordingly).
+    skip_tier_b: bool = False
+    skip_tier_c: bool = False
+    skip_tier_d: bool = False
+
+
+@dataclass
 class ResistanceMapConfig:
     """Top-level configuration container."""
 
@@ -225,6 +259,7 @@ class ResistanceMapConfig:
     landscape: LandscapeConfig = field(default_factory=LandscapeConfig)
     api: APIConfig = field(default_factory=APIConfig)
     hardware: HardwareConfig = field(default_factory=HardwareConfig)
+    evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
 
     checkpoint_dir: Path = Path("checkpoints")
     log_dir: Path = Path("logs")
@@ -279,6 +314,7 @@ def load_config(path: Path) -> ResistanceMapConfig:
         "landscape": (config.landscape, LandscapeConfig),
         "api": (config.api, APIConfig),
         "hardware": (config.hardware, HardwareConfig),
+        "evaluation": (config.evaluation, EvaluationConfig),
     }
 
     for section_name, (section_obj, section_cls) in section_map.items():

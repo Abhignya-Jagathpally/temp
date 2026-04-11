@@ -25,7 +25,18 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
-_VALID_EVIDENCE_TYPES = {"file", "metric", "schema", "document", "hash", "todo"}
+_VALID_EVIDENCE_TYPES = {
+    "file",
+    "metric",
+    "schema",
+    "document",
+    "hash",
+    "todo",
+    "report",
+    "table",
+    "plot",
+    "manifest",
+}
 
 
 @dataclass
@@ -58,6 +69,65 @@ class Rubric:
     scores: dict[tuple[str, str, str], _ScoreEntry] = field(default_factory=dict)
 
     # ------------------------------------------------------------------ I/O
+
+    @classmethod
+    def from_dict(cls, spec: dict[str, Any]) -> "Rubric":
+        """Build a :class:`Rubric` from an in-memory dict spec.
+
+        Two schemas are accepted:
+
+        1. The native ``tier -> agent -> criterion -> spec`` layout used by
+           the YAML rubric on disk.
+        2. A flatter ``{"agents": {agent_name: {"criteria": {criterion: spec}}}}``
+           layout that is convenient for tests and ad-hoc rubrics. The flat
+           layout is auto-promoted to a single synthetic tier ``"_default"``.
+
+        Weights may be any non-negative float; the sum-to-one warning still
+        fires when the convention is violated.
+        """
+        if not isinstance(spec, dict):
+            raise ValueError(f"Rubric spec must be a mapping, got {type(spec)}")
+
+        if "agents" in spec and isinstance(spec["agents"], dict):
+            table: dict[str, dict[str, dict[str, dict[str, Any]]]] = {"_default": {}}
+            for agent_name, agent_spec in spec["agents"].items():
+                if not isinstance(agent_spec, dict):
+                    raise ValueError(
+                        f"agents.{agent_name} must be a mapping, got {type(agent_spec)}"
+                    )
+                criteria = agent_spec.get("criteria", {})
+                if not isinstance(criteria, dict):
+                    raise ValueError(
+                        f"agents.{agent_name}.criteria must be a mapping"
+                    )
+                table["_default"][agent_name] = {
+                    crit: dict(crit_spec) if isinstance(crit_spec, dict) else {"weight": float(crit_spec)}
+                    for crit, crit_spec in criteria.items()
+                }
+        else:
+            # Native tier-keyed layout (or empty).
+            table = {tier: dict(agents) for tier, agents in spec.items()}
+
+        rubric = cls(table=table)
+        rubric._validate()
+        return rubric
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the rubric table as a JSON-serialisable dict.
+
+        The output uses the native ``tier -> agent -> criterion -> spec``
+        layout regardless of which schema was used to build the rubric.
+        """
+        return {
+            tier_name: {
+                agent_name: {
+                    crit_name: dict(crit_spec)
+                    for crit_name, crit_spec in agents.items()
+                }
+                for agent_name, agents in tier.items()
+            }
+            for tier_name, tier in self.table.items()
+        }
 
     @classmethod
     def from_yaml(cls, path: Path | str) -> "Rubric":
@@ -130,9 +200,9 @@ class Rubric:
                             f"{tier_name}.{agent_name}.{crit_name}: spec must be a mapping"
                         )
                     weight = float(spec.get("weight", 0.0))
-                    if not 0.0 <= weight <= 1.0:
+                    if weight < 0.0:
                         raise ValueError(
-                            f"{tier_name}.{agent_name}.{crit_name}: weight {weight} not in [0, 1]"
+                            f"{tier_name}.{agent_name}.{crit_name}: weight {weight} must be non-negative"
                         )
                     total_weight += weight
                     ev_type = spec.get("evidence_type", "metric")
@@ -185,24 +255,63 @@ class Rubric:
 
     def score(
         self,
-        agent: str,
-        criterion: str,
-        value: Any,
+        agent: Any = None,
+        criterion: str | None = None,
+        value: Any = None,
         evidence: Any = None,
-    ) -> float:
-        """Record a score for one ``(agent, criterion)`` pair.
+    ) -> Any:
+        """Record a score, or compute weighted means from a nested raw dict.
 
-        Args:
-            agent: Rubric key for the agent (e.g. ``"data_adequacy"``).
-            criterion: Criterion key inside that agent (e.g.
-                ``"indication_match"``).
-            value: Raw score; see :meth:`_coerce` for accepted forms.
-            evidence: Optional evidence payload to attach.
+        This method has two call modes:
 
-        Returns:
-            ``value * weight`` after coercion. ``0.0`` is returned (with a
-            warning) if the criterion is unknown to the rubric.
+        **Pointwise:** ``score(agent, criterion, value, evidence=None)``
+        records one ``(agent, criterion)`` value and returns the
+        ``value * weight`` contribution. ``0.0`` is returned (with a
+        warning) if the criterion is unknown to the rubric.
+
+        **Bulk:** ``score(raw_dict)`` where ``raw_dict`` has the shape
+        ``{agent_name: {criterion_name: raw_value, ...}, ...}``. Returns a
+        ``{agent_name: weighted_mean}`` dict where each weighted mean is
+        ``sum(weight * coerced_value) / sum(weight)`` across the agent's
+        criteria. This is the convention used by the rubric tests and by
+        the Tier D chair when grading.
         """
+        # Bulk mode: a single dict-of-dicts argument.
+        if isinstance(agent, dict) and criterion is None and value is None:
+            raw = agent
+            results: dict[str, float] = {}
+            for ag_name, ag_scores in raw.items():
+                if not isinstance(ag_scores, dict):
+                    raise ValueError(
+                        f"score(raw_dict): expected mapping for agent "
+                        f"{ag_name!r}, got {type(ag_scores)}"
+                    )
+                weighted_sum = 0.0
+                weight_sum = 0.0
+                for crit_name, raw_val in ag_scores.items():
+                    _, spec = self._locate(ag_name, crit_name)
+                    if spec is None:
+                        logger.warning(
+                            "Rubric.score(bulk): unknown criterion %s.%s, skipping",
+                            ag_name,
+                            crit_name,
+                        )
+                        continue
+                    w = float(spec.get("weight", 0.0))
+                    coerced = self._coerce(raw_val)
+                    weighted_sum += w * coerced
+                    weight_sum += w
+                results[ag_name] = (
+                    weighted_sum / weight_sum if weight_sum > 0 else 0.0
+                )
+            return results
+
+        # Pointwise mode (legacy/native).
+        if not isinstance(agent, str) or criterion is None:
+            raise TypeError(
+                "Rubric.score requires either (agent: str, criterion: str, value, ...) "
+                "or a single nested-dict positional arg."
+            )
         tier_name, spec = self._locate(agent, criterion)
         if spec is None:
             logger.warning(

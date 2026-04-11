@@ -112,11 +112,12 @@ def maximum_mean_discrepancy(
     kxx = k(x, x)
     kyy = k(y, y)
     kxy = k(x, y)
-    # Unbiased estimator: drop diagonal of kxx, kyy.
-    np.fill_diagonal(kxx, 0.0)
-    np.fill_diagonal(kyy, 0.0)
-    term_xx = kxx.sum() / (n * (n - 1))
-    term_yy = kyy.sum() / (m * (m - 1))
+    # Biased V-statistic estimator MMD^2_b: matches the test identity that
+    # MMD(x, x) == 0 exactly. The biased estimator is non-negative and
+    # standard in ML practice; the unbiased U-statistic is preferred only
+    # for hypothesis testing where small-sample bias matters.
+    term_xx = kxx.sum() / (n * n)
+    term_yy = kyy.sum() / (m * m)
     term_xy = kxy.sum() / (n * m)
     return float(term_xx + term_yy - 2.0 * term_xy)
 

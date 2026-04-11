@@ -18,7 +18,6 @@ them into the final :class:`~resistancemap.evaluation.orchestrator.EvalReport`.
 from __future__ import annotations
 
 import logging
-from abc import abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -53,6 +52,10 @@ class EvalVerdict(Enum):
     BLOCKED = "blocked"
 
 
+# Alias for agents / tests that import the shorter name.
+Verdict = EvalVerdict
+
+
 @dataclass
 class EvalFinding:
     """Structured finding emitted by every evaluation agent.
@@ -85,9 +88,16 @@ class EvalFinding:
     required_changes: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        """Coerce ``verdict`` from string and clamp ``score`` into [0, 1]."""
+        """Coerce ``verdict`` from string and clamp ``score`` into [0, 1].
+
+        ``None`` scores (e.g. from agents that intentionally do not assign
+        a numeric grade) are coerced to 0.0 rather than raising. This keeps
+        partial findings constructible during ad-hoc instantiation.
+        """
         if isinstance(self.verdict, str):
             self.verdict = EvalVerdict(self.verdict)
+        if self.score is None:
+            self.score = 0.0
         self.score = max(0.0, min(1.0, float(self.score)))
 
     def to_dict(self) -> dict[str, Any]:
@@ -131,18 +141,29 @@ class EvalAgent(BaseAgent):
     and zero-trust hashing without further work.
     """
 
-    #: Tier letter. Subclasses **must** override.
+    #: Tier letter. Subclasses **must** override (or pass via __init__).
     tier: str = ""
 
-    def __init__(self, name: str, dependencies: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        tier: str | None = None,
+        dependencies: list[str] | None = None,
+    ) -> None:
         """Initialise the evaluation agent.
 
         Args:
             name: Unique agent identifier.
+            tier: Optional explicit tier letter ("A"|"B"|"C"|"D"). If
+                provided, becomes an instance attribute that overrides the
+                class-level :attr:`tier`. This is convenient for fixtures and
+                ad-hoc agents that do not warrant a dedicated subclass.
             dependencies: Optional list of upstream agent names. Defaults to
                 an empty list (most Tier A agents are roots).
         """
         super().__init__(name=name, dependencies=dependencies)
+        if tier is not None:
+            self.tier = tier
         if self.tier not in {"A", "B", "C", "D"}:
             raise ValueError(
                 f"{type(self).__name__}: tier must be one of A/B/C/D, got {self.tier!r}"
@@ -151,13 +172,18 @@ class EvalAgent(BaseAgent):
 
     # ----------------------------------------------------------------- API
 
-    @abstractmethod
     async def assess(
         self,
         intake: dict[str, Any],
         config: ResistanceMapConfig,
     ) -> EvalFinding:
         """Run the evaluation logic and return a structured finding.
+
+        Subclasses should normally override this method. Advanced subclasses
+        (e.g. test fixtures) may instead override :meth:`execute` directly,
+        in which case this method is unused. The default implementation
+        raises :class:`NotImplementedError` so an unconfigured agent fails
+        loudly rather than silently producing a stub finding.
 
         Args:
             intake: Inputs prepared by the orchestrator. For Tier A this is
@@ -168,6 +194,9 @@ class EvalAgent(BaseAgent):
         Returns:
             A populated :class:`EvalFinding`.
         """
+        raise NotImplementedError(
+            f"{type(self).__name__} must override assess() or execute()"
+        )
 
     async def execute(
         self,

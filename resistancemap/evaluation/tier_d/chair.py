@@ -378,7 +378,7 @@ class PrincipalIntegratorAgent(EvalAgent):
         if report.overall_grade >= 6:
             verdict = Verdict.PASS
         elif report.overall_grade >= 3:
-            verdict = Verdict.CONDITIONAL_PASS
+            verdict = Verdict.CONDITIONAL
         else:
             verdict = Verdict.FAIL
 

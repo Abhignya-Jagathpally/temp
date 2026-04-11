@@ -166,7 +166,7 @@ class BaselineAdversaryAgent(EvalAgent):
             return EvalFinding(
                 agent_name=self.name,
                 tier=self.tier,
-                verdict=Verdict.SKIP,
+                verdict=Verdict.SKIPPED,
                 score=None,
                 criteria_results=criteria_results,
                 evidence=evidence,
@@ -318,7 +318,7 @@ class BaselineAdversaryAgent(EvalAgent):
         if any_baseline_wins:
             verdict = Verdict.FAIL
         elif any_unjustified:
-            verdict = Verdict.CONDITIONAL_PASS
+            verdict = Verdict.CONDITIONAL
         else:
             verdict = Verdict.PASS
 

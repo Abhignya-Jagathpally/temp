@@ -66,9 +66,10 @@ class EvalReport:
     """
 
     run_id: str
-    per_tier_verdicts: dict[str, dict[str, str]] = field(default_factory=dict)
-    findings: list[dict[str, Any]] = field(default_factory=list)
-    overall_verdict: str = EvalVerdict.CONDITIONAL.value
+    per_tier_verdicts: dict[str, EvalVerdict] = field(default_factory=dict)
+    per_tier_agent_verdicts: dict[str, dict[str, EvalVerdict]] = field(default_factory=dict)
+    findings: list[EvalFinding] = field(default_factory=list)
+    overall_verdict: EvalVerdict = EvalVerdict.CONDITIONAL
     maturity_grade: dict[str, Any] = field(default_factory=dict)
     required_changes: list[str] = field(default_factory=list)
     verification_chain: list[str] = field(default_factory=list)
@@ -77,12 +78,29 @@ class EvalReport:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        """JSON-safe view of the report."""
+        """JSON-safe view of the report.
+
+        Verdicts are coerced to their string ``.value`` form and findings
+        are serialised via :meth:`EvalFinding.to_dict` so the result is
+        suitable for ``json.dump``.
+        """
         return {
             "run_id": self.run_id,
-            "per_tier_verdicts": self.per_tier_verdicts,
-            "findings": self.findings,
-            "overall_verdict": self.overall_verdict,
+            "per_tier_verdicts": {
+                tier: (v.value if isinstance(v, EvalVerdict) else v)
+                for tier, v in self.per_tier_verdicts.items()
+            },
+            "per_tier_agent_verdicts": {
+                tier: {name: (v.value if isinstance(v, EvalVerdict) else v)
+                       for name, v in agents.items()}
+                for tier, agents in self.per_tier_agent_verdicts.items()
+            },
+            "findings": [f.to_dict() for f in self.findings],
+            "overall_verdict": (
+                self.overall_verdict.value
+                if isinstance(self.overall_verdict, EvalVerdict)
+                else self.overall_verdict
+            ),
             "maturity_grade": self.maturity_grade,
             "required_changes": self.required_changes,
             "verification_chain": self.verification_chain,
@@ -237,16 +255,23 @@ class EvalOrchestrator:
         )
 
         # Gather upstream findings as the intake for this tier.
-        intake: dict[str, EvalFinding] = {}
-        for prior in report.findings:
-            intake[prior["agent_name"]] = prior  # serialised dict view
+        intake: dict[str, EvalFinding] = {
+            prior.agent_name: prior for prior in report.findings
+        }
+        # Tier D agents (chair) want the full list under a stable key.
+        intake["findings"] = list(report.findings)
 
         async def _wrapped(agent: EvalAgent) -> tuple[EvalAgent, EvalFinding, float]:
             start = time.time()
             try:
                 result = await agent._safe_execute(intake, config)
                 elapsed = time.time() - start
+                # Prefer the live finding stuffed in metadata; fall back to
+                # result.output if it is itself an EvalFinding (subclasses
+                # that override execute() directly typically do this).
                 finding = result.metadata.get("finding") if result.metadata else None
+                if finding is None and isinstance(result.output, EvalFinding):
+                    finding = result.output
                 if finding is None:
                     finding = EvalFinding(
                         agent_name=agent.name,
@@ -286,12 +311,21 @@ class EvalOrchestrator:
         bucket: list[EvalFinding],
         elapsed: float,
     ) -> None:
-        """Append one finding to the report and the per-tier bucket."""
+        """Append one finding to the report and the per-tier bucket.
+
+        Live :class:`EvalFinding` instances are stored on the report so that
+        downstream consumers (tests, the chair, programmatic callers) can
+        introspect verdict enums and required_changes lists directly.
+        Serialisation to JSON happens at write time.
+        """
         bucket.append(finding)
-        report.findings.append(finding.to_dict())
+        report.findings.append(finding)
         report.timing[agent.name] = elapsed
-        report.per_tier_verdicts.setdefault(agent.tier, {})[agent.name] = (
-            finding.verdict.value
+        report.per_tier_agent_verdicts.setdefault(agent.tier, {})[agent.name] = finding.verdict
+        # Roll up the worst per-agent verdict in this tier (FAIL > BLOCKED >
+        # SKIPPED > CONDITIONAL > PASS) into the per-tier summary verdict.
+        report.per_tier_verdicts[agent.tier] = self._tier_rollup(
+            report.per_tier_agent_verdicts[agent.tier].values()
         )
         digest = hashlib.sha256(
             json.dumps(finding.to_dict(), sort_keys=True, default=str).encode()
@@ -304,6 +338,28 @@ class EvalOrchestrator:
             finding.score,
             digest[:8],
         )
+
+    @staticmethod
+    def _tier_rollup(verdicts: Any) -> EvalVerdict:
+        """Reduce a tier's per-agent verdicts to a single worst-case verdict.
+
+        Severity ordering (worst first): FAIL > BLOCKED > SKIPPED >
+        CONDITIONAL > PASS. An empty input rolls up to CONDITIONAL.
+        """
+        order = (
+            EvalVerdict.FAIL,
+            EvalVerdict.BLOCKED,
+            EvalVerdict.SKIPPED,
+            EvalVerdict.CONDITIONAL,
+            EvalVerdict.PASS,
+        )
+        seen = set(verdicts)
+        if not seen:
+            return EvalVerdict.CONDITIONAL
+        for v in order:
+            if v in seen:
+                return v
+        return EvalVerdict.CONDITIONAL
 
     # ----------------------------------------------------- adversarial hook
 
@@ -367,7 +423,7 @@ class EvalOrchestrator:
             overall = EvalVerdict.PASS
         else:
             overall = EvalVerdict.CONDITIONAL
-        report.overall_verdict = overall.value
+        report.overall_verdict = overall
 
         # Aggregate de-duplicated required changes.
         seen: set[str] = set()
@@ -467,7 +523,10 @@ class EvalOrchestrator:
                 json.dump(report.to_dict(), f, indent=2, default=str)
             with open(findings_path, "w") as f:
                 for finding in report.findings:
-                    f.write(json.dumps(finding, default=str) + "\n")
+                    serialised = (
+                        finding.to_dict() if isinstance(finding, EvalFinding) else finding
+                    )
+                    f.write(json.dumps(serialised, default=str) + "\n")
             logger.info(
                 "EvalOrchestrator: wrote audit trail to %s", run_dir
             )

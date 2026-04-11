@@ -28,6 +28,7 @@ from resistancemap.evaluation.base import (
     EvalAgent,
     EvalFinding,
     EvalVerdict,
+    Verdict,
 )
 from resistancemap.evaluation.charter import (
     Charter,
@@ -44,6 +45,7 @@ __all__ = [
     "EvalAgent",
     "EvalFinding",
     "EvalVerdict",
+    "Verdict",
     "EvalOrchestrator",
     "EvalReport",
     "Charter",

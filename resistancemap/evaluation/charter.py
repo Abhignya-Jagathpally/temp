@@ -174,7 +174,7 @@ def load_default_charter() -> Charter:
     )
 
     pathway_claim = Claim(
-        name="through-which-pathway",
+        name="pathway",
         operational_meaning=(
             "For each predicted resistance state, the model emits an "
             "attribution over the PPI graph (STRING-derived) that highlights "

@@ -62,26 +62,62 @@ def _kendall_tau(x: np.ndarray, y: np.ndarray) -> float:
     return float((concordant - discordant) / denom)
 
 
+def _is_set_like_attribution(attr: Any) -> bool:
+    """True if ``attr`` is a list/tuple/set of feature identifiers (no scores).
+
+    Detects the simple "ranked feature list" form (e.g. ``["TP53", "KRAS"]``)
+    that the rubric / pathway tests use, distinct from the score-bearing
+    forms (1D numeric array or ``{id: score}`` dict).
+    """
+    if isinstance(attr, dict):
+        return False
+    if isinstance(attr, np.ndarray):
+        return False
+    if isinstance(attr, (list, tuple, set, frozenset)):
+        # If every entry is non-numeric, treat as a feature set.
+        for item in attr:
+            if isinstance(item, (int, float, np.integer, np.floating, bool)):
+                return False
+        return True
+    return False
+
+
 def attribution_overlap(
     attribution_a: Any,
     attribution_b: Any,
     top_k: Optional[int] = None,
-) -> Dict[str, float]:
+) -> Any:
     """Compare two feature attributions: Jaccard, Kendall-tau, top-k overlap.
 
+    This function has two modes:
+
+    **Set mode** -- when both inputs are plain iterables of feature
+    identifiers (e.g. ``["TP53", "KRAS"]``), the function returns a single
+    float: the Jaccard index ``|A ∩ B| / |A ∪ B|``. This is the form used
+    by simple ranked-list comparisons.
+
+    **Score mode** -- when at least one input is a numeric array or a
+    ``{feature: score}`` dict, the function returns a richer dict with
+    ``jaccard``, ``kendall_tau``, ``top_k_overlap``, and ``n_shared``.
+
     Args:
-        attribution_a: Attribution scores; either a 1D numpy array (positional)
-            or a dict mapping feature id -> score. Both inputs must use the
-            same key/index space.
-        attribution_b: Attribution scores; same convention as ``attribution_a``.
-        top_k: If given, restrict the Jaccard and overlap to the top-k features
-            of each attribution by absolute score.
+        attribution_a: Either an iterable of feature ids (set mode) or a
+            score container (score mode).
+        attribution_b: Same convention as ``attribution_a``.
+        top_k: If given, restrict the score-mode comparison to the top-k
+            features of each attribution by absolute score.
 
     Returns:
-        Dict with keys ``jaccard`` (top-k Jaccard), ``kendall_tau`` (rank
-        correlation over the shared key set), ``top_k_overlap`` (fraction of
-        a's top-k present in b's top-k), and ``n_shared``.
+        Float (set mode) or dict of overlap statistics (score mode).
     """
+    if _is_set_like_attribution(attribution_a) and _is_set_like_attribution(attribution_b):
+        set_a = set(attribution_a)
+        set_b = set(attribution_b)
+        union = set_a | set_b
+        if not union:
+            return float("nan")
+        return len(set_a & set_b) / len(union)
+
     a = _to_dict_or_array(attribution_a)
     b = _to_dict_or_array(attribution_b)
 

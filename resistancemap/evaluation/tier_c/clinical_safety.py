@@ -269,9 +269,9 @@ class ClinicalTranslationSafetyAgent(EvalAgent):
         if not analytical:
             verdict = Verdict.FAIL
         elif not clinical_v or not ood_present:
-            verdict = Verdict.CONDITIONAL_PASS
+            verdict = Verdict.CONDITIONAL
         else:
-            verdict = Verdict.CONDITIONAL_PASS  # never PASS without utility data
+            verdict = Verdict.CONDITIONAL  # never PASS without utility data
 
         # Score: fraction of CLIA rungs cleared (max 1.0 only with utility).
         rungs_cleared = sum(

@@ -1025,6 +1025,97 @@ def _init_distributed(config: ResistanceMapConfig) -> None:
 # CLI entry point
 # ═══════════════════════════════════════════════════════════════════════════════
 
+async def run_evaluation_governance(config: ResistanceMapConfig) -> None:
+    """Run the evaluation governance layer over the configured pipeline.
+
+    Registers the 10 evaluation agents (Tier A/B/C/D) with an
+    :class:`~resistancemap.evaluation.orchestrator.EvalOrchestrator` and
+    executes them. The training DAG is **not** invoked. The orchestrator
+    enforces a Tier A hard stop (any FAIL blocks Tier B/C/D), runs an
+    architecture-vs-baseline adversarial round between Tier B and Tier C,
+    and finishes with the chair (Tier D).
+
+    Args:
+        config: Loaded :class:`ResistanceMapConfig`. Only ``config.evaluation``
+            controls behaviour here, but every agent reads other sections of
+            the config to audit them.
+    """
+    # Imports are local so the training-only paths never pay the cost of
+    # loading the evaluation package.
+    from resistancemap.evaluation import EvalOrchestrator
+    from resistancemap.evaluation.tier_a import (
+        DataAdequacyAgent,
+        MeasurementIntegrationAgent,
+        BiasFairnessShiftAgent,
+    )
+    from resistancemap.evaluation.tier_b import (
+        ArchitectureAuditorAgent,
+        CellStateTrajectoryAgent,
+        PathwayPPIReasoningAgent,
+    )
+    from resistancemap.evaluation.tier_c import (
+        ForecastingUncertaintyAgent,
+        BaselineAdversaryAgent,
+        ClinicalTranslationSafetyAgent,
+    )
+    from resistancemap.evaluation.tier_d import PrincipalIntegratorAgent
+
+    eval_cfg = config.evaluation
+    if not eval_cfg.enabled:
+        logger.warning("evaluation.enabled is False; nothing to do.")
+        return
+
+    orch = EvalOrchestrator(log_root=eval_cfg.log_root)
+
+    # Tier A — gates
+    orch.add_agent(DataAdequacyAgent())
+    orch.add_agent(MeasurementIntegrationAgent())
+    orch.add_agent(BiasFairnessShiftAgent())
+
+    # Tier B — architecture and mechanism
+    if not eval_cfg.skip_tier_b:
+        orch.add_agent(ArchitectureAuditorAgent())
+        orch.add_agent(CellStateTrajectoryAgent())
+        orch.add_agent(PathwayPPIReasoningAgent())
+
+    # Tier C — prediction quality + alternatives
+    if not eval_cfg.skip_tier_c:
+        orch.add_agent(ForecastingUncertaintyAgent())
+        orch.add_agent(BaselineAdversaryAgent())
+        orch.add_agent(ClinicalTranslationSafetyAgent())
+
+    # Tier D — chair
+    if not eval_cfg.skip_tier_d:
+        orch.add_agent(PrincipalIntegratorAgent())
+
+    logger.info("Starting ResistanceMap evaluation governance run")
+    report = await orch.run(config, run_id=eval_cfg.run_id)
+
+    overall = (
+        report.overall_verdict.value
+        if hasattr(report.overall_verdict, "value")
+        else str(report.overall_verdict)
+    )
+    print(f"\n{'=' * 60}")
+    print("ResistanceMap Evaluation Governance Report")
+    print(f"  run_id:           {report.run_id}")
+    print(f"  overall verdict:  {overall}")
+    print(f"  TRL grade:        {report.maturity_grade.get('trl', '?')}"
+          f" — {report.maturity_grade.get('justification', '')}")
+    print(f"  per-tier:         "
+          + ", ".join(
+              f"{t}={(v.value if hasattr(v, 'value') else v)}"
+              for t, v in report.per_tier_verdicts.items()
+          ))
+    print(f"  required changes: {len(report.required_changes)}")
+    for i, change in enumerate(report.required_changes[:10], 1):
+        print(f"    {i:>2}. {change}")
+    if len(report.required_changes) > 10:
+        print(f"    ... and {len(report.required_changes) - 10} more")
+    print(f"  audit trail:      {eval_cfg.log_root}/{report.run_id}/")
+    print(f"{'=' * 60}\n")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="ResistanceMap — pharmacogenomic ML for hematologic malignancies",
@@ -1062,6 +1153,15 @@ Examples:
         "--port", type=int, default=None,
         help="Override API server port (only for --stage serve)",
     )
+    parser.add_argument(
+        "--evaluate", action="store_true",
+        help=(
+            "Run the evaluation governance layer (10 PhD-level audit agents "
+            "across Tier A/B/C/D) instead of the training DAG. Tier A "
+            "FAILs hard-stop downstream tiers; report is written under "
+            "evaluation.log_root/<run_id>/."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1079,6 +1179,11 @@ def main() -> None:
     _init_distributed(config)
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
+
+    # Evaluation governance mode: orthogonal to the training DAG.
+    if args.evaluate:
+        asyncio.run(run_evaluation_governance(config))
+        return
 
     # Single-stage mode always uses sequential execution
     if args.stage:

@@ -128,9 +128,9 @@ def integrated_brier_score(
     times, events = _validate_survival_inputs(times, events)
     surv_pred = np.asarray(surv_pred, dtype=np.float64)
     eval_times = np.asarray(eval_times, dtype=np.float64)
-    if eval_times.ndim != 1 or eval_times.shape[0] < 2:
-        raise ValueError("eval_times must be a 1D array with >= 2 entries")
-    if np.any(np.diff(eval_times) <= 0):
+    if eval_times.ndim != 1 or eval_times.shape[0] < 1:
+        raise ValueError("eval_times must be a non-empty 1D array")
+    if eval_times.shape[0] >= 2 and np.any(np.diff(eval_times) <= 0):
         raise ValueError("eval_times must be strictly increasing")
     if surv_pred.ndim != 2 or surv_pred.shape != (times.shape[0], eval_times.shape[0]):
         raise ValueError(
@@ -164,6 +164,11 @@ def integrated_brier_score(
         if g_at_t > 0:
             contrib[mask_risk] = ((1.0 - surv_pred[mask_risk, k]) ** 2) / g_at_t
         bs_per_t[k] = contrib.sum() / n
+
+    # Single-horizon special case: integration is undefined; return the
+    # mean Brier score at that horizon.
+    if eval_times.shape[0] == 1:
+        return float(bs_per_t[0])
 
     # Trapezoidal time integration normalized by the eval window.
     duration = eval_times[-1] - eval_times[0]

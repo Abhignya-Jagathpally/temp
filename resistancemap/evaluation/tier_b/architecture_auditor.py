@@ -339,5 +339,5 @@ class ArchitectureAuditorAgent(EvalAgent):
         return self._make_result(
             AgentState.COMPLETED,
             output=finding.__dict__ if hasattr(finding, "__dict__") else finding,
-            metadata={"verdict": str(finding.verdict), "score": finding.score},
+            metadata={"verdict": str(finding.verdict), "score": finding.score, "finding": finding},
         )
