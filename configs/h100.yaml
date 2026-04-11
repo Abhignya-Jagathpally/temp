@@ -27,9 +27,9 @@ vae:
   # H100 can handle larger batches
   pretrain_epochs: 200
   finetune_epochs: 100
-  pretrain_lr: 1e-3
-  finetune_lr: 1e-4
-  weight_decay: 1e-5
+  pretrain_lr: 0.001
+  finetune_lr: 0.0001
+  weight_decay: 0.00001
   batch_size: 1024     # Doubled from default 512
   gradient_clip_norm: 1.0
 
@@ -44,19 +44,19 @@ vae:
   gradient_checkpointing: true  # Save memory
 
   patience: 20
-  min_delta: 1e-4
+  min_delta: 0.0001
 
 # Trajectory
 trajectory:
   ode_solver: dopri5    # Higher accuracy solver for H100
-  ode_rtol: 1e-6
-  ode_atol: 1e-8
+  ode_rtol: 0.000001
+  ode_atol: 0.00000001
   integration_time: 100.0
 
   forecast_horizons: [3, 6, 12]
   n_perturbation: 100   # More samples on powerful GPU
 
-  calibration_lr: 1e-3
+  calibration_lr: 0.001
   calibration_epochs: 500
   calibration_batch_size: 128  # Larger batch
   score_range: [0.0, 1.0]
@@ -80,11 +80,11 @@ fusion:
   hidden_dim: 256       # Increased from 128
   n_heads: 8            # Doubled from 4
   dropout: 0.2
-  fusion_type: cross_attention
+  fusion_type: concat
 
-  fusion_lr: 5e-4
+  fusion_lr: 0.0005
   fusion_epochs: 150
-  weight_decay: 1e-4
+  weight_decay: 0.0001
 
 # Landscape
 landscape:
@@ -98,7 +98,7 @@ landscape:
 hardware:
   device: cuda
   dtype: bfloat16             # Native H100 support
-  compile: true               # torch.compile for speed
+  compile: false              # torch.compile disabled (dynamo compat issue with VAE)
   compile_mode: reduce-overhead  # Lower latency
   pin_memory: true
   num_workers: 16             # More DataLoader workers

@@ -119,6 +119,18 @@ class TrajectoryConfig:
     # Output range
     score_range: tuple[float, float] = (0.0, 1.0)
 
+    # Chromatin reader/writer proteins for ODE parameterization
+    reader_writer_proteins: list[str] = field(default_factory=lambda: [
+        "EZH2", "KDM6A", "KDM6B", "KMT2A", "KMT2D",
+        "DNMT1", "DNMT3A", "DNMT3B", "TET1", "TET2",
+        "HDAC1", "HDAC2", "KAT2A", "KAT2B", "EP300",
+        "BRD4", "SMARCA4", "ARID1A", "SUZ12", "EED",
+    ])
+
+
+# Alias for backward compatibility with trajectory module
+StabilityConfig = TrajectoryConfig
+
 
 @dataclass
 class ProteinNetConfig:
@@ -277,6 +289,10 @@ def load_config(path: Path) -> ResistanceMapConfig:
                     field_type = section_cls.__dataclass_fields__[key].type
                     if field_type == Path or field_type == "Path":
                         value = Path(value)
+                    elif field_type in (float, "float") and isinstance(value, str):
+                        value = float(value)
+                    elif field_type in (int, "int") and isinstance(value, str):
+                        value = int(value)
                     setattr(section_obj, key, value)
 
     # Top-level fields

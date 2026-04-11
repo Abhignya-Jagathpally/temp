@@ -244,7 +244,7 @@ def load_string_ppi(config: DataConfig) -> dict[str, Any]:
             "Run scripts/download_data.sh first."
         )
 
-    df = pd.read_csv(path, sep="\t")
+    df = pd.read_csv(path, sep=r"\s+", engine="python")
     expected_cols = {"protein1", "protein2", "combined_score"}
     if not expected_cols.issubset(df.columns):
         df.columns = ["protein1", "protein2", "combined_score"]
@@ -310,6 +310,41 @@ def load_scrna_h5ad(path: Path, config: DataConfig) -> dict[str, Any]:
         "sample_ids": adata.obs.index.tolist() if hasattr(adata.obs, "index") else [f"cell_{i}" for i in range(adata.n_obs)],
         "gene_names": adata.var.index.tolist() if hasattr(adata.var, "index") else [f"gene_{i}" for i in range(adata.n_vars)],
     }
+
+
+def load_scrna_data(config: DataConfig) -> Optional[dict[str, Any]]:
+    """Wrapper that loads any configured scRNA-seq h5ad files; tolerates missing files.
+
+    Looks at config.scrna_gse124310_path and config.scrna_gse271107_path. Returns
+    None if neither exists (so harmonize_omics can degrade gracefully).
+    """
+    out: dict[str, Any] = {}
+    for attr in ("scrna_gse124310_path", "scrna_gse271107_path"):
+        p = getattr(config, attr, None)
+        if p is None:
+            continue
+        p = Path(p)
+        if p.exists():
+            try:
+                out[attr] = load_scrna_h5ad(p, config)
+            except Exception as e:
+                logger.warning(f"scRNA load failed for {p}: {e}")
+    return out or None
+
+
+def load_mmrf_data(config: DataConfig) -> Optional[dict[str, Any]]:
+    """Stub: MMRF CoMMpass is dbGaP-controlled and not auto-fetched.
+
+    Returns None if config.mmrf_commpass_dir is empty/missing. harmonize_omics
+    must tolerate None and skip MMRF-dependent splits.
+    """
+    d = Path(getattr(config, "mmrf_commpass_dir", "data/raw/mmrf_commpass/"))
+    if not d.exists() or not any(d.iterdir()):
+        logger.warning(f"MMRF CoMMpass directory empty or missing at {d}; skipping (controlled access)")
+        return None
+    # Real loader not implemented — placeholder so the import resolves.
+    logger.warning(f"MMRF dir {d} has files but no loader is implemented; returning None")
+    return None
 
 
 def load_drug_sensitivity(config: DataConfig) -> dict[str, Any]:
@@ -398,12 +433,17 @@ def _standardize_drug_columns(df: pd.DataFrame, source_name: str) -> pd.DataFram
             col_map[orig] = "ic50"
         elif lower == "log2.ic50" and "ic50" not in col_map.values():
             col_map[orig] = "log2_ic50"
+        elif lower == "ln_ic50" and "ic50" not in col_map.values():
+            col_map[orig] = "ln_ic50"
 
     df = df.rename(columns=col_map)
 
-    # Convert log2 IC50 to linear if needed
+    # Convert log-scale IC50 to linear if needed
     if "ic50" not in df.columns and "log2_ic50" in df.columns:
         df["ic50"] = 2.0 ** df["log2_ic50"]
+    elif "ic50" not in df.columns and "ln_ic50" in df.columns:
+        import numpy as _np
+        df["ic50"] = _np.exp(df["ln_ic50"])
 
     logger.info(f"  {source_name}: standardized columns")
     return df

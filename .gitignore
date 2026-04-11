@@ -1,0 +1,16 @@
+# Data and checkpoints (too large for git)
+/data/
+checkpoints/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

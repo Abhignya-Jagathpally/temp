@@ -311,6 +311,7 @@ def train_vae(
         heme_lineages = {
             "Myeloid", "Lymphoid",
             "haematopoietic_and_lymphoid_tissue",
+            "blood", "lymphocyte", "plasma_cell",
         }
         indices = [
             i for i in splits["train"]

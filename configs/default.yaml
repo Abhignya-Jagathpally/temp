@@ -57,9 +57,9 @@ vae:
   # Training
   pretrain_epochs: 200
   finetune_epochs: 100
-  pretrain_lr: 1e-3
-  finetune_lr: 1e-4
-  weight_decay: 1e-5
+  pretrain_lr: 0.001
+  finetune_lr: 0.0001
+  weight_decay: 0.00001
   batch_size: 512
   gradient_clip_norm: 1.0
 
@@ -78,14 +78,14 @@ vae:
 
   # Early stopping
   patience: 20
-  min_delta: 1e-4
+  min_delta: 0.0001
 
 # ODE-based resistance trajectory modeling
 trajectory:
   # ODE solver
   ode_solver: euler     # euler | dopri5 | rk4
-  ode_rtol: 1e-5
-  ode_atol: 1e-7
+  ode_rtol: 0.00001
+  ode_atol: 0.0000001
   integration_time: 100.0  # Arbitrary time units
 
   # Forecasting horizons
@@ -95,7 +95,7 @@ trajectory:
   n_perturbation: 50    # Samples for trajectory uncertainty
 
   # Calibration
-  calibration_lr: 1e-3
+  calibration_lr: 0.001
   calibration_epochs: 500
   calibration_batch_size: 64
 
@@ -128,9 +128,9 @@ fusion:
   fusion_type: cross_attention  # cross_attention | concat | gated
 
   # Training
-  fusion_lr: 5e-4
+  fusion_lr: 0.0005
   fusion_epochs: 150
-  weight_decay: 1e-4
+  weight_decay: 0.0001
 
 # Resistance landscape visualization
 landscape:

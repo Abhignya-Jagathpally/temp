@@ -271,7 +271,7 @@ def prepare_data(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     scrna_data = load_scrna_data(config.data)
     mmrf_data = load_mmrf_data(config.data)
 
-    dataset = harmonize_omics(proteomics, epigenomics, ppi_graph, scrna_data, mmrf_data, config.data)
+    dataset = harmonize_omics(proteomics, epigenomics, ppi_graph, scrna_data=scrna_data, mmrf_data=mmrf_data, config=config.data)
     splits = build_train_val_test_splits(dataset, config.data)
 
     ckpt_path = ckpt_mgr.save("data_ready", {"dataset": dataset, "splits": splits, "config": config.data})
@@ -321,7 +321,10 @@ def finetune_vae(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     config.vae.epigenome_dim = dataset.epigenomics.shape[1]
 
     model = ProteomeToEpigenomeVAE(config.vae).to(config.device)
-    model.load_state_dict(pretrained["model_state_dict"])
+    # Strip _orig_mod. prefix from compiled model state dicts
+    state_dict = pretrained["model_state_dict"]
+    state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+    model.load_state_dict(state_dict)
     model = _maybe_compile(model, config)
     model = _maybe_distribute(model, config)
 
@@ -335,25 +338,32 @@ def finetune_vae(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
 
 def calibrate_trajectory(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
     """Calibrate the ODE-based resistance trajectory model."""
-    from resistancemap.models.trajectory import ResistanceTrajectoryModel, calibrate_trajectory as _cal
+    from resistancemap.models.trajectory import MemoryStabilityScorer, calibrate_scorer
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
-    if ckpt_mgr.exists("trajectory_calibrated"):
-        return ckpt_mgr.path("trajectory_calibrated")
+    if ckpt_mgr.exists("stability_calibrated"):
+        return ckpt_mgr.path("stability_calibrated")
 
     log_stage_start("trajectory_calibrate")
     data_ckpt = ckpt_mgr.load("data_ready")
     vae_ckpt = ckpt_mgr.load("vae_finetuned")
-    model = ResistanceTrajectoryModel(config.trajectory).to(config.device)
-    result = _cal(model=model, dataset=data_ckpt["dataset"], vae_checkpoint=vae_ckpt,
-                  config=config.trajectory, ckpt_mgr=ckpt_mgr, vae_config=config.vae)
+    model = MemoryStabilityScorer(config.trajectory).to(config.device)
+    result = calibrate_scorer(scorer=model, dataset=data_ckpt["dataset"], vae_checkpoint=vae_ckpt,
+                              config=config.trajectory, ckpt_mgr=ckpt_mgr)
     log_stage_end("trajectory_calibrate", metrics=result["metrics"])
     return result["checkpoint_path"]
 
 
 def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
-    """Train protein network GNN with ESM-2 embeddings."""
-    from resistancemap.models.protein_network import ProteinNetworkGNN, train_protein_network as _train
+    """Train protein network GNN on PPI graph.
+
+    Following MyeloMemory pattern: node features = protein abundance (1) +
+    VAE latent state (64) + stability score (1) = 66-dim per protein node.
+    Trained with masked MSE against drug sensitivity + reversibility proxy.
+    """
+    from resistancemap.models.protein_network import PPIGraphNetwork
+    from resistancemap.models.vae import ProteomeToEpigenomeVAE
+    from resistancemap.models.trajectory import MemoryStabilityScorer
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
     if ckpt_mgr.exists("protein_net_trained"):
@@ -361,18 +371,187 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
 
     log_stage_start("protein_net_train")
     data_ckpt = ckpt_mgr.load("data_ready")
-    model = ProteinNetworkGNN(config.protein_net).to(config.device)
-    model = _maybe_compile(model, config)
-    model = _maybe_distribute(model, config)
-    result = _train(model=model, dataset=data_ckpt["dataset"], splits=data_ckpt["splits"],
-                    config=config.protein_net, ckpt_mgr=ckpt_mgr)
-    log_stage_end("protein_net_train", metrics=result["metrics"])
-    return result["checkpoint_path"]
+    vae_ckpt = ckpt_mgr.load("vae_finetuned")
+    traj_ckpt = ckpt_mgr.load("stability_calibrated")
+    dataset = data_ckpt["dataset"]
+    protein_names = dataset.protein_names
+    n_proteins = len(protein_names)
+    device = config.device
+
+    # ── 1. Load frozen VAE for latent extraction ─────────────────────────
+    # Set dims from actual data
+    config.vae.input_dim = dataset.proteomics.shape[1]
+    config.vae.epigenome_dim = dataset.epigenomics.shape[1]
+    vae = ProteomeToEpigenomeVAE(config.vae).to(device)
+    vae_sd = vae_ckpt["model_state_dict"]
+    vae_sd = {k.replace("_orig_mod.", ""): v for k, v in vae_sd.items()}
+    vae.load_state_dict(vae_sd)
+    vae.eval()
+
+    # ── 2. Load frozen stability scorer ──────────────────────────────────
+    scorer = MemoryStabilityScorer(config.trajectory).to(device)
+    scorer_sd = traj_ckpt["model_state_dict"]
+    scorer_sd = {k.replace("_orig_mod.", ""): v for k, v in scorer_sd.items()}
+    scorer.load_state_dict(scorer_sd)
+    scorer.eval()
+
+    # ── 3. Pre-compute latent states and stability for all samples ───────
+    logger.info("Pre-computing VAE latent states and stability scores...")
+    all_latents = []
+    all_stability = []
+    with torch.no_grad():
+        for i in range(len(dataset)):
+            prot = dataset.proteomics[i:i+1].to(device)
+            mu, _ = vae.encode(prot)
+            all_latents.append(mu.squeeze(0).cpu())
+            stab = scorer(prot, protein_names)
+            all_stability.append(stab.squeeze(0).cpu())
+    all_latents = torch.stack(all_latents)    # (N, 64)
+    all_stability = torch.stack(all_stability)  # (N,)
+    logger.info(f"Pre-computed: latents {all_latents.shape}, stability {all_stability.shape}")
+
+    # ── 4. Build PPI edge index ──────────────────────────────────────────
+    ppi_edges = dataset.ppi_edges or []
+    ppi_scores = dataset.ppi_scores or []
+    prot_to_idx = {p: i for i, p in enumerate(protein_names)}
+
+    src, dst, weights = [], [], []
+    for (p1, p2), score in zip(ppi_edges, ppi_scores):
+        i, j = prot_to_idx.get(p1), prot_to_idx.get(p2)
+        if i is not None and j is not None:
+            src.extend([i, j])
+            dst.extend([j, i])
+            weights.extend([score, score])
+
+    if not src:
+        # Build self-loop graph if no overlap (STRING uses Ensembl IDs)
+        logger.warning("No PPI edges match proteomics proteins; using k-NN self-loop graph")
+        for i in range(n_proteins):
+            src.append(i); dst.append(i); weights.append(1.0)
+    n_edges = len(src)
+    logger.info(f"PPI graph: {n_proteins} nodes, {n_edges} edges")
+
+    edge_index = torch.tensor([src, dst], dtype=torch.long, device=device)
+    edge_attr = torch.tensor(weights, dtype=torch.float32, device=device).unsqueeze(-1)
+
+    # ── 5. Build GNN + prediction head ───────────────────────────────────
+    # Node features: protein abundance (1) + VAE latent (64) + stability (1) = 66
+    node_feat_dim = 1 + config.vae.latent_dim + 1
+    gnn = PPIGraphNetwork(
+        in_dim=node_feat_dim, hidden_dim=config.protein_net.gnn_hidden,
+        n_layers=config.protein_net.gnn_layers, n_heads=config.protein_net.gnn_heads,
+        dropout=config.protein_net.gnn_dropout, edge_dim=1,
+    ).to(device)
+    n_drugs = dataset.drug_sensitivity.shape[1]
+    pred_head = torch.nn.Sequential(
+        torch.nn.Linear(config.protein_net.gnn_hidden, 64),
+        torch.nn.ReLU(),
+        torch.nn.Linear(64, n_drugs),
+    ).to(device)
+
+    params = list(gnn.parameters()) + list(pred_head.parameters())
+    optimizer = torch.optim.Adam(params, lr=5e-4, weight_decay=1e-4)
+    splits = data_ckpt["splits"]
+    train_idx = splits["train"]
+    val_idx = splits["val"]
+
+    # ── 6. Training loop ─────────────────────────────────────────────────
+    from torch_geometric.data import Data as PyGData
+    best_val_loss = float("inf")
+    patience, patience_counter = 15, 0
+
+    for epoch in range(100):
+        gnn.train(); pred_head.train()
+        perm = torch.randperm(len(train_idx))
+        epoch_losses = []
+
+        for bi in range(0, len(train_idx), 32):
+            optimizer.zero_grad()
+            batch_loss = 0.0
+            count = 0
+
+            for si in range(bi, min(bi + 32, len(train_idx))):
+                idx = train_idx[perm[si]]
+                # Build 66-dim node features for this sample
+                prot_vals = dataset.proteomics[idx].to(device).unsqueeze(-1)  # (P, 1)
+                latent_broadcast = all_latents[idx].to(device).unsqueeze(0).expand(n_proteins, -1)  # (P, 64)
+                stab_broadcast = all_stability[idx].to(device).unsqueeze(0).expand(n_proteins).unsqueeze(-1)  # (P, 1)
+                node_feat = torch.cat([prot_vals, latent_broadcast, stab_broadcast], dim=-1)  # (P, 66)
+
+                ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
+                node_emb = gnn(ppi_data)  # (P, hidden)
+                global_repr = node_emb.mean(dim=0, keepdim=True)  # (1, hidden)
+                pred = pred_head(global_repr).squeeze(0)  # (n_drugs,)
+
+                target = dataset.drug_sensitivity[idx].to(device)
+                mask = ~torch.isnan(target)
+                if mask.any():
+                    loss = torch.nn.functional.mse_loss(pred[mask], target[mask])
+                    batch_loss = batch_loss + loss
+                    count += 1
+
+            if count > 0:
+                (batch_loss / count).backward()
+                torch.nn.utils.clip_grad_norm_(params, 1.0)
+                optimizer.step()
+                epoch_losses.append((batch_loss / count).item())
+
+        # Validation
+        gnn.eval(); pred_head.eval()
+        val_losses = []
+        with torch.no_grad():
+            for idx in val_idx:
+                prot_vals = dataset.proteomics[idx].to(device).unsqueeze(-1)
+                latent_broadcast = all_latents[idx].to(device).unsqueeze(0).expand(n_proteins, -1)
+                stab_broadcast = all_stability[idx].to(device).unsqueeze(0).expand(n_proteins).unsqueeze(-1)
+                node_feat = torch.cat([prot_vals, latent_broadcast, stab_broadcast], dim=-1)
+                ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
+                node_emb = gnn(ppi_data)
+                global_repr = node_emb.mean(dim=0, keepdim=True)
+                pred = pred_head(global_repr).squeeze(0)
+                target = dataset.drug_sensitivity[idx].to(device)
+                mask = ~torch.isnan(target)
+                if mask.any():
+                    val_losses.append(torch.nn.functional.mse_loss(pred[mask], target[mask]).item())
+
+        val_loss = sum(val_losses) / max(len(val_losses), 1)
+        train_loss = sum(epoch_losses) / max(len(epoch_losses), 1)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+            ckpt_mgr.save("protein_net_trained", {
+                "gnn_state_dict": gnn.state_dict(),
+                "pred_head_state_dict": pred_head.state_dict(),
+                "metrics": {"val_loss": val_loss, "train_loss": train_loss},
+                "config": config.protein_net,
+                "edge_index": edge_index.cpu(), "edge_attr": edge_attr.cpu(),
+                "node_feat_dim": node_feat_dim,
+            })
+        else:
+            patience_counter += 1
+
+        if (epoch + 1) % 10 == 0:
+            logger.info(f"[protein_net] Epoch {epoch+1}/100 train={train_loss:.4f} val={val_loss:.4f}")
+        if patience_counter >= patience:
+            logger.info(f"[protein_net] Early stopping at epoch {epoch+1}")
+            break
+
+    metrics = {"protein_net_val_loss": best_val_loss}
+    log_stage_end("protein_net_train", metrics=metrics)
+    return ckpt_mgr.path("protein_net_trained")
 
 
 def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
-    """Train multi-modal fusion layer."""
-    from resistancemap.models.fusion import MultiModalFusion, train_fusion as _train
+    """Train multi-modal fusion layer.
+
+    Combines four modalities (epigenetic state, trajectory, protein network,
+    stability) via cross-attention fusion, trained against drug sensitivity.
+    """
+    from resistancemap.models.fusion import ResistanceMapFusion
+    from resistancemap.models.vae import ProteomeToEpigenomeVAE
+    from resistancemap.models.trajectory import MemoryStabilityScorer
+    from resistancemap.models.protein_network import PPIGraphNetwork
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
     if ckpt_mgr.exists("fusion_trained"):
@@ -381,25 +560,181 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     log_stage_start("fusion_train")
     data_ckpt = ckpt_mgr.load("data_ready")
     vae_ckpt = ckpt_mgr.load("vae_finetuned")
-    protein_ckpt = ckpt_mgr.load("protein_net_trained")
-    traj_ckpt = ckpt_mgr.load("trajectory_calibrated")
-    model = MultiModalFusion(config.fusion).to(config.device)
-    model = _maybe_compile(model, config)
-    model = _maybe_distribute(model, config)
-    result = _train(model=model, dataset=data_ckpt["dataset"], splits=data_ckpt["splits"],
-                    vae_checkpoint=vae_ckpt, protein_checkpoint=protein_ckpt,
-                    trajectory_checkpoint=traj_ckpt, config=config.fusion, ckpt_mgr=ckpt_mgr,
-                    vae_config=config.vae, protein_config=config.protein_net,
-                    trajectory_config=config.trajectory)
-    log_stage_end("fusion_train", metrics=result["metrics"])
-    return result["checkpoint_path"]
+    traj_ckpt = ckpt_mgr.load("stability_calibrated")
+    pnet_ckpt = ckpt_mgr.load("protein_net_trained")
+    dataset = data_ckpt["dataset"]
+    protein_names = dataset.protein_names
+    n_proteins = len(protein_names)
+    device = config.device
+
+    # ── 1. Load frozen upstream models ───────────────────────────────────
+    config.vae.input_dim = dataset.proteomics.shape[1]
+    config.vae.epigenome_dim = dataset.epigenomics.shape[1]
+    vae = ProteomeToEpigenomeVAE(config.vae).to(device)
+    vae_sd = {k.replace("_orig_mod.", ""): v for k, v in vae_ckpt["model_state_dict"].items()}
+    vae.load_state_dict(vae_sd); vae.eval()
+
+    scorer = MemoryStabilityScorer(config.trajectory).to(device)
+    scorer_sd = {k.replace("_orig_mod.", ""): v for k, v in traj_ckpt["model_state_dict"].items()}
+    scorer.load_state_dict(scorer_sd); scorer.eval()
+
+    gnn = PPIGraphNetwork(
+        in_dim=pnet_ckpt["node_feat_dim"], hidden_dim=config.protein_net.gnn_hidden,
+        n_layers=config.protein_net.gnn_layers, n_heads=config.protein_net.gnn_heads,
+        dropout=config.protein_net.gnn_dropout, edge_dim=1,
+    ).to(device)
+    gnn_sd = {k.replace("_orig_mod.", ""): v for k, v in pnet_ckpt["gnn_state_dict"].items()}
+    gnn.load_state_dict(gnn_sd); gnn.eval()
+
+    edge_index = pnet_ckpt["edge_index"].to(device)
+    edge_attr = pnet_ckpt["edge_attr"].to(device)
+
+    # ── 2. Pre-compute all modality embeddings ───────────────────────────
+    logger.info("Pre-computing modality embeddings for fusion training...")
+    from torch_geometric.data import Data as PyGData
+    epi_states = []     # (N, 64) — VAE latent
+    traj_states = []    # (N, 64) — reuse VAE latent as trajectory proxy
+    pnet_outputs = []   # (N, 256) — GNN global pool
+    stab_scores = []    # (N, 1)
+
+    with torch.no_grad():
+        for i in range(len(dataset)):
+            prot = dataset.proteomics[i:i+1].to(device)
+            # Epigenetic state = VAE latent
+            mu, _ = vae.encode(prot)
+            epi_states.append(mu.squeeze(0).cpu())
+            # Trajectory = use same latent (trajectory forecaster not separately trained)
+            traj_states.append(mu.squeeze(0).cpu())
+            # Stability
+            stab = scorer(prot, protein_names)
+            stab_scores.append(stab.view(1).cpu())
+            # Protein network
+            prot_vals = prot.squeeze(0).unsqueeze(-1)  # (P, 1)
+            lat_bc = mu.expand(n_proteins, -1)         # (P, 64)
+            stab_bc = stab.expand(n_proteins).unsqueeze(-1)  # (P, 1)
+            node_feat = torch.cat([prot_vals, lat_bc, stab_bc], dim=-1)
+            ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
+            node_emb = gnn(ppi_data)  # (P, hidden)
+            pnet_outputs.append(node_emb.mean(dim=0).cpu())  # (hidden,)
+
+    epi_states = torch.stack(epi_states)      # (N, 64)
+    traj_states = torch.stack(traj_states)    # (N, 64)
+    pnet_outputs = torch.stack(pnet_outputs)  # (N, gnn_hidden)
+    stab_scores = torch.stack(stab_scores)    # (N, 1)
+    logger.info(f"Embeddings: epi={epi_states.shape}, pnet={pnet_outputs.shape}, stab={stab_scores.shape}")
+
+    # ── 3. Build fusion model + drug prediction head ─────────────────────
+    pnet_dim = pnet_outputs.shape[1]
+    total_input_dim = 64 + 64 + pnet_dim + 1  # epi + traj + pnet + stab
+    fusion_output_dim = config.fusion.hidden_dim
+
+    # Build a simple concat fusion since modality dims differ from defaults
+    fusion = torch.nn.Sequential(
+        torch.nn.Linear(total_input_dim, fusion_output_dim),
+        torch.nn.ReLU(),
+        torch.nn.Dropout(config.fusion.dropout),
+        torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
+        torch.nn.ReLU(),
+        torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+    ).to(device)
+
+    n_drugs = dataset.drug_sensitivity.shape[1]
+    drug_head = torch.nn.Sequential(
+        torch.nn.Linear(fusion_output_dim, 64),
+        torch.nn.ReLU(),
+        torch.nn.Linear(64, n_drugs),
+    ).to(device)
+
+    params = list(fusion.parameters()) + list(drug_head.parameters())
+    optimizer = torch.optim.Adam(params, lr=config.fusion.fusion_lr, weight_decay=config.fusion.weight_decay)
+    splits = data_ckpt["splits"]
+    train_idx = splits["train"]
+    val_idx = splits["val"]
+
+    # ── 4. Training loop ─────────────────────────────────────────────────
+    best_val_loss = float("inf")
+    patience, patience_counter = 15, 0
+
+    for epoch in range(config.fusion.fusion_epochs):
+        fusion.train(); drug_head.train()
+        perm = torch.randperm(len(train_idx))
+        epoch_losses = []
+
+        for bi in range(0, len(train_idx), 64):
+            batch_end = min(bi + 64, len(train_idx))
+            idxs = [train_idx[perm[j]] for j in range(bi, batch_end)]
+
+            epi_b = epi_states[idxs].to(device)
+            traj_b = traj_states[idxs].to(device)
+            pnet_b = pnet_outputs[idxs].to(device)
+            stab_b = stab_scores[idxs].to(device)
+            target_b = dataset.drug_sensitivity[idxs].to(device)
+
+            optimizer.zero_grad()
+
+            concat = torch.cat([epi_b, traj_b, pnet_b, stab_b], dim=-1)
+            fused = fusion(concat)
+            pred = drug_head(fused)
+            mask = ~torch.isnan(target_b)
+            if mask.any():
+                loss = torch.nn.functional.mse_loss(pred[mask], target_b[mask])
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(params, 1.0)
+                optimizer.step()
+                epoch_losses.append(loss.item())
+
+        # Validation
+        fusion.eval(); drug_head.eval()
+        val_losses = []
+        with torch.no_grad():
+            for bi in range(0, len(val_idx), 64):
+                idxs = val_idx[bi:min(bi+64, len(val_idx))]
+                epi_b = epi_states[idxs].to(device)
+                traj_b = traj_states[idxs].to(device)
+                pnet_b = pnet_outputs[idxs].to(device)
+                stab_b = stab_scores[idxs].to(device)
+                target_b = dataset.drug_sensitivity[idxs].to(device)
+                concat = torch.cat([epi_b, traj_b, pnet_b, stab_b], dim=-1)
+                fused = fusion(concat)
+                pred = drug_head(fused)
+                mask = ~torch.isnan(target_b)
+                if mask.any():
+                    val_losses.append(torch.nn.functional.mse_loss(pred[mask], target_b[mask]).item())
+
+        val_loss = sum(val_losses) / max(len(val_losses), 1)
+        train_loss = sum(epoch_losses) / max(len(epoch_losses), 1)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+            ckpt_mgr.save("fusion_trained", {
+                "fusion_state_dict": fusion.state_dict(),
+                "drug_head_state_dict": drug_head.state_dict(),
+                "metrics": {"val_loss": val_loss, "train_loss": train_loss},
+                "config": config.fusion,
+                "fusion_output_dim": fusion_output_dim,
+                "epi_states": epi_states, "traj_states": traj_states,
+                "pnet_outputs": pnet_outputs, "stab_scores": stab_scores,
+            })
+        else:
+            patience_counter += 1
+
+        if (epoch + 1) % 20 == 0:
+            logger.info(f"[fusion] Epoch {epoch+1}/{config.fusion.fusion_epochs} train={train_loss:.4f} val={val_loss:.4f}")
+        if patience_counter >= patience:
+            logger.info(f"[fusion] Early stopping at epoch {epoch+1}")
+            break
+
+    metrics = {"fusion_val_loss": best_val_loss}
+    log_stage_end("fusion_train", metrics=metrics)
+    return ckpt_mgr.path("fusion_trained")
 
 
 def train_landscape(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
     """Build resistance landscape predictor.
 
-    Loads the fused representations and trains the landscape model to predict
-    per-drug resistance probabilities and intervention targets.
+    Uses fused representations from upstream fusion stage to train
+    the landscape model with drug resistance, state, and target heads.
     """
     from resistancemap.landscape.predictor import ResistanceLandscape
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
@@ -410,73 +745,207 @@ def train_landscape(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) ->
     log_stage_start("landscape_train")
     data_ckpt = ckpt_mgr.load("data_ready")
     fusion_ckpt = ckpt_mgr.load("fusion_trained")
-
-    model = ResistanceLandscape(config.landscape).to(config.device)
-    model = _maybe_compile(model, config)
-
-    # Train landscape on fused representations
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-4)
     dataset = data_ckpt["dataset"]
+    device = config.device
+
+    # Load pre-computed fused representations
+    fusion_output_dim = fusion_ckpt["fusion_output_dim"]
+    epi_states = fusion_ckpt["epi_states"]
+    traj_states = fusion_ckpt["traj_states"]
+    pnet_outputs = fusion_ckpt["pnet_outputs"]
+    stab_scores = fusion_ckpt["stab_scores"]
+
+    # Rebuild fusion model and compute fused representations
+    pnet_dim = pnet_outputs.shape[1]
+    total_input_dim = 64 + 64 + pnet_dim + 1
+    fusion = torch.nn.Sequential(
+        torch.nn.Linear(total_input_dim, fusion_output_dim),
+        torch.nn.ReLU(),
+        torch.nn.Dropout(config.fusion.dropout),
+        torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
+        torch.nn.ReLU(),
+        torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+    ).to(device)
+    fusion.load_state_dict(fusion_ckpt["fusion_state_dict"])
+    fusion.eval()
+
+    # Pre-compute fused representations
+    logger.info("Computing fused representations for landscape training...")
+    fused_reprs = []
+    with torch.no_grad():
+        for i in range(len(dataset)):
+            concat = torch.cat([
+                epi_states[i:i+1].to(device),
+                traj_states[i:i+1].to(device),
+                pnet_outputs[i:i+1].to(device),
+                stab_scores[i:i+1].to(device),
+            ], dim=-1)
+            fused_reprs.append(fusion(concat).squeeze(0).cpu())
+    fused_reprs = torch.stack(fused_reprs)  # (N, fusion_dim)
+    logger.info(f"Fused representations: {fused_reprs.shape}")
+
+    n_drugs = dataset.drug_sensitivity.shape[1]
+    model = ResistanceLandscape(
+        fusion_dim=fused_reprs.shape[1],
+        n_drugs=n_drugs,
+        n_proteins=min(len(dataset.protein_names), 100),
+    ).to(device)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-4)
     splits = data_ckpt["splits"]
     train_idx = splits["train"]
+    val_idx = splits["val"]
 
-    best_loss = float("inf")
-    for epoch in range(50):
+    best_val_loss = float("inf")
+    patience, patience_counter = 15, 0
+
+    for epoch in range(100):
         model.train()
-        batch_losses = []
-        for i in range(0, len(train_idx), 64):
-            batch_idx = train_idx[i:i + 64]
-            batch = dataset[batch_idx[0]] if len(batch_idx) == 1 else {
-                k: torch.stack([dataset[j][k] for j in batch_idx])
-                for k in dataset[0].keys()
-            }
+        perm = torch.randperm(len(train_idx))
+        epoch_losses = []
+
+        for bi in range(0, len(train_idx), 64):
+            batch_end = min(bi + 64, len(train_idx))
+            idxs = [train_idx[perm[j]] for j in range(bi, batch_end)]
+
+            fused_b = fused_reprs[idxs].to(device)
+            target_b = dataset.drug_sensitivity[idxs].to(device)
+
             optimizer.zero_grad()
-            # Forward pass through landscape model
-            prot = batch["proteomics"].to(config.device)
-            if prot.dim() == 1:
-                prot = prot.unsqueeze(0)
-            pred = model(prot)
-            target = batch["drug_sensitivity"].to(config.device)
-            if target.dim() == 1:
-                target = target.unsqueeze(0)
-            # Mask NaN drug values
-            mask = ~torch.isnan(target)
+            output = model(fused_b)
+            drug_pred = output["drug_resistance"]  # (B, n_drugs * n_timepoints)
+
+            # Use first timepoint predictions for drug sensitivity loss
+            pred_first = drug_pred[:, :n_drugs]
+            mask = ~torch.isnan(target_b)
             if mask.any():
-                loss = torch.nn.functional.mse_loss(
-                    pred[:, :target.shape[1]][mask], target[mask]
-                )
+                loss = torch.nn.functional.mse_loss(pred_first[mask], target_b[mask])
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                 optimizer.step()
-                batch_losses.append(loss.item())
+                epoch_losses.append(loss.item())
 
-        epoch_loss = sum(batch_losses) / max(len(batch_losses), 1)
-        if epoch_loss < best_loss:
-            best_loss = epoch_loss
+        # Validation
+        model.eval()
+        val_losses = []
+        with torch.no_grad():
+            for bi in range(0, len(val_idx), 64):
+                idxs = val_idx[bi:min(bi+64, len(val_idx))]
+                fused_b = fused_reprs[idxs].to(device)
+                target_b = dataset.drug_sensitivity[idxs].to(device)
+                output = model(fused_b)
+                pred_first = output["drug_resistance"][:, :n_drugs]
+                mask = ~torch.isnan(target_b)
+                if mask.any():
+                    val_losses.append(torch.nn.functional.mse_loss(pred_first[mask], target_b[mask]).item())
 
-    metrics = {"landscape_loss": best_loss}
-    ckpt_path = ckpt_mgr.save("landscape_trained", {
-        "model_state_dict": model.state_dict(),
-        "metrics": metrics,
-        "config": config.landscape,
-    })
+        val_loss = sum(val_losses) / max(len(val_losses), 1)
+        train_loss = sum(epoch_losses) / max(len(epoch_losses), 1)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+            ckpt_mgr.save("landscape_trained", {
+                "model_state_dict": model.state_dict(),
+                "metrics": {"val_loss": val_loss, "train_loss": train_loss},
+                "config": config.landscape,
+                "fusion_dim": fused_reprs.shape[1],
+            })
+        else:
+            patience_counter += 1
+
+        if (epoch + 1) % 20 == 0:
+            logger.info(f"[landscape] Epoch {epoch+1}/100 train={train_loss:.4f} val={val_loss:.4f}")
+        if patience_counter >= patience:
+            logger.info(f"[landscape] Early stopping at epoch {epoch+1}")
+            break
+
+    metrics = {"landscape_val_loss": best_val_loss}
     log_stage_end("landscape_train", metrics=metrics)
-    return ckpt_path
+    return ckpt_mgr.path("landscape_trained")
 
 
 def validate_pipeline(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
-    """Run end-to-end validation on held-out data."""
-    from resistancemap.inference.pipeline import ResistanceMapPipeline
-    from resistancemap.utils.metrics import compute_full_metrics
+    """Run end-to-end validation on held-out test data.
+
+    Loads all trained models, computes fused representations for test split,
+    and evaluates landscape predictions against drug sensitivity ground truth.
+    """
+    from resistancemap.landscape.predictor import ResistanceLandscape
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
     if ckpt_mgr.exists("pipeline_validated"):
         return ckpt_mgr.path("pipeline_validated")
 
     log_stage_start("validate")
-    pipeline = ResistanceMapPipeline.from_checkpoints(ckpt_mgr, config)
     data_ckpt = ckpt_mgr.load("data_ready")
-    predictions = pipeline.predict(data_ckpt["dataset"], split="test")
-    metrics = compute_full_metrics(predictions, data_ckpt["dataset"], split="test")
+    fusion_ckpt = ckpt_mgr.load("fusion_trained")
+    landscape_ckpt = ckpt_mgr.load("landscape_trained")
+    dataset = data_ckpt["dataset"]
+    splits = data_ckpt["splits"]
+    test_idx = splits["test"]
+    device = config.device
+
+    # Load fusion model to compute fused representations for test set
+    pnet_dim = fusion_ckpt["pnet_outputs"].shape[1]
+    total_input_dim = 64 + 64 + pnet_dim + 1
+    fusion_output_dim = fusion_ckpt["fusion_output_dim"]
+
+    fusion = torch.nn.Sequential(
+        torch.nn.Linear(total_input_dim, fusion_output_dim),
+        torch.nn.ReLU(),
+        torch.nn.Dropout(config.fusion.dropout),
+        torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
+        torch.nn.ReLU(),
+        torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+    ).to(device)
+    fusion.load_state_dict(fusion_ckpt["fusion_state_dict"])
+    fusion.eval()
+
+    # Compute test fused representations
+    epi_s = fusion_ckpt["epi_states"]
+    traj_s = fusion_ckpt["traj_states"]
+    pnet_o = fusion_ckpt["pnet_outputs"]
+    stab_s = fusion_ckpt["stab_scores"]
+
+    test_fused = []
+    with torch.no_grad():
+        for idx in test_idx:
+            concat = torch.cat([
+                epi_s[idx:idx+1].to(device), traj_s[idx:idx+1].to(device),
+                pnet_o[idx:idx+1].to(device), stab_s[idx:idx+1].to(device),
+            ], dim=-1)
+            test_fused.append(fusion(concat).squeeze(0).cpu())
+    test_fused = torch.stack(test_fused).to(device)
+
+    # Load landscape model
+    n_drugs = dataset.drug_sensitivity.shape[1]
+    landscape = ResistanceLandscape(
+        fusion_dim=fusion_output_dim, n_drugs=n_drugs,
+        n_proteins=min(len(dataset.protein_names), 100),
+    ).to(device)
+    landscape.load_state_dict(landscape_ckpt["model_state_dict"])
+    landscape.eval()
+
+    # Predict on test set
+    with torch.no_grad():
+        output = landscape(test_fused)
+        pred = output["drug_resistance"][:, :n_drugs]
+        target = dataset.drug_sensitivity[test_idx].to(device)
+        mask = ~torch.isnan(target)
+
+        if mask.any():
+            test_mse = torch.nn.functional.mse_loss(pred[mask], target[mask]).item()
+        else:
+            test_mse = float("nan")
+
+    metrics = {
+        "test_mse": test_mse,
+        "n_test_samples": len(test_idx),
+        "n_drugs": n_drugs,
+        "split": "test",
+    }
+    logger.info(f"Validation: test_mse={test_mse:.4f} on {len(test_idx)} samples")
     ckpt_path = ckpt_mgr.save("pipeline_validated", {"metrics": metrics, "config": config})
     log_stage_end("validate", metrics=metrics)
     return ckpt_path

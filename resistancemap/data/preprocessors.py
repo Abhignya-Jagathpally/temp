@@ -368,6 +368,21 @@ def harmonize_omics(
     # Load and align drug sensitivity
     drug_data = load_drug_sensitivity(config)
     drug_df = drug_data["data"]
+    # Map cell line names to DepMap IDs if needed
+    if len(set(drug_df.index) & set(common_ids)) == 0:
+        metadata_path = config.ccle_proteomics_path.parent / "sample_info.csv"
+        if metadata_path.exists():
+            meta = pd.read_csv(metadata_path)
+            id_col = meta.columns[0]  # DepMap_ID
+            name_cols = [c for c in meta.columns if "cell_line_name" in c.lower() or "ccle" in c.lower()]
+            for nc in name_cols:
+                name_to_id = dict(zip(meta[nc].str.strip(), meta[id_col]))
+                new_idx = [name_to_id.get(str(n).strip(), n) for n in drug_df.index]
+                drug_df.index = new_idx
+                overlap = len(set(drug_df.index) & set(common_ids))
+                if overlap > 0:
+                    logger.info(f"  Drug sensitivity ID mapping via {nc}: {overlap} matches")
+                    break
     drug_df = drug_df.reindex(common_ids)
     drug_tensor = torch.tensor(drug_df.values, dtype=torch.float32)
     drug_tensor = torch.where(
