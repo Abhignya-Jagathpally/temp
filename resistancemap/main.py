@@ -159,7 +159,7 @@ async def run_agentic_pipeline(config: ResistanceMapConfig) -> dict:
     lc_scheduler = LatentComputeScheduler()
     logger.info(
         f"Latent compute scheduler: GPU budget={lc_scheduler.gpu_memory_budget_gb:.0f}GB, "
-        f"max_concurrent={lc_scheduler.max_concurrent}"
+        f"max_concurrent={lc_scheduler.max_concurrent_jobs}"
     )
 
     # ── 6. Execute DAG ───────────────────────────────────────────────────
@@ -209,10 +209,24 @@ async def run_agentic_pipeline(config: ResistanceMapConfig) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _maybe_compile(model: torch.nn.Module, config: ResistanceMapConfig) -> torch.nn.Module:
-    """Apply torch.compile if enabled in config (requires PyTorch 2.0+)."""
-    if config.hardware.compile:
-        return torch.compile(model, mode=config.hardware.compile_mode)
-    return model
+    """Apply torch.compile if enabled in config (requires PyTorch 2.0+).
+
+    If torch.compile is enabled but Inductor crashes (a recurring problem
+    for some module shapes / mode combinations), suppress the dynamo
+    exception and fall back to eager mode for that model so the rest of
+    the pipeline can still complete. This mirrors the suggestion printed
+    by torch._dynamo on backend failure.
+    """
+    if not config.hardware.compile:
+        return model
+    try:
+        import torch._dynamo as _dynamo
+        # Tell dynamo to fall back to eager on any subsequent compile failure
+        # for this model rather than crashing the training loop.
+        _dynamo.config.suppress_errors = True
+    except Exception:  # noqa: BLE001
+        pass
+    return torch.compile(model, mode=config.hardware.compile_mode)
 
 
 def _maybe_distribute(model: torch.nn.Module, config: ResistanceMapConfig) -> torch.nn.Module:
