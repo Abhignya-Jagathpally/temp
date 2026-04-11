@@ -121,10 +121,18 @@ protein_net:
   esm2_model: facebook/esm2_t33_650M_UR50D
   esm2_dim: 1280         # ESM2-T33 output dimension
 
-  # Graph neural network
-  gnn_hidden: 256
-  gnn_layers: 4
-  gnn_heads: 8           # Multi-head attention
+  # Graph neural network. The previous defaults (4 layers x 8 heads x 256
+  # hidden) were tuned for an empty PPI graph (the GNN degenerated to
+  # self-loops, ~19k edges). With the ENSP -> gene-symbol fix the real
+  # STRING graph has ~929k directed edges, and per-edge GATConv attention
+  # × 4 layers × 8 heads accumulates ~30+ GB of forward activations per
+  # sample. With 32 samples accumulated per optimizer step that crosses
+  # the 90 GB mark and OOMs even an H100. Slimming the GAT to 2 layers /
+  # 2 heads / 128 hidden keeps the inductive bias (graph attention with
+  # edge weights) while staying well inside GPU budget.
+  gnn_hidden: 128
+  gnn_layers: 2
+  gnn_heads: 2           # Multi-head attention
   gnn_dropout: 0.2
   gnn_conv_type: gat     # gat | gcn | graphsage
 

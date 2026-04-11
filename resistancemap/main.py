@@ -474,17 +474,24 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
     best_val_loss = float("inf")
     patience, patience_counter = 15, 0
 
+    # Inner batch is the number of samples whose GNN-forward activations
+    # we hold in GPU memory before backward(). Each sample materialises
+    # one full PPI graph forward (~929k edges with the real STRING graph),
+    # so a large inner batch crosses 90 GB. 4 keeps a useful gradient
+    # estimate while leaving headroom.
+    pn_inner_batch = 4
+
     for epoch in range(100):
         gnn.train(); pred_head.train()
         perm = torch.randperm(len(train_idx))
         epoch_losses = []
 
-        for bi in range(0, len(train_idx), 32):
+        for bi in range(0, len(train_idx), pn_inner_batch):
             optimizer.zero_grad()
             batch_loss = 0.0
             count = 0
 
-            for si in range(bi, min(bi + 32, len(train_idx))):
+            for si in range(bi, min(bi + pn_inner_batch, len(train_idx))):
                 idx = train_idx[perm[si]]
                 # Build 66-dim node features for this sample
                 prot_vals = dataset.proteomics[idx].to(device).unsqueeze(-1)  # (P, 1)
