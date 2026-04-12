@@ -1,0 +1,54 @@
+# Data and checkpoints (too large for git)
+/data/
+checkpoints/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Coverage / testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Secrets / credentials (Agent 7 §7.5)
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# Weights & Biases
+wandb/
+
+# Model artifacts
+*.pt
+*.pth
+*.ckpt
+*.safetensors
