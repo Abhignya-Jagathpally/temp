@@ -458,10 +458,10 @@ class TestSpecializedAgents:
         assert agent.name == "data_prep"
         assert "data_validation" in agent.dependencies
 
-        # Should fail without proper input
-        result = await agent.execute({}, ResistanceMapConfig())
-
-        assert result.status == AgentState.FAILED
+        # verify_inputs should fail without data_validation output
+        is_valid, err = agent.verify_inputs({})
+        assert not is_valid
+        assert "data_validation" in err
 
     @pytest.mark.asyncio
     async def test_vae_pretrain_agent(self):
