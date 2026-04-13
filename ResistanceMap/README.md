@@ -18,24 +18,26 @@ ResistanceMap integrates multi-modal data (proteomics, epigenomics, single-cell 
 Agentic Execution Layer (DAG Orchestrator)
   │
   │  Layer 0: [DataValidation]              ← zero-trust input check
-  │  Layer 1: [DataPrep]                    ← harmonize omics
+  │  Layer 1: [DataPrep]                    ← harmonize omics + patient scRNA-seq
   │  Layer 2: [VAEPretrain ‖ ESM2Embed]     ← PARALLEL
   │  Layer 3: [VAEFinetune]
-  │  Layer 4: [Trajectory ‖ ProteinNet]     ← PARALLEL
-  │  Layer 5: [Fusion]
-  │  Layer 6: [Landscape]
-  │  Layer 7: [Validation]                  ← SOTA benchmark comparison
+  │  Layer 4: [Trajectory]
+  │  Layer 5: [ProteinNet]                  ← needs trajectory stability scores
+  │  Layer 6: [Fusion]
+  │  Layer 7: [Landscape]
+  │  Layer 8: [Validation]                  ← SOTA benchmark comparison
   │
   │  Each agent boundary: SHA256 hash chain + statistical validation (KS test)
   │  AgentOps: trace duration, handoff latency, cost/request, tool latency
 
 Data Layer
-  ├─ CCLE Proteomics (~8k proteins)
-  ├─ CCLE Epigenomics (ATAC-seq, H3K4me3, H3K27me3)
-  ├─ STRING PPI (protein interaction network, ~7.8k nodes, ~460k edges)
-  ├─ scRNA-seq (GSE124310, GSE271107)
-  ├─ GDSC/CTRPv2 (drug sensitivity)
-  └─ MMRF CoMMpass (clinical outcomes, ~900 patients)
+  ├─ CCLE Proteomics (1,393 cell lines, 19,177 proteins)
+  ├─ CCLE Epigenomics (chromatin profiling, 897 lines, 42 features)
+  ├─ STRING PPI v12 (19,177 nodes, 930k directed edges after ENSP→gene mapping)
+  ├─ scRNA-seq GSE124310 (27,796 MM patient bone marrow cells)
+  ├─ scRNA-seq GSE271107 (143,748 cells: HD→MGUS→SMM→MM progression)
+  ├─ GDSC drug sensitivity (11 MM-relevant drugs, IC50 dose-response)
+  └─ MMRF CoMMpass (clinical outcomes — controlled access, requires IRB)
 
 Model Layer
   ├─ L1: VAE Encoder (Proteomics → 64D latent resistance state)
@@ -173,18 +175,20 @@ hardware:
 
 All stages are checkpoint-aware — skip automatically if already completed.
 
-| Stage | Function | Inputs | Outputs | Runtime |
-|-------|----------|--------|---------|---------|
-| `data_validate` | Verify all raw data files exist | Filesystem | OK/Error | Seconds |
-| `data_prep` | Load & harmonize omics datasets | Raw data | data_ready.pt | Minutes |
-| `vae_pretrain` | Pan-cancer VAE on CCLE | data_ready.pt | vae_pretrained.pt | Hours (8 H100s) |
-| `vae_finetune` | Specialize VAE on hematologic lines | vae_pretrained.pt | vae_finetuned.pt | Minutes-hours |
-| `trajectory_calibrate` | ODE resistance dynamics | vae_finetuned.pt | trajectory_calibrated.pt | Hours |
-| `protein_net_train` | GNN on PPI with ESM-2 | data_ready.pt | protein_net_trained.pt | Hours |
-| `fusion_train` | Multi-modal cross-attention | All models | fusion_trained.pt | Hours |
-| `landscape_train` | UMAP + mechanism identification | fusion_trained.pt | landscape_trained.pt | Minutes |
-| `validate` | End-to-end metrics on test set | All models | pipeline_validated.pt | Minutes |
-| `serve` | Launch FastAPI server | All models | Running server | Indefinite |
+| Stage | Function | Inputs | Outputs | Runtime (2x GPU) |
+|-------|----------|--------|---------|-------------------|
+| `data_validate` | Verify all raw data files exist | Filesystem | OK/Error | instant |
+| `data_prep` | Load & harmonize omics + patient scRNA-seq | Raw data | data_ready.pt (77MB) | 1.2 min |
+| `vae_pretrain` | Pan-cancer VAE on CCLE (parallel w/ ESM2) | data_ready.pt | vae_pretrained.pt (512MB) | 1.9 min |
+| `vae_finetune` | Specialize VAE on hematologic lines | vae_pretrained.pt | vae_finetuned.pt (512MB) | 0.3 min |
+| `trajectory_calibrate` | ODE stability scoring (500 epochs) | vae_finetuned.pt | stability_calibrated.pt | 4.5 min |
+| `protein_net_train` | GAT GNN on STRING PPI (930k edges) | vae + trajectory ckpts | protein_net_trained.pt (18MB) | 7.9 min |
+| `fusion_train` | Multi-modal fusion (epi+traj+pnet+stab) | All upstream ckpts | fusion_trained.pt (1.1MB) | 5.5 min |
+| `landscape_train` | Resistance landscape predictor | fusion_trained.pt | landscape_trained.pt (0.6MB) | instant |
+| `validate` | End-to-end metrics on held-out test set | All models | pipeline_validated.pt | instant |
+| `serve` | Launch FastAPI server | All models | Running server | indefinite |
+
+**Latest run (with patient data):** 10/10 agents, 21.3 min total, test_mse=0.7191 on 132 samples across 11 drugs.
 
 ## Code Reuse Attribution
 
