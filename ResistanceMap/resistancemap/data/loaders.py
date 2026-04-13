@@ -422,39 +422,6 @@ def load_scrna_h5ad(path: Path, config: DataConfig) -> dict[str, Any]:
     }
 
 
-def load_scrna_data(config: DataConfig) -> Optional[dict[str, Any]]:
-    """Wrapper that loads any configured scRNA-seq h5ad files; tolerates missing files.
-
-    Looks at config.scrna_gse124310_path and config.scrna_gse271107_path. Returns
-    None if neither exists (so harmonize_omics can degrade gracefully).
-    """
-    out: dict[str, Any] = {}
-    for attr in ("scrna_gse124310_path", "scrna_gse271107_path"):
-        p = getattr(config, attr, None)
-        if p is None:
-            continue
-        p = Path(p)
-        if p.exists():
-            try:
-                out[attr] = load_scrna_h5ad(p, config)
-            except Exception as e:
-                logger.warning(f"scRNA load failed for {p}: {e}")
-    return out or None
-
-
-def load_mmrf_data(config: DataConfig) -> Optional[dict[str, Any]]:
-    """Stub: MMRF CoMMpass is dbGaP-controlled and not auto-fetched.
-
-    Returns None if config.mmrf_commpass_dir is empty/missing. harmonize_omics
-    must tolerate None and skip MMRF-dependent splits.
-    """
-    d = Path(getattr(config, "mmrf_commpass_dir", "data/raw/mmrf_commpass/"))
-    if not d.exists() or not any(d.iterdir()):
-        logger.warning(f"MMRF CoMMpass directory empty or missing at {d}; skipping (controlled access)")
-        return None
-    # Real loader not implemented — placeholder so the import resolves.
-    logger.warning(f"MMRF dir {d} has files but no loader is implemented; returning None")
-    return None
 
 
 def load_drug_sensitivity(config: DataConfig) -> dict[str, Any]:
@@ -559,17 +526,18 @@ def _standardize_drug_columns(df: pd.DataFrame, source_name: str) -> pd.DataFram
     return df
 
 
-def load_scrna_data(config: DataConfig) -> dict[str, Any]:
+def load_scrna_data(config: DataConfig) -> Optional[dict[str, Any]]:
     """Load all available scRNA-seq datasets.
 
     Loads GSE124310 (MM patient samples) and GSE271107 (lenalidomide response)
-    if their files exist. Returns empty dict if neither is found.
+    if their files exist. Returns None if neither is found (graceful degradation
+    for missing scRNA-seq data).
 
     Args:
         config: DataConfig with scRNA-seq paths.
 
     Returns:
-        Dict with loaded AnnData objects keyed by accession.
+        Dict with loaded AnnData objects keyed by accession, or None if no datasets found.
     """
     result = {}
 
@@ -578,49 +546,101 @@ def load_scrna_data(config: DataConfig) -> dict[str, Any]:
         ("GSE271107", config.scrna_gse271107_path),
     ]:
         if path.exists():
-            data = load_scrna_h5ad(path, config)
-            result[name] = data
-            logger.info(f"Loaded scRNA-seq {name}: {data['adata'].n_obs} cells")
+            try:
+                data = load_scrna_h5ad(path, config)
+                result[name] = data
+                logger.info(f"Loaded scRNA-seq {name}: {data['adata'].n_obs} cells")
+            except Exception as e:
+                logger.warning(f"Failed to load scRNA-seq {name} from {path}: {e}")
         else:
-            logger.warning(f"scRNA-seq {name} not found at {path}, skipping")
+            logger.debug(f"scRNA-seq {name} not found at {path}, skipping")
 
-    return result
+    # Return None if no datasets loaded (graceful degradation)
+    return result if result else None
 
 
 def load_mmrf_data(config: DataConfig) -> dict[str, Any]:
     """Load MMRF CoMMpass clinical and genomic data.
 
-    Looks for clinical.txt and gene_expression.tsv in the CoMMpass directory.
-    Returns empty dict if directory doesn't exist or is empty.
+    Loads clinical.txt, gene_expression.tsv, and optionally mutation data from
+    the CoMMpass directory. Extracts patient IDs, treatment info, and ISS staging
+    from clinical data. Returns empty dict if directory doesn't exist (graceful degradation).
 
     Args:
         config: DataConfig with MMRF CoMMpass directory path.
 
     Returns:
-        Dict with clinical and expression data.
+        Dict with keys: 'clinical', 'expression', 'patient_ids', 'treatment_data'.
+        Returns empty dict if directory missing or no data files found.
     """
     mmrf_dir = config.mmrf_commpass_dir
     result = {}
 
     if not mmrf_dir.exists():
-        logger.warning(f"MMRF CoMMpass directory not found at {mmrf_dir}, skipping")
+        logger.info(f"MMRF CoMMpass directory not found at {mmrf_dir} (graceful degradation)")
         return result
 
-    # Clinical data
-    clinical_path = mmrf_dir / "clinical.txt"
-    if clinical_path.exists():
-        df = pd.read_csv(clinical_path, sep="\t", low_memory=False)
-        result["clinical"] = df
-        logger.info(f"Loaded MMRF clinical: {len(df)} patients")
+    logger.info(f"Loading MMRF CoMMpass data from {mmrf_dir}")
 
-    # Gene expression
+    # Load clinical data
+    clinical_path = mmrf_dir / "clinical.txt"
+    clinical_df = None
+    if clinical_path.exists():
+        try:
+            clinical_df = pd.read_csv(clinical_path, sep="\t", low_memory=False)
+            result["clinical"] = clinical_df
+            logger.info(f"Loaded MMRF clinical: {len(clinical_df)} patients, {len(clinical_df.columns)} features")
+
+            # Extract patient IDs
+            patient_id_col = None
+            for col in ("patient_id", "PATIENT_ID", "Patient_ID", "patientID"):
+                if col in clinical_df.columns:
+                    patient_id_col = col
+                    break
+            if patient_id_col:
+                result["patient_ids"] = clinical_df[patient_id_col].tolist()
+                logger.info(f"Extracted {len(result['patient_ids'])} patient IDs")
+
+            # Extract treatment data if available
+            treatment_data = {}
+            treatment_cols = [c for c in clinical_df.columns if "treatment" in c.lower() or "drug" in c.lower()]
+            if treatment_cols:
+                for col in treatment_cols:
+                    treatment_data[col] = clinical_df[col].tolist()
+                result["treatment_data"] = treatment_data
+                logger.info(f"Extracted treatment data: {len(treatment_cols)} treatment columns")
+
+            # Extract ISS staging if available
+            iss_cols = [c for c in clinical_df.columns if "iss" in c.lower()]
+            if iss_cols:
+                result["iss_staging"] = {col: clinical_df[col].tolist() for col in iss_cols}
+                logger.info(f"Extracted ISS staging from {len(iss_cols)} columns")
+        except Exception as e:
+            logger.error(f"Failed to load MMRF clinical data from {clinical_path}: {e}")
+
+    # Load gene expression data
     expr_path = mmrf_dir / "gene_expression.tsv"
     if expr_path.exists():
-        df = pd.read_csv(expr_path, sep="\t", index_col=0, low_memory=False)
-        result["expression"] = df
-        logger.info(f"Loaded MMRF expression: {df.shape}")
+        try:
+            expr_df = pd.read_csv(expr_path, sep="\t", index_col=0, low_memory=False)
+            result["expression"] = expr_df
+            logger.info(f"Loaded MMRF gene expression: {expr_df.shape[0]} genes × {expr_df.shape[1]} samples")
+        except Exception as e:
+            logger.error(f"Failed to load MMRF expression data from {expr_path}: {e}")
+
+    # Load mutation data if available
+    mutation_path = mmrf_dir / "mutations.tsv"
+    if mutation_path.exists():
+        try:
+            mut_df = pd.read_csv(mutation_path, sep="\t", low_memory=False)
+            result["mutations"] = mut_df
+            logger.info(f"Loaded MMRF mutations: {len(mut_df)} records")
+        except Exception as e:
+            logger.warning(f"Failed to load MMRF mutation data from {mutation_path}: {e}")
 
     if not result:
         logger.warning(f"No MMRF data files found in {mmrf_dir}")
+    else:
+        logger.info(f"MMRF data loading complete: {len(result)} data types loaded")
 
     return result

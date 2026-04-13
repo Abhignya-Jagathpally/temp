@@ -35,6 +35,43 @@ from resistancemap.utils.checkpoint import CheckpointManager
 logger = logging.getLogger(__name__)
 
 
+class _GradientReversalFunction(torch.autograd.Function):
+    """Autograd function implementing gradient reversal.
+
+    Custom autograd.Function that negates gradients during backpropagation.
+    This is necessary because PyTorch's autograd system does not call
+    nn.Module.backward() — it only respects torch.autograd.Function.backward().
+    """
+
+    @staticmethod
+    def forward(ctx: Any, x: torch.Tensor, lambda_: float) -> torch.Tensor:
+        """Forward pass: identity function.
+
+        Args:
+            ctx: Context object for storing values during backward.
+            x: Input tensor.
+            lambda_: Gradient scaling factor.
+
+        Returns:
+            x.clone() to ensure proper gradient tracking.
+        """
+        ctx.lambda_ = lambda_
+        return x.clone()
+
+    @staticmethod
+    def backward(ctx: Any, grad_output: torch.Tensor) -> tuple[torch.Tensor, None]:
+        """Backward pass: negate gradients scaled by lambda_.
+
+        Args:
+            ctx: Context object with stored lambda_.
+            grad_output: Gradient from downstream.
+
+        Returns:
+            Tuple of (reversed_grad, None) where None is for lambda_ gradient.
+        """
+        return -ctx.lambda_ * grad_output, None
+
+
 class GradientReversalLayer(nn.Module):
     """Gradient reversal layer for domain-adversarial training.
 
@@ -55,12 +92,15 @@ class GradientReversalLayer(nn.Module):
         self.lambda_ = lambda_
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass: identity function."""
-        return x
+        """Forward pass: apply gradient reversal via autograd.Function.
 
-    def backward(self, grad_output: torch.Tensor) -> torch.Tensor:
-        """Backward pass: negate gradients scaled by lambda_."""
-        return -self.lambda_ * grad_output
+        Args:
+            x: Input tensor.
+
+        Returns:
+            Input tensor with gradient reversal applied during backprop.
+        """
+        return _GradientReversalFunction.apply(x, self.lambda_)
 
 
 class FiLMLayer(nn.Module):
@@ -179,6 +219,87 @@ class _DecoderBlock(nn.Module):
         return self.drop(self.act(self.bn(self.linear(x))))
 
 
+class StochasticDecoder(nn.Module):
+    """Stochastic decoder outputting distribution parameters over epigenomics.
+
+    Instead of a deterministic reconstruction, this decoder outputs the parameters
+    of a distribution (mean and log-variance) over the epigenomic space. This
+    captures the biological reality that multiple chromatin states can be consistent
+    with the same proteomics profile.
+
+    The decoder learns to output:
+    - A mean vector (epigenome_dim,) representing the expected epigenomic state
+    - A log-variance vector (epigenome_dim,) capturing per-feature aleatoric
+      uncertainty (model's epistemic uncertainty about what chromatin state
+      corresponds to a given proteomics profile)
+
+    Architecture:
+        z (latent) → [hidden layers] → h_final
+        h_final → mean_head → mean (epigenome_dim,)
+        h_final → logvar_head → log_var (epigenome_dim,)
+
+    Args:
+        latent_dim: Dimension of input latent vector.
+        epigenome_dim: Dimension of output epigenomic space.
+        decoder_hidden_dims: List of hidden layer dimensions.
+        dropout: Dropout rate.
+        use_batch_norm: Whether to use batch normalization.
+    """
+
+    def __init__(
+        self,
+        latent_dim: int,
+        epigenome_dim: int,
+        decoder_hidden_dims: list[int],
+        dropout: float,
+        use_batch_norm: bool,
+    ) -> None:
+        super().__init__()
+        self.latent_dim = latent_dim
+        self.epigenome_dim = epigenome_dim
+
+        # Build shared decoder backbone
+        decoder_layers = []
+        prev_dim = latent_dim
+        for hidden_dim in decoder_hidden_dims:
+            decoder_layers.append(
+                _DecoderBlock(prev_dim, hidden_dim, dropout, use_batch_norm)
+            )
+            prev_dim = hidden_dim
+
+        self.decoder = nn.Sequential(*decoder_layers)
+
+        # Output heads for mean and log-variance
+        self.mean_head = nn.Linear(prev_dim, epigenome_dim)
+        self.logvar_head = nn.Linear(prev_dim, epigenome_dim)
+
+        self._init_weights()
+
+    def _init_weights(self) -> None:
+        """Xavier uniform initialization for all linear layers."""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+
+    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """Decode latent vector to distribution parameters.
+
+        Args:
+            z: (B, latent_dim) latent memory state vector.
+
+        Returns:
+            Tuple of (mean, log_var):
+            - mean: (B, epigenome_dim) expected epigenomic profile
+            - log_var: (B, epigenome_dim) log-variance (aleatoric uncertainty)
+        """
+        h = self.decoder(z)
+        mean = self.mean_head(h)
+        log_var = self.logvar_head(h)
+        return mean, log_var
+
+
 class ProteomeToEpigenomeVAE(nn.Module):
     """Conditional VAE mapping proteomics → latent memory state → epigenomics.
 
@@ -197,7 +318,14 @@ class ProteomeToEpigenomeVAE(nn.Module):
     def __init__(self, config: VAEConfig) -> None:
         super().__init__()
         self.config = config
-        self.latent_dim = config.latent_dim
+
+        # Use expanded_latent_dim if specified, otherwise use latent_dim
+        self.latent_dim = (
+            config.expanded_latent_dim
+            if config.expanded_latent_dim is not None
+            else config.latent_dim
+        )
+        self.use_stochastic_decoder = getattr(config, 'use_stochastic_decoder', False)
         self.conditioning_dim = getattr(config, 'conditioning_dim', 0)
         self.domain_adversarial = getattr(config, 'domain_adversarial', False)
 
@@ -219,26 +347,35 @@ class ProteomeToEpigenomeVAE(nn.Module):
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Latent projections
-        self.fc_mu = nn.Linear(prev_dim, config.latent_dim)
-        self.fc_log_var = nn.Linear(prev_dim, config.latent_dim)
+        self.fc_mu = nn.Linear(prev_dim, self.latent_dim)
+        self.fc_log_var = nn.Linear(prev_dim, self.latent_dim)
 
-        # Build decoder
-        decoder_layers = []
-        prev_dim = config.latent_dim
-        for hidden_dim in config.decoder_hidden_dims:
-            decoder_layers.append(
-                _DecoderBlock(prev_dim, hidden_dim, config.dropout, config.use_batch_norm)
+        # Build decoder - either stochastic or deterministic
+        if self.use_stochastic_decoder:
+            self.decoder = StochasticDecoder(
+                latent_dim=self.latent_dim,
+                epigenome_dim=config.epigenome_dim,
+                decoder_hidden_dims=config.decoder_hidden_dims,
+                dropout=config.dropout,
+                use_batch_norm=config.use_batch_norm,
             )
-            prev_dim = hidden_dim
-        self.decoder = nn.Sequential(*decoder_layers)
-
-        # Output heads for each epigenomic assay
-        self.output_head = nn.Linear(prev_dim, config.epigenome_dim)
+            self.output_head = None  # Stochastic decoder has its own heads
+        else:
+            # Standard deterministic decoder
+            decoder_layers = []
+            prev_dim = self.latent_dim
+            for hidden_dim in config.decoder_hidden_dims:
+                decoder_layers.append(
+                    _DecoderBlock(prev_dim, hidden_dim, config.dropout, config.use_batch_norm)
+                )
+                prev_dim = hidden_dim
+            self.decoder = nn.Sequential(*decoder_layers)
+            self.output_head = nn.Linear(prev_dim, config.epigenome_dim)
 
         # Domain discriminator for adversarial training (optional)
         if self.domain_adversarial:
             self.domain_discriminator = ConditionalDomainDiscriminator(
-                latent_dim=config.latent_dim, n_domains=2
+                latent_dim=self.latent_dim, n_domains=2
             )
         else:
             self.domain_discriminator = None
@@ -270,21 +407,33 @@ class ProteomeToEpigenomeVAE(nn.Module):
             return mu + eps * std
         return mu  # Deterministic at inference
 
-    def decode(self, z: torch.Tensor) -> torch.Tensor:
+    def decode(
+        self, z: torch.Tensor
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Decode latent vector to reconstructed epigenomics.
 
         Args:
             z: (B, latent_dim) latent memory state vector.
 
         Returns:
-            (B, epigenome_dim) reconstructed epigenomic profile.
+            If deterministic decoder:
+                (B, epigenome_dim) reconstructed epigenomic profile.
+            If stochastic decoder:
+                Tuple of (mean, log_var), each (B, epigenome_dim).
         """
-        h = self.decoder(z)
-        return self.output_head(h)
+        if self.use_stochastic_decoder:
+            # Stochastic decoder returns (mean, log_var)
+            return self.decoder(z)
+        else:
+            # Deterministic decoder returns reconstruction
+            h = self.decoder(z)
+            return self.output_head(h)
 
     def forward(
         self, x: torch.Tensor, conditioning: torch.Tensor | None = None
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor] | tuple[
+        torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+    ]:
         """Full forward pass: encode → sample → decode.
 
         Args:
@@ -292,12 +441,23 @@ class ProteomeToEpigenomeVAE(nn.Module):
             conditioning: Optional (B, conditioning_dim) conditioning input for FiLM layers.
 
         Returns:
-            Tuple of (reconstruction, mu, log_var).
+            If deterministic decoder:
+                Tuple of (reconstruction, mu, log_var).
+            If stochastic decoder:
+                Tuple of (recon_mean, recon_logvar, mu, log_var) where:
+                - recon_mean, recon_logvar: distribution parameters over epigenomics
+                - mu, log_var: latent distribution parameters
         """
         mu, log_var = self.encode(x, conditioning)
         z = self.reparameterize(mu, log_var)
-        recon = self.decode(z)
-        return recon, mu, log_var
+        decoder_out = self.decode(z)
+
+        if self.use_stochastic_decoder:
+            recon_mean, recon_logvar = decoder_out
+            return recon_mean, recon_logvar, mu, log_var
+        else:
+            recon = decoder_out
+            return recon, mu, log_var
 
     def encode(
         self, x: torch.Tensor, conditioning: torch.Tensor | None = None
@@ -397,6 +557,43 @@ class ProteomeToEpigenomeVAE(nn.Module):
             mu, _ = self.encode(x, conditioning)
         return mu
 
+    def get_epigenome_reconstruction_with_uncertainty(
+        self, x: torch.Tensor, conditioning: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Get epigenomic reconstruction with aleatoric uncertainty estimates.
+
+        Only available when using stochastic decoder. Returns the distribution
+        parameters p(epigenome | proteome).
+
+        Args:
+            x: (B, P) protein abundance tensor.
+            conditioning: Optional (B, conditioning_dim) conditioning input for FiLM.
+
+        Returns:
+            If stochastic decoder:
+                Tuple of (mean, log_var):
+                - mean: (B, epigenome_dim) expected epigenomic profile
+                - log_var: (B, epigenome_dim) log-variance (aleatoric uncertainty)
+            If deterministic decoder:
+                Returns (reconstruction, zeros) with deterministic reconstruction
+
+        Raises:
+            RuntimeError: If called on model without stochastic decoder enabled.
+        """
+        if not self.use_stochastic_decoder:
+            raise RuntimeError(
+                "get_epigenome_reconstruction_with_uncertainty() requires "
+                "use_stochastic_decoder=True in config"
+            )
+
+        self.eval()
+        with torch.no_grad():
+            mu, _ = self.encode(x, conditioning)
+            z = self.reparameterize(mu, torch.zeros_like(mu))  # Use mean for deterministic path
+            recon_mean, recon_logvar = self.decoder(z)
+
+        return recon_mean, recon_logvar
+
 
 def _kl_divergence(mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
     """KL divergence from N(mu, var) to N(0, I).
@@ -405,6 +602,33 @@ def _kl_divergence(mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
         Scalar KL loss (mean over batch).
     """
     return -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
+
+
+def _stochastic_reconstruction_loss(
+    target: torch.Tensor, mean: torch.Tensor, log_var: torch.Tensor
+) -> torch.Tensor:
+    """Negative log-likelihood loss for stochastic decoder.
+
+    Assumes a Gaussian distribution over the reconstruction:
+        p(x | z) = N(x | mean, diag(var))
+        NLL = 0.5 * (log(var) + (x - mean)^2 / var)
+
+    This captures aleatoric uncertainty: the model's uncertainty about which
+    epigenomic state corresponds to the proteomics profile.
+
+    Args:
+        target: (B, D) target epigenomic profile.
+        mean: (B, D) predicted mean of reconstruction distribution.
+        log_var: (B, D) predicted log-variance (per-feature aleatoric uncertainty).
+
+    Returns:
+        Scalar NLL loss (mean over batch and features).
+    """
+    var = torch.exp(log_var)
+    # Clip variance to avoid numerical issues
+    var = torch.clamp(var, min=1e-8)
+    nll = 0.5 * (log_var + (target - mean) ** 2 / var)
+    return torch.mean(nll)
 
 
 def _cyclical_kl_weight(
@@ -589,8 +813,20 @@ def train_vae(
             optimizer.zero_grad(set_to_none=True)
 
             with autocast("cuda", dtype=torch.bfloat16):
-                recon, mu, log_var = model(proteomics)
-                recon_loss = F.mse_loss(recon, epigenomics)
+                model_output = model(proteomics)
+
+                # Handle both deterministic and stochastic decoder outputs
+                if len(model_output) == 4:
+                    # Stochastic decoder: (recon_mean, recon_logvar, mu, log_var)
+                    recon_mean, recon_logvar, mu, log_var = model_output
+                    recon_loss = _stochastic_reconstruction_loss(
+                        epigenomics, recon_mean, recon_logvar
+                    )
+                else:
+                    # Deterministic decoder: (recon, mu, log_var)
+                    recon, mu, log_var = model_output
+                    recon_loss = F.mse_loss(recon, epigenomics)
+
                 kl_loss = _kl_divergence(mu, log_var)
 
                 kl_weight = _cyclical_kl_weight(
@@ -633,8 +869,20 @@ def train_vae(
                 epigenomics = batch["epigenomics"].to(device, non_blocking=True)
 
                 with autocast("cuda", dtype=torch.bfloat16):
-                    recon, mu, log_var = model(proteomics)
-                    recon_loss = F.mse_loss(recon, epigenomics)
+                    model_output = model(proteomics)
+
+                    # Handle both deterministic and stochastic decoder outputs
+                    if len(model_output) == 4:
+                        # Stochastic decoder: (recon_mean, recon_logvar, mu, log_var)
+                        recon_mean, recon_logvar, mu, log_var = model_output
+                        recon_loss = _stochastic_reconstruction_loss(
+                            epigenomics, recon_mean, recon_logvar
+                        )
+                    else:
+                        # Deterministic decoder: (recon, mu, log_var)
+                        recon, mu, log_var = model_output
+                        recon_loss = F.mse_loss(recon, epigenomics)
+
                     kl_loss = _kl_divergence(mu, log_var)
                     val_loss += (recon_loss + kl_loss).item()
 

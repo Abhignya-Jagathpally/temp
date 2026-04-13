@@ -21,8 +21,9 @@ Components sourced from:
     - MyeloMemory GlobalAttention pattern: myelomemory/models/gnn.py
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -219,7 +220,7 @@ class JumpingKnowledge(nn.Module):
             # LSTM to aggregate across layers
             self.lstm = nn.LSTM(hidden_dim, hidden_dim, batch_first=True)
 
-    def forward(self, layer_outputs: List[torch.Tensor]) -> torch.Tensor:
+    def forward(self, layer_outputs: list[torch.Tensor]) -> torch.Tensor:
         """Aggregate representations from multiple layers.
 
         Args:
@@ -270,7 +271,7 @@ class GraphMASKLayer(nn.Module):
         )
         self._mask_cache = None
 
-    def forward(self, edge_attention: torch.Tensor, edge_attr: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, edge_attention: torch.Tensor, edge_attr: torch.Tensor | None = None) -> torch.Tensor:
         """Modulate edge attention with learned mask.
 
         Args:
@@ -386,7 +387,7 @@ class ESM2Embedder(nn.Module):
         self.model_name = model_name
         self.device = device
         self.cache_size = cache_size
-        self.embedding_cache: Dict[str, torch.Tensor] = {}
+        self.embedding_cache: dict[str, torch.Tensor] = {}
 
         try:
             from transformers import AutoTokenizer, AutoModel
@@ -401,7 +402,7 @@ class ESM2Embedder(nn.Module):
             self.tokenizer = None
             self.embedding_dim = 1280
 
-    def embed_proteins(self, sequences: List[str]) -> torch.Tensor:
+    def embed_proteins(self, sequences: list[str]) -> torch.Tensor:
         """Compute embeddings for protein sequences.
 
         Args:
@@ -448,7 +449,7 @@ class ESM2Embedder(nn.Module):
         result = torch.stack([e[1] for e in embeddings]).to(self.device)
         return result
 
-    def forward(self, sequences: List[str]) -> torch.Tensor:
+    def forward(self, sequences: list[str]) -> torch.Tensor:
         """Wrapper for embed_proteins."""
         return self.embed_proteins(sequences)
 
@@ -477,7 +478,7 @@ class PPIGraphNetwork(nn.Module):
 
     def __init__(self, in_dim: int = 321, hidden_dim: int = 256,
                  n_layers: int = 4, n_heads: int = 8, dropout: float = 0.2,
-                 edge_dim: Optional[int] = 1, dropedge_rate: float = 0.0,
+                 edge_dim: int | None = 1, dropedge_rate: float = 0.0,
                  use_pairnorm: bool = False, use_jumping_knowledge: bool = False,
                  use_graphmask: bool = False):
         """Initialize PPIGraphNetwork.
@@ -621,7 +622,7 @@ class PathwayAwareProteinEncoder(nn.Module):
         self.attn_v = nn.Linear(hidden_dim, hidden_dim)
         self.output_proj = nn.Linear(hidden_dim, output_dim)
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         """Forward pass.
 
         Args:
@@ -694,7 +695,7 @@ class ResistancePropagator(nn.Module):
         else:
             self.per_protein_scores = None
 
-    def forward(self, node_emb: torch.Tensor, batch_vec: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, node_emb: torch.Tensor, batch_vec: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass.
 
         Args:
@@ -845,15 +846,15 @@ class ProteinNetworkPropagator(nn.Module):
 
     def forward(
         self,
-        sequences: List[str],
+        sequences: list[str],
         latent_states: torch.Tensor,
         stability_scores: torch.Tensor,
         edge_index: torch.Tensor,
-        edge_attr: Optional[torch.Tensor] = None,
-        batch_vec: Optional[torch.Tensor] = None,
-        drug_embedding: Optional[torch.Tensor] = None,
-        phosphoproteomics: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        edge_attr: torch.Tensor | None = None,
+        batch_vec: torch.Tensor | None = None,
+        drug_embedding: torch.Tensor | None = None,
+        phosphoproteomics: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """Forward pass through protein network propagator.
 
         Args:

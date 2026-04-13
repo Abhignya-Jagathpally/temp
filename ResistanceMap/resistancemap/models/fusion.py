@@ -22,8 +22,9 @@ Enhancements:
     - Domain adaptation: Optional MMD-based alignment between domains
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -48,7 +49,7 @@ class ResidualBatchCorrector(nn.Module):
         self,
         feature_dim: int,
         n_batches: int,
-        embedding_dim: Optional[int] = None,
+        embedding_dim: int | None = None,
     ):
         """Initialize residual batch corrector.
 
@@ -145,7 +146,7 @@ class CrossModalAttentionBlock(nn.Module):
 
     def forward(
         self, query: torch.Tensor, key_value: torch.Tensor,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Forward pass.
 
         Args:
@@ -189,11 +190,11 @@ class CrossModalFusionNet(nn.Module):
 
     def __init__(
         self,
-        modality_dims: Dict[str, int],
+        modality_dims: dict[str, int],
         hidden_dim: int = 128,
         n_heads: int = 4,
         dropout: float = 0.2,
-        output_dim: Optional[int] = None,
+        output_dim: int | None = None,
     ):
         """Initialize cross-modal fusion network.
 
@@ -311,9 +312,9 @@ class CrossModalFusionNet(nn.Module):
 
     def forward(
         self,
-        modalities: Dict[str, torch.Tensor],
-        modality_mask: Optional[Dict[str, bool]] = None,
-    ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+        modalities: dict[str, torch.Tensor],
+        modality_mask: dict[str, bool] | None = None,
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """Forward pass through cross-modal fusion.
 
         Args:
@@ -397,9 +398,9 @@ class TensorFusion(nn.Module):
 
     def __init__(
         self,
-        modality_dims: Dict[str, int],
+        modality_dims: dict[str, int],
         hidden_dim: int = 128,
-        output_dim: Optional[int] = None,
+        output_dim: int | None = None,
     ):
         """Initialize tensor fusion.
 
@@ -439,7 +440,7 @@ class TensorFusion(nn.Module):
             f"fused_dim={self.fused_dim}, output_dim={output_dim}"
         )
 
-    def forward(self, modalities: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, modalities: dict[str, torch.Tensor]) -> torch.Tensor:
         """Forward pass through tensor fusion.
 
         Args:
@@ -504,9 +505,9 @@ class ResistanceMapFusion(nn.Module):
         fusion_type: str = "cross_attention",
         n_heads: int = 4,
         dropout: float = 0.2,
-        modality_dims: Optional[Dict[str, int]] = None,
+        modality_dims: dict[str, int] | None = None,
         batch_correction: bool = False,
-        n_batches: Optional[int] = None,
+        n_batches: int | None = None,
     ):
         """Initialize ResistanceMap fusion layer.
 
@@ -590,8 +591,8 @@ class ResistanceMapFusion(nn.Module):
         trajectory_state: torch.Tensor,
         protein_network_output: torch.Tensor,
         stability_score: torch.Tensor,
-        batch_ids: Optional[torch.Tensor] = None,
-    ) -> Dict[str, torch.Tensor]:
+        batch_ids: torch.Tensor | None = None,
+    ) -> dict[str, torch.Tensor]:
         """Forward pass through multi-modal fusion.
 
         Args:
@@ -651,7 +652,7 @@ class ResistanceMapFusion(nn.Module):
             }
 
     @property
-    def modality_info(self) -> Dict[str, int]:
+    def modality_info(self) -> dict[str, int]:
         """Return modality dimensions."""
         return self.modality_dims.copy()
 
@@ -685,9 +686,9 @@ class MultiModalFusionPipeline(nn.Module):
         hidden_dim: int = 256,
         output_dim: int = 128,
         fusion_type: str = "cross_attention",
-        modality_dims: Optional[Dict[str, int]] = None,
+        modality_dims: dict[str, int] | None = None,
         batch_correction: bool = False,
-        n_batches: Optional[int] = None,
+        n_batches: int | None = None,
     ):
         """Initialize multi-modal fusion pipeline.
 
@@ -715,7 +716,7 @@ class MultiModalFusionPipeline(nn.Module):
         trajectory_state: torch.Tensor,
         protein_network_output: torch.Tensor,
         stability_score: torch.Tensor,
-        batch_ids: Optional[torch.Tensor] = None,
+        batch_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Forward pass.
 

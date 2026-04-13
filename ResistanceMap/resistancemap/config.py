@@ -104,6 +104,10 @@ class VAEConfig:
     adversarial_weight: float = 0.1
     adversarial_warmup_epochs: int = 10
 
+    # Cross-modal VAE enhancements
+    use_stochastic_decoder: bool = False  # Use stochastic decoder for uncertainty quantification
+    expanded_latent_dim: Optional[int] = None  # Override latent_dim (e.g., 128, 256) to reduce bottleneck
+
 
 @dataclass
 class TrajectoryConfig:

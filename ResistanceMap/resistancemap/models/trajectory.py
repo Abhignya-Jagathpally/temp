@@ -23,6 +23,7 @@ Uses torchdiffeq for GPU-accelerated, differentiable ODE solving (H100-optimized
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 import torch
@@ -54,6 +55,11 @@ TEMPORAL_DISCLAIMERS = {
         "Confidence intervals widen. ODE assumes continuous state—discrete gene amplification "
         "events are not captured."
     ),
+    9: (
+        "Extended-term ODE predictions (9 months): growing uncertainty from accumulated "
+        "parameter drift and unmodeled stochastic processes. Confidence intervals significantly widen. "
+        "ODE determinism increasingly unreliable; consider qualitative trends only."
+    ),
     12: (
         "Long-term ODE predictions (12 months): deterministic ODE extrapolation "
         "becomes unreliable. Assumes parameters remain constant—driver mutations, "
@@ -81,13 +87,17 @@ class SinkhornOT(nn.Module):
         self.n_iterations = n_iterations
 
     def _sinkhorn_iterations(
-        self, cost_matrix: torch.Tensor, n_iters: int = None
+        self, cost_matrix: torch.Tensor, n_iters: int = None, tolerance: float = 1e-6
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute transport plan via Sinkhorn iterations.
+        """Compute transport plan via log-domain Sinkhorn iterations.
+
+        Uses log-space computation throughout to avoid numerical overflow with small epsilon.
+        Implements entropic-regularized optimal transport with optional early stopping.
 
         Args:
             cost_matrix: (M, N) ground cost matrix.
             n_iters: Number of iterations.
+            tolerance: Convergence tolerance for dual variables (early stopping).
 
         Returns:
             Tuple of (transport_plan, dual_vars) where transport_plan is (M, N).
@@ -95,16 +105,41 @@ class SinkhornOT(nn.Module):
         if n_iters is None:
             n_iters = self.n_iterations
 
-        K = torch.exp(-cost_matrix / self.epsilon)
-        u = torch.ones(cost_matrix.shape[0], device=cost_matrix.device) / cost_matrix.shape[0]
-        v = torch.ones(cost_matrix.shape[1], device=cost_matrix.device) / cost_matrix.shape[1]
+        M, N = cost_matrix.shape
+        device = cost_matrix.device
 
-        for _ in range(n_iters):
-            u = 1.0 / (K @ v + 1e-8)
-            v = 1.0 / (K.T @ u + 1e-8)
+        # Work in log-space throughout to avoid overflow
+        log_K = -cost_matrix / self.epsilon  # (M, N)
 
-        transport_plan = u.unsqueeze(-1) * K * v.unsqueeze(0)
-        return transport_plan, (u, v)
+        # Initialize log-domain dual variables as zeros
+        log_u = torch.zeros(M, device=device)  # (M,)
+        log_v = torch.zeros(N, device=device)  # (N,)
+
+        # Sinkhorn iterations in log-domain
+        for iteration in range(n_iters):
+            # Store previous dual variables for convergence check
+            log_u_prev = log_u.clone()
+            log_v_prev = log_v.clone()
+
+            # Update log_u: log_u = -logsumexp(log_K + log_v, dim=1)
+            log_u = -torch.logsumexp(log_K + log_v[None, :], dim=1)
+
+            # Update log_v: log_v = -logsumexp(log_K + log_u, dim=0)
+            log_v = -torch.logsumexp(log_K + log_u[:, None], dim=0)
+
+            # Optional convergence check for early stopping
+            if iteration > 0:
+                u_change = torch.max(torch.abs(log_u - log_u_prev))
+                v_change = torch.max(torch.abs(log_v - log_v_prev))
+                max_change = torch.max(u_change, v_change)
+                if max_change < tolerance:
+                    break
+
+        # Compute transport plan in linear space only at the end
+        # transport_plan = exp(log_u[:, None] + log_K + log_v[None, :])
+        transport_plan = torch.exp(log_u[:, None] + log_K + log_v[None, :])
+
+        return transport_plan, (log_u, log_v)
 
     def forward(
         self, cloud1: torch.Tensor, cloud2: torch.Tensor
@@ -1243,6 +1278,219 @@ class TrajectoryForecaster(nn.Module):
             'n_mc_samples': n_mc_samples,
             'confidence_level': confidence_level,
         }
+
+
+@dataclass
+class ForecastReliability:
+    """Quantifies the reliability of a neural ODE forecast horizon.
+
+    Attributes:
+        horizon_months: The forecast horizon in months.
+        reliability_grade: Letter grade ("A" for 0-3m, "B" for 3-6m, "C" for 6-9m, "F" for 9-12m+).
+        disclaimer: Disclaimer text from TEMPORAL_DISCLAIMERS for this horizon.
+        confidence_decay_factor: Exponential decay factor (e.g. 0.95^months) quantifying confidence loss.
+        is_reliable: Boolean flag (True only for grades A or B).
+        hard_warning: Strong warning message for grades C/F, or None for A/B.
+        recommended_action: Actionable guidance string (e.g., "Use as point estimate" for A).
+    """
+    horizon_months: int
+    reliability_grade: str
+    disclaimer: str
+    confidence_decay_factor: float
+    is_reliable: bool
+    hard_warning: str | None
+    recommended_action: str
+
+
+class ForecastReliabilityScorer:
+    """Enforces temporal disclaimers and reliability constraints on Neural ODE forecasts.
+
+    Addresses the fundamental issue that extrapolating a deterministic ODE 12 months
+    into the future from a single snapshot is highly speculative. This scorer:
+    - Assigns reliability grades based on forecast horizon
+    - Applies exponential confidence decay
+    - Provides actionable warnings and recommendations
+    - Supports validation with optional error raising
+
+    The reliability grading is based on accumulating uncertainty in ODE parameters,
+    unmodeled stochastic processes, and the limits of deterministic extrapolation.
+    """
+
+    def __init__(self, base_decay_rate: float = 0.95) -> None:
+        """Initialize the ForecastReliabilityScorer.
+
+        Args:
+            base_decay_rate: Monthly confidence decay rate (default 0.95 → 5% loss per month).
+                             Used as base^months to compute decay factor.
+        """
+        self.base_decay_rate = base_decay_rate
+
+    def score(
+        self,
+        forecast_horizon_months: int,
+        uncertainty_estimate: float | None = None,
+    ) -> ForecastReliability:
+        """Score the reliability of a forecast at a given horizon.
+
+        Args:
+            forecast_horizon_months: Forecast horizon in months (3, 6, 9, or 12).
+            uncertainty_estimate: Optional external uncertainty measure (unused in base grading).
+
+        Returns:
+            ForecastReliability dataclass with grade, warnings, and recommendations.
+
+        Raises:
+            ValueError: If horizon is not in supported range [1, 12].
+        """
+        if not (1 <= forecast_horizon_months <= 12):
+            raise ValueError(
+                f"Forecast horizon must be in [1, 12] months; got {forecast_horizon_months}"
+            )
+
+        # Compute exponential confidence decay factor
+        confidence_decay_factor = self.base_decay_rate ** forecast_horizon_months
+
+        # Assign reliability grade based on horizon
+        if forecast_horizon_months <= 3:
+            reliability_grade = "A"
+            is_reliable = True
+            hard_warning = None
+            recommended_action = (
+                "Use as point estimate. Confidence intervals remain narrow. "
+                "Suitable for near-term decision support."
+            )
+        elif forecast_horizon_months <= 6:
+            reliability_grade = "B"
+            is_reliable = True
+            hard_warning = None
+            recommended_action = (
+                "Use with wide confidence intervals. Accumulating parameter uncertainty. "
+                "Suitable for medium-term planning with sensitivity analysis."
+            )
+        elif forecast_horizon_months <= 9:
+            reliability_grade = "C"
+            is_reliable = False
+            hard_warning = (
+                f"CAUTION: {forecast_horizon_months}-month ODE forecast is highly speculative. "
+                "Parameters may drift, stochastic epigenetic switches are unmodeled, "
+                "and discrete events (mutations, clonal selection) are not captured. "
+                "Use qualitative trends only; do not rely on quantitative predictions."
+            )
+            recommended_action = (
+                "Treat as qualitative trend only. Use multiple corroborating data sources. "
+                "Consider ensemble forecasts with alternative models."
+            )
+        else:  # >= 10 months
+            reliability_grade = "F"
+            is_reliable = False
+            hard_warning = (
+                f"UNRELIABLE: {forecast_horizon_months}-month deterministic ODE extrapolation "
+                "is not scientifically defensible. Assumes constant parameters and no driver mutations, "
+                "epigenetic catastrophes, or heterogeneity growth. This forecast should NOT be used "
+                "for clinical decision-making or patient counseling."
+            )
+            recommended_action = (
+                "Do NOT use for quantitative predictions. Consider alternative approaches: "
+                "stochastic simulations, ensemble models, or expert clinical judgment."
+            )
+
+        # Get disclaimer from TEMPORAL_DISCLAIMERS (use closest available key)
+        disclaimer_key = min(TEMPORAL_DISCLAIMERS.keys(), key=lambda k: abs(k - forecast_horizon_months))
+        disclaimer = TEMPORAL_DISCLAIMERS[disclaimer_key]
+
+        return ForecastReliability(
+            horizon_months=forecast_horizon_months,
+            reliability_grade=reliability_grade,
+            disclaimer=disclaimer,
+            confidence_decay_factor=confidence_decay_factor,
+            is_reliable=is_reliable,
+            hard_warning=hard_warning,
+            recommended_action=recommended_action,
+        )
+
+    @staticmethod
+    def apply_confidence_decay(
+        predictions: dict[str, Any],
+        horizon_months: int,
+        base_decay_rate: float = 0.95,
+    ) -> dict[str, Any]:
+        """Apply exponential confidence decay to prediction confidence scores.
+
+        Scales all confidence-related fields (e.g., standard deviations, quantiles)
+        by the computed decay factor to reflect growing uncertainty.
+
+        Args:
+            predictions: Dictionary containing forecast data, typically with keys like
+                        'point_forecast', 'ci_lower', 'ci_upper', 'std_dev', etc.
+            horizon_months: Forecast horizon in months.
+            base_decay_rate: Monthly decay rate (default 0.95).
+
+        Returns:
+            Dictionary with scaled confidence measures.
+        """
+        decay_factor = base_decay_rate ** horizon_months
+
+        # Make a copy to avoid mutating the original
+        result = {}
+        for key, value in predictions.items():
+            if key in ("ci_lower", "ci_upper", "std_dev", "variance", "std_error"):
+                # Scale confidence intervals and uncertainty measures
+                if isinstance(value, dict):
+                    result[key] = {k: (v * decay_factor if isinstance(v, (int, float)) else v) for k, v in value.items()}
+                elif isinstance(value, (list, tuple)):
+                    result[key] = type(value)(v * decay_factor if isinstance(v, (int, float)) else v for v in value)
+                else:
+                    # Assume it's a tensor or numeric scalar
+                    result[key] = value * decay_factor
+            else:
+                # Copy other fields unchanged
+                result[key] = value
+
+        # Add metadata
+        result["confidence_decay_factor"] = decay_factor
+        result["forecast_horizon_months"] = horizon_months
+
+        return result
+
+    def validate_forecast_request(
+        self,
+        horizon_months: int,
+        raise_on_unreliable: bool = False,
+    ) -> ForecastReliability:
+        """Validate and log a forecast request, optionally raising on unreliable horizons.
+
+        Args:
+            horizon_months: Requested forecast horizon in months.
+            raise_on_unreliable: If True, raise ValueError for grades C or F (unreliable).
+
+        Returns:
+            ForecastReliability object with validation results.
+
+        Raises:
+            ValueError: If raise_on_unreliable=True and grade is C or F.
+        """
+        reliability = self.score(horizon_months)
+
+        # Log the validation result
+        log_level = "warning" if not reliability.is_reliable else "info"
+        getattr(logger, log_level)(
+            f"Forecast validation [{horizon_months}m]: Grade {reliability.reliability_grade} | "
+            f"Decay factor: {reliability.confidence_decay_factor:.4f} | "
+            f"Reliable: {reliability.is_reliable}"
+        )
+
+        # Log the hard warning if present
+        if reliability.hard_warning:
+            logger.warning(f"Hard warning: {reliability.hard_warning}")
+
+        # Optionally raise
+        if raise_on_unreliable and not reliability.is_reliable:
+            raise ValueError(
+                f"Forecast at {horizon_months} months is unreliable (grade {reliability.reliability_grade}). "
+                f"Hard warning: {reliability.hard_warning}"
+            )
+
+        return reliability
 
 
 def calibrate_scorer(

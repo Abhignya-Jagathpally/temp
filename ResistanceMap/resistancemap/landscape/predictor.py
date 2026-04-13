@@ -534,13 +534,91 @@ class ResistanceLandscapePredictor:
         if sample_ids is None:
             sample_ids = [None] * batch_size
 
+        # Single vectorized forward pass (expensive GPU operation)
+        outputs = self.model(fused_representations.to(self.device))
+
+        # Extract all tensors at once
+        drug_probs = outputs["drug_resistance"]  # (batch_size, n_drugs * n_timepoints)
+        state_output = outputs["resistance_state"]  # (batch_size, n_states)
+        transition_matrix = outputs["transition_matrix"]  # (batch_size, n_states, n_states)
+        target_scores = outputs["target_scores"]  # (batch_size, n_proteins)
+
+        # Handle evidential outputs if present
+        if self.model.use_evidential:
+            alpha = outputs["alpha"]  # (batch_size, n_states)
+            epistemic_uncertainty = outputs["epistemic_uncertainty"]  # (batch_size,)
+            aleatoric_uncertainty = outputs["aleatoric_uncertainty"]  # (batch_size,)
+            K = float(self.model.n_states)
+            state_probs = outputs["resistance_state"].cpu().numpy()  # Already normalized from evidential
+        else:
+            alpha = None
+            epistemic_uncertainty = None
+            aleatoric_uncertainty = None
+            # Compute softmax for standard mode
+            state_probs = torch.softmax(state_output, dim=1).cpu().numpy()  # (batch_size, n_states)
+
+        # Lightweight post-processing loop: build results
         results = []
         for i in range(batch_size):
-            prot_scores = protein_resistance_scores[i] if protein_resistance_scores is not None else None
-            result = self.predict_single(
-                fused_representations[i],
+            # Extract drug resistance by timepoint for this sample
+            drug_probs_np = drug_probs[i].cpu().numpy()
+            drug_resistance_3m = {}
+            drug_resistance_6m = {}
+            drug_resistance_12m = {}
+
+            for j, drug_name in enumerate(self.drug_names):
+                drug_resistance_3m[drug_name] = float(drug_probs_np[j * 3])
+                drug_resistance_6m[drug_name] = float(drug_probs_np[j * 3 + 1])
+                drug_resistance_12m[drug_name] = float(drug_probs_np[j * 3 + 2])
+
+            # Determine current state (argmax)
+            current_state_idx = int(np.argmax(state_probs[i]))
+            resistance_state = self.state_names[current_state_idx]
+
+            # Determine basin of attraction
+            trans_np = transition_matrix[i].cpu().numpy()
+            basin_idx = int(np.argmax(trans_np.mean(axis=0)))
+            basin_of_attraction = self.state_names[basin_idx]
+
+            # Compute confidence and uncertainties
+            if self.model.use_evidential:
+                alpha_i = alpha[i].cpu()
+                epistemic_unc = float(epistemic_uncertainty[i].cpu())
+                aleatoric_unc = float(aleatoric_uncertainty[i].cpu())
+                evidence_strength = float(alpha_i.sum().cpu())
+                calibrated_confidence = evidence_strength / (evidence_strength + K)
+            else:
+                epistemic_unc = 0.0
+                aleatoric_unc = 0.0
+                evidence_strength = 0.0
+                calibrated_confidence = float(state_probs[i, current_state_idx])
+
+            # Rank intervention targets (lightweight per-sample operation)
+            if protein_resistance_scores is not None:
+                prot_scores = protein_resistance_scores[i]
+            else:
+                prot_scores = target_scores[i]
+
+            ranked_targets = self.target_ranker.rank_targets(
+                self.protein_names,
+                prot_scores,
+                top_k=10,
+            )
+
+            result = LandscapeResult(
                 sample_id=sample_ids[i],
-                protein_resistance_scores=prot_scores,
+                fused_representation=fused_representations[i].cpu(),
+                drug_resistance_3m=drug_resistance_3m,
+                drug_resistance_6m=drug_resistance_6m,
+                drug_resistance_12m=drug_resistance_12m,
+                top_intervention_targets=ranked_targets,
+                resistance_state=resistance_state,
+                basin_of_attraction=basin_of_attraction,
+                transition_probabilities=transition_matrix[i].cpu(),
+                confidence_score=calibrated_confidence,
+                epistemic_uncertainty=epistemic_unc,
+                aleatoric_uncertainty=aleatoric_unc,
+                evidence_strength=evidence_strength,
             )
             results.append(result)
 
