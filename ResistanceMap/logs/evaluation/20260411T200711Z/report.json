@@ -1,0 +1,1138 @@
+{
+  "run_id": "20260411T200711Z",
+  "per_tier_verdicts": {
+    "A": "skipped",
+    "B": "fail",
+    "C": "fail",
+    "D": "conditional"
+  },
+  "per_tier_agent_verdicts": {
+    "A": {
+      "eval_data_adequacy": "conditional",
+      "eval_measurement_integration": "conditional",
+      "eval_bias_fairness_shift": "skipped"
+    },
+    "B": {
+      "architecture_auditor": "fail",
+      "cell_state_trajectory": "skipped",
+      "pathway_ppi_reasoning": "skipped"
+    },
+    "C": {
+      "forecasting_uncertainty_agent": "skipped",
+      "baseline_adversary_agent": "skipped",
+      "clinical_translation_safety_agent": "fail"
+    },
+    "D": {
+      "principal_integrator_agent": "conditional"
+    }
+  },
+  "findings": [
+    {
+      "agent_name": "eval_data_adequacy",
+      "tier": "A",
+      "verdict": "conditional",
+      "score": 0.21428571428571427,
+      "criteria_results": {
+        "indication_match": "pass",
+        "treatment_line_documented": "undocumented",
+        "sample_site_documented": "undocumented",
+        "longitudinal_availability": "unavailable",
+        "modality_alignment": "scaffolded",
+        "resistance_label_definition": "undocumented",
+        "temporal_leakage_clean": false
+      },
+      "evidence": {
+        "indication_notes": {
+          "mm_hits": [
+            "mm@data/raw/mmrf_commpass",
+            "mmrf@data/raw/mmrf_commpass",
+            "commpass@data/raw/mmrf_commpass",
+            "gse124310@data/raw/gse124310.h5ad",
+            "gse271107@data/raw/gse271107.h5ad"
+          ],
+          "off_target": []
+        },
+        "patient_manifest_path": "data/raw/mmrf_commpass/patient_manifest.csv",
+        "single_cell_paths_present": [
+          "data/raw/gse124310.h5ad"
+        ],
+        "resistance_label_definition_doc": "data/raw/mmrf_commpass/resistance_label_definition.md",
+        "leakage_report": {
+          "duplicate_patient_ids": {},
+          "temporal_leaks": [],
+          "clean": false,
+          "details": {
+            "n_train": 0,
+            "n_val": 0,
+            "n_test": 0,
+            "n_unique_total": 0,
+            "warnings": [
+              "train or test split is empty; audit is vacuous",
+              "validation split is empty"
+            ]
+          }
+        }
+      },
+      "failure_modes": [
+        "Treatment line (NDMM vs RRMM) not documented in any manifest.",
+        "Primary vs secondary resistance label definition is not documented; downstream calibration cannot be interpreted.",
+        "Pre-treatment single-cell not matched to post-relapse single-cell (charter requires this for any temporal claim).",
+        "Leakage scan was vacuous (no split manifest available)."
+      ],
+      "required_changes": [
+        "Provide a per-patient manifest at data/raw/mmrf_commpass/patient_manifest.csv with treatment_line and sample_site columns.",
+        "Add a resistance label provenance memo at data/raw/mmrf_commpass/resistance_label_definition.md covering primary vs secondary, thresholding rule, and the source feature.",
+        "Expose train/val/test patient-id manifests so the leakage scan can run on real splits."
+      ]
+    },
+    {
+      "agent_name": "eval_measurement_integration",
+      "tier": "A",
+      "verdict": "conditional",
+      "score": 0.0,
+      "criteria_results": {
+        "cell_type_resolution": "todo",
+        "batch_effects_assessed": "todo",
+        "cross_modality_alignment": "todo",
+        "ppi_graph_version": "documented",
+        "drug_target_coverage": 0.0
+      },
+      "evidence": {
+        "cell_type_resolution": {
+          "status": "TODO",
+          "note": "Pending a single-cell loader that exposes per-cell type / state annotations. Resolution must be declared and matched to the resistance label granularity."
+        },
+        "batch_effects_assessed": {
+          "status": "TODO",
+          "metric": "kBET / iLISI not yet computed",
+          "note": "Defer to the batch-mixing metric provided by an upstream preprocessing agent; record the result here once produced."
+        },
+        "cross_modality_alignment": {
+          "status": "TODO",
+          "note": "Same-cell vs imputed-bridge alignment must be declared with an explicit error bound. Currently undeclared."
+        },
+        "ppi_graph": {
+          "path": "data/raw/string_ppi.txt",
+          "n_proteins_detected": 19624,
+          "n_edges_detected": 13715405,
+          "confidence_cutoff": 0.7,
+          "expected_n_proteins": 7853,
+          "expected_n_edges": 460000
+        },
+        "drug_target_coverage": {
+          "fraction": 0.0,
+          "n_drugs_total": 2,
+          "n_drugs_fully_covered": 0,
+          "per_drug": {
+            "Bortezomib": {
+              "targets": [
+                "PSMB5",
+                "PSMB1"
+              ],
+              "covered": [],
+              "fully_covered": false
+            },
+            "Lenalidomide": {
+              "targets": [
+                "CRBN",
+                "IKZF1",
+                "IKZF3"
+              ],
+              "covered": [],
+              "fully_covered": false
+            }
+          },
+          "drugs_with_unknown_targets": [
+            "Panobinostat",
+            "Vorinostat",
+            "Romidepsin",
+            "Venetoclax",
+            "Dinaciclib",
+            "Palbociclib",
+            "Doxorubicin",
+            "Etoposide",
+            "Cyclophosphamide"
+          ]
+        }
+      },
+      "failure_modes": [
+        "PPI graph covers only 0% of the surface targets of configured drugs; pathway attribution claims are unwarranted for the uncovered drugs."
+      ],
+      "required_changes": [
+        "Wire a single-cell loader and declare cell-type vs state granularity in the data manifest.",
+        "Compute kBET / iLISI on the harmonised matrices and record it as evidence under batch_effects_assessed.",
+        "Declare whether modalities share cells (paired) or are bridged by imputation, and bound the alignment error.",
+        "Either upgrade the PPI graph (newer STRING release / lower confidence cutoff) or restrict target_drugs to the drugs whose targets are present in the graph."
+      ]
+    },
+    {
+      "agent_name": "eval_bias_fairness_shift",
+      "tier": "A",
+      "verdict": "skipped",
+      "score": 0.0,
+      "criteria_results": {
+        "selection_bias_audit": "undocumented",
+        "ancestry_representation": "todo",
+        "ses_proxy_handling": "todo",
+        "train_deploy_shift": "todo",
+        "subgroup_calibration": "todo"
+      },
+      "evidence": {
+        "selection_bias_doc": "data/raw/mmrf_commpass/ancestry_distribution.md",
+        "patient_manifest": "data/raw/mmrf_commpass/patient_manifest.csv",
+        "ses_proxy_handling": {
+          "status": "TODO",
+          "note": "If insurance / geography / income proxies are present, their handling must be documented; if absent, that absence must itself be documented."
+        },
+        "train_deploy_shift": {
+          "status": "TODO",
+          "note": "Module exists but compute_shift() is not defined."
+        },
+        "subgroup_calibration": {
+          "status": "TODO",
+          "note": "Defer to a downstream calibration agent (Tier C). This agent only declares the requirement; it does not compute subgroup ECE itself."
+        }
+      },
+      "failure_modes": [
+        "Both ancestry memo and patient manifest are absent; agent skipped to avoid fabricating subgroup tables.",
+        "No selection-bias / ancestry distribution memo present for the configured cohorts. Public datasets (CCLE, GDSC, MMRF) all have known enrolment skews that must be acknowledged.",
+        "Per-patient ancestry / demographic columns are not available; subgroup calibration cannot be computed."
+      ],
+      "required_changes": [
+        "Author a selection-bias memo at data/raw/mmrf_commpass/ancestry_distribution.md covering CCLE cell-line ancestry, GDSC sourcing, and MMRF enrolment criteria.",
+        "Provide a patient manifest at data/raw/mmrf_commpass/patient_manifest.csv including self-reported ancestry and a documented missingness rate.",
+        "Document SES proxy availability and handling (or explicit absence) for every cohort.",
+        "Implement resistancemap.evaluation.metrics.shift.compute_shift and re-run; this agent will pick it up automatically.",
+        "Tier C forecasting agent must report ECE per ancestry subgroup, not just overall."
+      ]
+    },
+    {
+      "agent_name": "architecture_auditor",
+      "tier": "B",
+      "verdict": "fail",
+      "score": 0.0,
+      "criteria_results": {
+        "vae_latent": {
+          "scientific_function": "state summary of proteomic+epigenomic profile",
+          "identified": [
+            "Marginal data likelihood under the chosen reconstruction loss",
+            "A latent of dimension 64 that minimizes ATAC + histone reconstruction error"
+          ],
+          "assumed": [
+            "Gaussian prior over latents (no tissue/donor stratification)",
+            "ATAC + H3K4me3 + H3K27me3 fully describe the epigenomic state",
+            "Latent axes are *interpretable* (they are not, by default)"
+          ],
+          "identifiability": "VAE latents are only identified up to an orthogonal rotation and per-axis sign flip. Any plot or claim that pins meaning to a *specific* latent axis is unfounded without an anchor (e.g., contrastive supervision, identifiable VAE / iVAE, or a fixed set of reference samples).",
+          "ablation_plan": {
+            "drop_h3k27me3_decoder": "should *break* recovery of repressed-chromatin states; if performance is unchanged, the H3K27me3 head is decorative.",
+            "shuffle_protein_to_epigenome_pairs": "should collapse the conditional generation quality to the marginal; if not, the model is ignoring conditioning.",
+            "freeze_latent_to_PCA": "should hurt downstream resistance prediction if and only if non-linear latent geometry matters."
+          },
+          "identifiability_gap": true,
+          "issues_found": true
+        },
+        "ode_dynamics": {
+          "scientific_function": "continuous-time dynamics of the resistance latent state",
+          "identified": [
+            "Local vector field of the latent ODE up to a time reparameterization",
+            "Stationary points reachable within integration_time=100.0"
+          ],
+          "assumed": [
+            "The drift function is autonomous (no exogenous treatment time series)",
+            "Cells follow population-average dynamics (no per-patient drift)",
+            "Output horizons [3, 6, 12] are in months and aligned with calendar time"
+          ],
+          "identifiability": "ODE flows are identifiable only up to monotonic time reparameterization. ``integration_time`` is in arbitrary units; without a paired longitudinal dataset (e.g., MMRF CoMMpass serial timepoints) we cannot map ODE-time to months. Any `when`-claim must be deferred until calibration is done.",
+          "ablation_plan": {
+            "replace_ode_with_linear_drift": "should *break* curvature-dependent forecasts; if not, the ODE adds no value over a linear extrapolator.",
+            "permute_initial_conditions": "should destroy per-patient forecasts; if not, the model is forecasting the population mean.",
+            "halve_integration_time": "should change long-horizon forecasts but not short-horizon; if both change identically, time has no physical meaning."
+          },
+          "arbitrary_time_units": true,
+          "issues_found": true
+        },
+        "gnn_pathway_context": {
+          "scientific_function": "pathway / interaction context for protein-level effects",
+          "identified": [
+            "A 2-layer GAT embedding over 7853 proteins",
+            "Neighborhood smoothness consistent with the PPI edge set"
+          ],
+          "assumed": [
+            "STRING PPI edges represent functional interactions, not literature-citation bias",
+            "Edge weights from the STRING combined score are calibrated",
+            "ESM-2 embeddings encode binding context relevant to MM resistance, not just sequence similarity"
+          ],
+          "identifiability": "Attention-based GNN attributions are confounded with node *degree* in the PPI: high-degree hubs accumulate attribution regardless of biology. Without a degree-preserving null we cannot tell pathway signal from hub artifact.",
+          "ablation_plan": {
+            "swap_ppi_for_degree_preserving_rewire": "should *break* pathway-level attributions; if not, the model is keying off node degree alone.",
+            "drop_esm2_embeddings_use_one_hot": "should hurt OOD generalization to held-out proteins; if not, the ESM-2 features are decorative.",
+            "edge_confidence_threshold_sweep": "varying ppi_confidence around the current 0.7 should produce a monotonic stability curve; non-monotonicity flags overfitting to the chosen cutoff."
+          },
+          "confounded_attribution_risk": true,
+          "issues_found": true
+        },
+        "fusion": {
+          "scientific_function": "combine VAE latent, trajectory state, and pathway context into a unified resistance prediction",
+          "identified": [
+            "Cross-modal attention weights of dimension 128",
+            "Per-task prediction error contribution per modality (only if leave-one-out ablations are run)"
+          ],
+          "assumed": [
+            "All modalities are observed for every patient (no MNAR handling)",
+            "cross_attention attention is the right inductive bias",
+            "Modalities are exchangeable in the attention layer"
+          ],
+          "identifiability": "Cross-attention fusion can be dominated by the lowest-noise modality, leaving the others with negligible gradient. Without leave-one-modality-out ablations we cannot tell whether the fusion is multi-modal or merely re-weighting one modality.",
+          "ablation_plan": {
+            "leave_one_modality_out": "each held-out modality should produce a measurable, non-trivial drop in held-out performance; a zero-drop modality indicates collapse.",
+            "shuffle_modality_alignment": "should destroy patient-level predictions if modalities are actually being fused; if not, fusion is just averaging.",
+            "swap_cross_attention_for_concat": "should match cross-attention performance only on tasks where modality interactions are linear."
+          },
+          "modality_collapse_risk": true,
+          "issues_found": true
+        }
+      },
+      "evidence": {
+        "n_modules_audited": 4,
+        "modules_clean": 0,
+        "config_signature": {
+          "vae.latent_dim": 64,
+          "trajectory.integration_time": 100.0,
+          "trajectory.ode_solver": "euler",
+          "protein_net.gnn_conv_type": "gat",
+          "fusion.fusion_type": "cross_attention"
+        }
+      },
+      "failure_modes": [
+        "VAE latent geometry is only identified up to rotation/sign without anchoring constraints.",
+        "trajectory.integration_time=100.0 is in *arbitrary units*; calendar-time `when`-claims are not supported until the integrator is calibrated to clinical time.",
+        "GNN attributions are confounded with PPI degree until a degree-controlled null model is run.",
+        "Cross-attention fusion can collapse onto a single dominant modality without per-modality dropout ablations."
+      ],
+      "required_changes": [
+        "Add a latent identifiability constraint (e.g., orthogonal anchors, contrastive supervision, or fixed reference samples) before any latent-axis interpretation is reported.",
+        "Calibrate ODE integration time to calendar time using a paired longitudinal dataset before emitting any time-stamped resistance forecasts.",
+        "Run pathway attribution against a degree-preserving rewired PPI null and report effect-size relative to that null.",
+        "Run leave-one-modality-out ablations and report the predicted performance drop for each modality; missing or zero-drop modalities indicate collapse."
+      ]
+    },
+    {
+      "agent_name": "cell_state_trajectory",
+      "tier": "B",
+      "verdict": "skipped",
+      "score": 0.0,
+      "criteria_results": {
+        "intake": {
+          "missing_keys": [
+            "vae_latents",
+            "cell_metadata",
+            "state_assignments",
+            "program_scores"
+          ]
+        }
+      },
+      "evidence": {
+        "reason": "missing_upstream_outputs"
+      },
+      "failure_modes": [
+        "Required upstream artefacts are missing from intake: ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores']. This agent does NOT fabricate latents or state assignments; rerun the VAE + trajectory stages and re-supply."
+      ],
+      "required_changes": [
+        "Provide all of ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores'] in intake before re-running CellStateTrajectoryAgent."
+      ]
+    },
+    {
+      "agent_name": "pathway_ppi_reasoning",
+      "tier": "B",
+      "verdict": "skipped",
+      "score": 0.0,
+      "criteria_results": {
+        "intake": {
+          "missing_keys": [
+            "ppi_edges",
+            "attribute_fn",
+            "baseline_attribution",
+            "alternative_attribution",
+            "heldout_pathway_ids",
+            "heldout_predictions",
+            "heldout_model_fn"
+          ]
+        }
+      },
+      "evidence": {
+        "reason": "missing_upstream_outputs",
+        "config_ppi_proteins": 7853,
+        "config_ppi_confidence": 0.7
+      },
+      "failure_modes": [
+        "Required upstream artefacts missing: ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn']. This agent does NOT fabricate PPI edges, attributions, or heldout sets; rerun the protein-net stage and re-supply."
+      ],
+      "required_changes": [
+        "Provide all of ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn'] in intake before re-running PathwayPPIReasoningAgent."
+      ]
+    },
+    {
+      "agent_name": "forecasting_uncertainty_agent",
+      "tier": "C",
+      "verdict": "skipped",
+      "score": 0.0,
+      "criteria_results": {
+        "predictions_present": false
+      },
+      "evidence": {
+        "horizons_months": [
+          3,
+          6,
+          12
+        ],
+        "n_perturbation": 50,
+        "integration_time_au": 100.0
+      },
+      "failure_modes": [
+        "ODE integration_time is in arbitrary units; mapping to calendar months has not been demonstrated. Any horizon-indexed metric is preliminary until that mapping exists."
+      ],
+      "required_changes": [
+        "calibrate ODE time to calendar time before claiming time-to-event predictions at 3/6/12 months"
+      ]
+    },
+    {
+      "agent_name": "baseline_adversary_agent",
+      "tier": "C",
+      "verdict": "skipped",
+      "score": 0.0,
+      "criteria_results": {
+        "baseline_predictions_present": false
+      },
+      "evidence": {
+        "pre_registration": {
+          "baselines": [
+            "transcriptome_only",
+            "last_observation",
+            "transcriptome_only",
+            "clinical_only",
+            "simple_survival"
+          ],
+          "design_choices": [
+            {
+              "design_choice": "Multi-omics fusion (proteomics + epigenomics + scRNA)",
+              "deletion_baseline": "transcriptome_only",
+              "discards": "proteomics + ATAC-seq + clinical context"
+            },
+            {
+              "design_choice": "ODE-based trajectory module",
+              "deletion_baseline": "last_observation",
+              "discards": "temporal smoothness + perturbation sensitivity"
+            },
+            {
+              "design_choice": "GNN-on-PPI protein interaction module",
+              "deletion_baseline": "transcriptome_only",
+              "discards": "biological prior over STRING interaction edges"
+            },
+            {
+              "design_choice": "Latent disease state (VAE)",
+              "deletion_baseline": "clinical_only",
+              "discards": "high-dimensional molecular structure"
+            },
+            {
+              "design_choice": "Survival head with proper time-to-event loss",
+              "deletion_baseline": "simple_survival",
+              "discards": "non-linear interactions and per-patient covariates"
+            }
+          ],
+          "n_bootstrap": 1000,
+          "fdr_alpha": 0.1,
+          "nested_cv_folds": 5,
+          "multiple_testing_correction": "Benjamini-Hochberg (FDR)"
+        }
+      },
+      "failure_modes": [
+        "No baseline_predictions in intake; nothing to adjudicate."
+      ],
+      "required_changes": [
+        "compute predictions for each baseline in resistancemap.evaluation.baselines on the pre-specified splits and pass them in intake['baseline_predictions']"
+      ]
+    },
+    {
+      "agent_name": "clinical_translation_safety_agent",
+      "tier": "C",
+      "verdict": "fail",
+      "score": 0.0,
+      "criteria_results": {
+        "drug_safety_map": {
+          "Bortezomib": "peripheral neuropathy is dose-cumulative; a false 'sensitive' call may push intensification that the patient cannot tolerate.",
+          "Lenalidomide": "thromboembolism risk and second-primary malignancy in long-term maintenance; a false 'resistant' call risks premature discontinuation of an otherwise-effective backbone.",
+          "Panobinostat": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Vorinostat": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Romidepsin": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Venetoclax": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Dinaciclib": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Palbociclib": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Doxorubicin": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Etoposide": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Cyclophosphamide": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation."
+        },
+        "clia_ladder": {
+          "analytical_validity": {
+            "present": false,
+            "evidence": {},
+            "definition": "does the model accurately and reproducibly measure what it claims to measure on the target assay/data type"
+          },
+          "clinical_validity": {
+            "present": false,
+            "evidence": {},
+            "definition": "does the model output correlate with the clinical outcome (response, PFS, OS) in an INDEPENDENT cohort"
+          },
+          "clinical_utility": {
+            "present": false,
+            "evidence": {},
+            "definition": "does using the model improve patient outcomes vs. current standard of care, demonstrated prospectively"
+          }
+        },
+        "subgroup_audit_present": false,
+        "ood_detector_present": false,
+        "abstention_rate": null,
+        "failure_modes_enumerated": 9,
+        "pre_registered_failure_modes": [
+          "False negative for aggressive disease -> missed intensification window.",
+          "Overconfident calls on rare phenotypes -> unwarranted therapy switch.",
+          "Calibration drift between training cohort (CCLE/MMRF) and target patient population -> systematic bias against under-represented racial/ethnic groups.",
+          "Subgroup-blind aggregate metrics hide harm to a small but clinically important subgroup (e.g. del(17p), t(14;16), high LDH).",
+          "Time-axis miscalibration (ODE arbitrary units) -> wrong urgency.",
+          "Reliance on a single biomarker the model has memorized rather than a biological mechanism -> brittle to assay changes.",
+          "Lack of an abstention pathway -> model produces a recommendation even when out-of-distribution detection should trigger 'defer to clinician'."
+        ]
+      },
+      "evidence": {
+        "drug_safety_map": {
+          "Bortezomib": "peripheral neuropathy is dose-cumulative; a false 'sensitive' call may push intensification that the patient cannot tolerate.",
+          "Lenalidomide": "thromboembolism risk and second-primary malignancy in long-term maintenance; a false 'resistant' call risks premature discontinuation of an otherwise-effective backbone.",
+          "Panobinostat": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Vorinostat": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Romidepsin": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Venetoclax": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Dinaciclib": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Palbociclib": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Doxorubicin": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Etoposide": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation.",
+          "Cyclophosphamide": "NO PRE-REGISTERED SAFETY NOTE; add one before this drug can drive any therapy recommendation."
+        },
+        "clia_ladder": {
+          "analytical_validity": {
+            "present": false,
+            "evidence": {},
+            "definition": "does the model accurately and reproducibly measure what it claims to measure on the target assay/data type"
+          },
+          "clinical_validity": {
+            "present": false,
+            "evidence": {},
+            "definition": "does the model output correlate with the clinical outcome (response, PFS, OS) in an INDEPENDENT cohort"
+          },
+          "clinical_utility": {
+            "present": false,
+            "evidence": {},
+            "definition": "does using the model improve patient outcomes vs. current standard of care, demonstrated prospectively"
+          }
+        }
+      },
+      "failure_modes": [
+        "False negative for aggressive disease -> missed intensification window.",
+        "Overconfident calls on rare phenotypes -> unwarranted therapy switch.",
+        "Calibration drift between training cohort (CCLE/MMRF) and target patient population -> systematic bias against under-represented racial/ethnic groups.",
+        "Subgroup-blind aggregate metrics hide harm to a small but clinically important subgroup (e.g. del(17p), t(14;16), high LDH).",
+        "Time-axis miscalibration (ODE arbitrary units) -> wrong urgency.",
+        "Reliance on a single biomarker the model has memorized rather than a biological mechanism -> brittle to assay changes.",
+        "Lack of an abstention pathway -> model produces a recommendation even when out-of-distribution detection should trigger 'defer to clinician'.",
+        "No analytical validity metrics provided; the model has not even cleared the first rung of the CLIA-adjacent ladder.",
+        "No OOD detector present: the model cannot recognize when a patient lies outside its training distribution and will still emit a confident recommendation."
+      ],
+      "required_changes": [
+        "add a pre-registered safety note for 'Panobinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Vorinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Romidepsin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Venetoclax' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Dinaciclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Palbociclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Doxorubicin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Etoposide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Cyclophosphamide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "report analytical validity metrics on a held-out test set (intake['analytical_validity_metrics'])",
+        "demonstrate clinical validity in an INDEPENDENT cohort (intake['clinical_validity_evidence']) before any clinical claim is made",
+        "demonstrate clinical utility in a prospective decision-impact study (intake['clinical_utility_evidence']) before any clinical-utility claim is made",
+        "report per-subgroup metrics for at least: cytogenetic risk (standard / high), age stratum, sex, race/ethnicity, prior lines of therapy, ISS stage",
+        "add an OOD detector and route OOD patients to a 'defer to clinician' abstention path",
+        "report abstention_rate so reviewers can see how often the model defers vs. acts"
+      ]
+    },
+    {
+      "agent_name": "principal_integrator_agent",
+      "tier": "D",
+      "verdict": "conditional",
+      "score": 0.3333333333333333,
+      "criteria_results": {
+        "per_tier_summary": {
+          "A": {
+            "PASS": 0,
+            "CONDITIONAL_PASS": 0,
+            "FAIL": 0,
+            "SKIP": 0,
+            "CONDITIONAL": 2,
+            "SKIPPED": 1
+          },
+          "B": {
+            "PASS": 0,
+            "CONDITIONAL_PASS": 0,
+            "FAIL": 1,
+            "SKIP": 0,
+            "SKIPPED": 2
+          },
+          "C": {
+            "PASS": 0,
+            "CONDITIONAL_PASS": 0,
+            "FAIL": 1,
+            "SKIP": 0,
+            "SKIPPED": 2
+          }
+        },
+        "debate_resolution_count": 3,
+        "overall_trl_grade": 3
+      },
+      "evidence": {
+        "per_tier_summary": {
+          "A": {
+            "PASS": 0,
+            "CONDITIONAL_PASS": 0,
+            "FAIL": 0,
+            "SKIP": 0,
+            "CONDITIONAL": 2,
+            "SKIPPED": 1
+          },
+          "B": {
+            "PASS": 0,
+            "CONDITIONAL_PASS": 0,
+            "FAIL": 1,
+            "SKIP": 0,
+            "SKIPPED": 2
+          },
+          "C": {
+            "PASS": 0,
+            "CONDITIONAL_PASS": 0,
+            "FAIL": 1,
+            "SKIP": 0,
+            "SKIPPED": 2
+          }
+        },
+        "debate_log": [
+          {
+            "tier": "A",
+            "conflicting_verdicts": [
+              "CONDITIONAL",
+              "SKIPPED"
+            ],
+            "agents": [
+              "eval_data_adequacy",
+              "eval_measurement_integration",
+              "eval_bias_fairness_shift"
+            ],
+            "resolution_rule": "peer-reviewed-style or pre-registered evidence outweighs ungrounded claims",
+            "winner_agent": "eval_data_adequacy",
+            "winner_weight": 0,
+            "winner_verdict": "conditional"
+          },
+          {
+            "tier": "B",
+            "conflicting_verdicts": [
+              "FAIL",
+              "SKIPPED"
+            ],
+            "agents": [
+              "architecture_auditor",
+              "cell_state_trajectory",
+              "pathway_ppi_reasoning"
+            ],
+            "resolution_rule": "peer-reviewed-style or pre-registered evidence outweighs ungrounded claims",
+            "winner_agent": "architecture_auditor",
+            "winner_weight": 0,
+            "winner_verdict": "fail"
+          },
+          {
+            "tier": "C",
+            "conflicting_verdicts": [
+              "FAIL",
+              "SKIPPED"
+            ],
+            "agents": [
+              "forecasting_uncertainty_agent",
+              "baseline_adversary_agent",
+              "clinical_translation_safety_agent"
+            ],
+            "resolution_rule": "peer-reviewed-style or pre-registered evidence outweighs ungrounded claims",
+            "winner_agent": "baseline_adversary_agent",
+            "winner_weight": 5,
+            "winner_verdict": "skipped"
+          }
+        ],
+        "chair_report": {
+          "overall_grade": 3,
+          "blocking_issues": [
+            "[architecture_auditor] GNN attributions are confounded with PPI degree until a degree-controlled null model is run.",
+            "[clinical_translation_safety_agent] Time-axis miscalibration (ODE arbitrary units) -> wrong urgency.",
+            "[clinical_translation_safety_agent] Reliance on a single biomarker the model has memorized rather than a biological mechanism -> brittle to assay changes.",
+            "[clinical_translation_safety_agent] Lack of an abstention pathway -> model produces a recommendation even when out-of-distribution detection should trigger 'defer to clinician'.",
+            "[clinical_translation_safety_agent] No analytical validity metrics provided; the model has not even cleared the first rung of the CLIA-adjacent ladder.",
+            "[clinical_translation_safety_agent] No OOD detector present: the model cannot recognize when a patient lies outside its training distribution and will still emit a confident recommendation."
+          ],
+          "required_changes_prioritized": [
+            {
+              "description": "add a pre-registered safety note for 'Panobinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Vorinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Romidepsin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Venetoclax' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Dinaciclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Palbociclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Doxorubicin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Etoposide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add a pre-registered safety note for 'Cyclophosphamide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "report analytical validity metrics on a held-out test set (intake['analytical_validity_metrics'])",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "demonstrate clinical validity in an INDEPENDENT cohort (intake['clinical_validity_evidence']) before any clinical claim is made",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "demonstrate clinical utility in a prospective decision-impact study (intake['clinical_utility_evidence']) before any clinical-utility claim is made",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "report per-subgroup metrics for at least: cytogenetic risk (standard / high), age stratum, sex, race/ethnicity, prior lines of therapy, ISS stage",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "add an OOD detector and route OOD patients to a 'defer to clinician' abstention path",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "report abstention_rate so reviewers can see how often the model defers vs. acts",
+              "severity": "block_publication",
+              "severity_score": 90,
+              "source_agent": "clinical_translation_safety_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "Expose train/val/test patient-id manifests so the leakage scan can run on real splits.",
+              "severity": "block_merge",
+              "severity_score": 80,
+              "source_agent": "eval_data_adequacy",
+              "source_tier": "A"
+            },
+            {
+              "description": "Add a latent identifiability constraint (e.g., orthogonal anchors, contrastive supervision, or fixed reference samples) before any latent-axis interpretation is reported.",
+              "severity": "block_merge",
+              "severity_score": 80,
+              "source_agent": "architecture_auditor",
+              "source_tier": "B"
+            },
+            {
+              "description": "Calibrate ODE integration time to calendar time using a paired longitudinal dataset before emitting any time-stamped resistance forecasts.",
+              "severity": "block_merge",
+              "severity_score": 80,
+              "source_agent": "architecture_auditor",
+              "source_tier": "B"
+            },
+            {
+              "description": "calibrate ODE time to calendar time before claiming time-to-event predictions at 3/6/12 months",
+              "severity": "block_merge",
+              "severity_score": 80,
+              "source_agent": "forecasting_uncertainty_agent",
+              "source_tier": "C"
+            },
+            {
+              "description": "Tier C forecasting agent must report ECE per ancestry subgroup, not just overall.",
+              "severity": "high",
+              "severity_score": 70,
+              "source_agent": "eval_bias_fairness_shift",
+              "source_tier": "A"
+            },
+            {
+              "description": "Provide a patient manifest at data/raw/mmrf_commpass/patient_manifest.csv including self-reported ancestry and a documented missingness rate.",
+              "severity": "medium",
+              "severity_score": 50,
+              "source_agent": "eval_bias_fairness_shift",
+              "source_tier": "A"
+            },
+            {
+              "description": "Document SES proxy availability and handling (or explicit absence) for every cohort.",
+              "severity": "medium",
+              "severity_score": 50,
+              "source_agent": "eval_bias_fairness_shift",
+              "source_tier": "A"
+            },
+            {
+              "description": "Run pathway attribution against a degree-preserving rewired PPI null and report effect-size relative to that null.",
+              "severity": "medium",
+              "severity_score": 50,
+              "source_agent": "architecture_auditor",
+              "source_tier": "B"
+            },
+            {
+              "description": "Run leave-one-modality-out ablations and report the predicted performance drop for each modality; missing or zero-drop modalities indicate collapse.",
+              "severity": "medium",
+              "severity_score": 50,
+              "source_agent": "architecture_auditor",
+              "source_tier": "B"
+            },
+            {
+              "description": "Provide a per-patient manifest at data/raw/mmrf_commpass/patient_manifest.csv with treatment_line and sample_site columns.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_data_adequacy",
+              "source_tier": "A"
+            },
+            {
+              "description": "Add a resistance label provenance memo at data/raw/mmrf_commpass/resistance_label_definition.md covering primary vs secondary, thresholding rule, and the source feature.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_data_adequacy",
+              "source_tier": "A"
+            },
+            {
+              "description": "Wire a single-cell loader and declare cell-type vs state granularity in the data manifest.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_measurement_integration",
+              "source_tier": "A"
+            },
+            {
+              "description": "Compute kBET / iLISI on the harmonised matrices and record it as evidence under batch_effects_assessed.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_measurement_integration",
+              "source_tier": "A"
+            },
+            {
+              "description": "Declare whether modalities share cells (paired) or are bridged by imputation, and bound the alignment error.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_measurement_integration",
+              "source_tier": "A"
+            },
+            {
+              "description": "Either upgrade the PPI graph (newer STRING release / lower confidence cutoff) or restrict target_drugs to the drugs whose targets are present in the graph.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_measurement_integration",
+              "source_tier": "A"
+            },
+            {
+              "description": "Author a selection-bias memo at data/raw/mmrf_commpass/ancestry_distribution.md covering CCLE cell-line ancestry, GDSC sourcing, and MMRF enrolment criteria.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_bias_fairness_shift",
+              "source_tier": "A"
+            },
+            {
+              "description": "Implement resistancemap.evaluation.metrics.shift.compute_shift and re-run; this agent will pick it up automatically.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "eval_bias_fairness_shift",
+              "source_tier": "A"
+            },
+            {
+              "description": "Provide all of ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores'] in intake before re-running CellStateTrajectoryAgent.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "cell_state_trajectory",
+              "source_tier": "B"
+            },
+            {
+              "description": "Provide all of ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn'] in intake before re-running PathwayPPIReasoningAgent.",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "pathway_ppi_reasoning",
+              "source_tier": "B"
+            },
+            {
+              "description": "compute predictions for each baseline in resistancemap.evaluation.baselines on the pre-specified splits and pass them in intake['baseline_predictions']",
+              "severity": "low",
+              "severity_score": 30,
+              "source_agent": "baseline_adversary_agent",
+              "source_tier": "C"
+            }
+          ],
+          "re_run_conditions": [
+            "all Tier A findings have verdict in {PASS, CONDITIONAL_PASS}",
+            "all blocking_issues resolved with documented evidence",
+            "any new pre-registered experiment is recorded before execution",
+            "external-cohort clinical validity evidence supplied to ClinicalTranslationSafetyAgent"
+          ],
+          "rationale": "no prospective clinical-utility evidence -> TRL <= 6; no independent-cohort clinical-validity evidence -> TRL <= 4; Tier C failure (forecasting/baseline/safety) -> TRL <= 3; Tier B failure (model mechanism) -> TRL <= 3",
+          "per_tier_summary": {
+            "A": {
+              "PASS": 0,
+              "CONDITIONAL_PASS": 0,
+              "FAIL": 0,
+              "SKIP": 0,
+              "CONDITIONAL": 2,
+              "SKIPPED": 1
+            },
+            "B": {
+              "PASS": 0,
+              "CONDITIONAL_PASS": 0,
+              "FAIL": 1,
+              "SKIP": 0,
+              "SKIPPED": 2
+            },
+            "C": {
+              "PASS": 0,
+              "CONDITIONAL_PASS": 0,
+              "FAIL": 1,
+              "SKIP": 0,
+              "SKIPPED": 2
+            }
+          },
+          "debate_log": [
+            {
+              "tier": "A",
+              "conflicting_verdicts": [
+                "CONDITIONAL",
+                "SKIPPED"
+              ],
+              "agents": [
+                "eval_data_adequacy",
+                "eval_measurement_integration",
+                "eval_bias_fairness_shift"
+              ],
+              "resolution_rule": "peer-reviewed-style or pre-registered evidence outweighs ungrounded claims",
+              "winner_agent": "eval_data_adequacy",
+              "winner_weight": 0,
+              "winner_verdict": "conditional"
+            },
+            {
+              "tier": "B",
+              "conflicting_verdicts": [
+                "FAIL",
+                "SKIPPED"
+              ],
+              "agents": [
+                "architecture_auditor",
+                "cell_state_trajectory",
+                "pathway_ppi_reasoning"
+              ],
+              "resolution_rule": "peer-reviewed-style or pre-registered evidence outweighs ungrounded claims",
+              "winner_agent": "architecture_auditor",
+              "winner_weight": 0,
+              "winner_verdict": "fail"
+            },
+            {
+              "tier": "C",
+              "conflicting_verdicts": [
+                "FAIL",
+                "SKIPPED"
+              ],
+              "agents": [
+                "forecasting_uncertainty_agent",
+                "baseline_adversary_agent",
+                "clinical_translation_safety_agent"
+              ],
+              "resolution_rule": "peer-reviewed-style or pre-registered evidence outweighs ungrounded claims",
+              "winner_agent": "baseline_adversary_agent",
+              "winner_weight": 5,
+              "winner_verdict": "skipped"
+            }
+          ]
+        }
+      },
+      "failure_modes": [
+        "[architecture_auditor] GNN attributions are confounded with PPI degree until a degree-controlled null model is run.",
+        "[clinical_translation_safety_agent] Time-axis miscalibration (ODE arbitrary units) -> wrong urgency.",
+        "[clinical_translation_safety_agent] Reliance on a single biomarker the model has memorized rather than a biological mechanism -> brittle to assay changes.",
+        "[clinical_translation_safety_agent] Lack of an abstention pathway -> model produces a recommendation even when out-of-distribution detection should trigger 'defer to clinician'.",
+        "[clinical_translation_safety_agent] No analytical validity metrics provided; the model has not even cleared the first rung of the CLIA-adjacent ladder.",
+        "[clinical_translation_safety_agent] No OOD detector present: the model cannot recognize when a patient lies outside its training distribution and will still emit a confident recommendation."
+      ],
+      "required_changes": [
+        "add a pre-registered safety note for 'Panobinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Vorinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Romidepsin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Venetoclax' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Dinaciclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Palbociclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Doxorubicin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Etoposide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "add a pre-registered safety note for 'Cyclophosphamide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+        "report analytical validity metrics on a held-out test set (intake['analytical_validity_metrics'])",
+        "demonstrate clinical validity in an INDEPENDENT cohort (intake['clinical_validity_evidence']) before any clinical claim is made",
+        "demonstrate clinical utility in a prospective decision-impact study (intake['clinical_utility_evidence']) before any clinical-utility claim is made",
+        "report per-subgroup metrics for at least: cytogenetic risk (standard / high), age stratum, sex, race/ethnicity, prior lines of therapy, ISS stage",
+        "add an OOD detector and route OOD patients to a 'defer to clinician' abstention path",
+        "report abstention_rate so reviewers can see how often the model defers vs. acts",
+        "Expose train/val/test patient-id manifests so the leakage scan can run on real splits.",
+        "Add a latent identifiability constraint (e.g., orthogonal anchors, contrastive supervision, or fixed reference samples) before any latent-axis interpretation is reported.",
+        "Calibrate ODE integration time to calendar time using a paired longitudinal dataset before emitting any time-stamped resistance forecasts.",
+        "calibrate ODE time to calendar time before claiming time-to-event predictions at 3/6/12 months",
+        "Tier C forecasting agent must report ECE per ancestry subgroup, not just overall.",
+        "Provide a patient manifest at data/raw/mmrf_commpass/patient_manifest.csv including self-reported ancestry and a documented missingness rate.",
+        "Document SES proxy availability and handling (or explicit absence) for every cohort.",
+        "Run pathway attribution against a degree-preserving rewired PPI null and report effect-size relative to that null.",
+        "Run leave-one-modality-out ablations and report the predicted performance drop for each modality; missing or zero-drop modalities indicate collapse.",
+        "Provide a per-patient manifest at data/raw/mmrf_commpass/patient_manifest.csv with treatment_line and sample_site columns.",
+        "Add a resistance label provenance memo at data/raw/mmrf_commpass/resistance_label_definition.md covering primary vs secondary, thresholding rule, and the source feature.",
+        "Wire a single-cell loader and declare cell-type vs state granularity in the data manifest.",
+        "Compute kBET / iLISI on the harmonised matrices and record it as evidence under batch_effects_assessed.",
+        "Declare whether modalities share cells (paired) or are bridged by imputation, and bound the alignment error.",
+        "Either upgrade the PPI graph (newer STRING release / lower confidence cutoff) or restrict target_drugs to the drugs whose targets are present in the graph.",
+        "Author a selection-bias memo at data/raw/mmrf_commpass/ancestry_distribution.md covering CCLE cell-line ancestry, GDSC sourcing, and MMRF enrolment criteria.",
+        "Implement resistancemap.evaluation.metrics.shift.compute_shift and re-run; this agent will pick it up automatically.",
+        "Provide all of ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores'] in intake before re-running CellStateTrajectoryAgent.",
+        "Provide all of ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn'] in intake before re-running PathwayPPIReasoningAgent.",
+        "compute predictions for each baseline in resistancemap.evaluation.baselines on the pre-specified splits and pass them in intake['baseline_predictions']"
+      ]
+    }
+  ],
+  "overall_verdict": "fail",
+  "maturity_grade": {
+    "trl": 1,
+    "justification": "Hard-stop: 2 FAIL / 0 BLOCKED of 10 findings.",
+    "counts": {
+      "total": 10,
+      "pass": 0,
+      "fail": 2,
+      "blocked": 0,
+      "skipped": 5,
+      "conditional": 3
+    }
+  },
+  "required_changes": [
+    "Provide a per-patient manifest at data/raw/mmrf_commpass/patient_manifest.csv with treatment_line and sample_site columns.",
+    "Add a resistance label provenance memo at data/raw/mmrf_commpass/resistance_label_definition.md covering primary vs secondary, thresholding rule, and the source feature.",
+    "Expose train/val/test patient-id manifests so the leakage scan can run on real splits.",
+    "Wire a single-cell loader and declare cell-type vs state granularity in the data manifest.",
+    "Compute kBET / iLISI on the harmonised matrices and record it as evidence under batch_effects_assessed.",
+    "Declare whether modalities share cells (paired) or are bridged by imputation, and bound the alignment error.",
+    "Either upgrade the PPI graph (newer STRING release / lower confidence cutoff) or restrict target_drugs to the drugs whose targets are present in the graph.",
+    "Author a selection-bias memo at data/raw/mmrf_commpass/ancestry_distribution.md covering CCLE cell-line ancestry, GDSC sourcing, and MMRF enrolment criteria.",
+    "Provide a patient manifest at data/raw/mmrf_commpass/patient_manifest.csv including self-reported ancestry and a documented missingness rate.",
+    "Document SES proxy availability and handling (or explicit absence) for every cohort.",
+    "Implement resistancemap.evaluation.metrics.shift.compute_shift and re-run; this agent will pick it up automatically.",
+    "Tier C forecasting agent must report ECE per ancestry subgroup, not just overall.",
+    "Add a latent identifiability constraint (e.g., orthogonal anchors, contrastive supervision, or fixed reference samples) before any latent-axis interpretation is reported.",
+    "Calibrate ODE integration time to calendar time using a paired longitudinal dataset before emitting any time-stamped resistance forecasts.",
+    "Run pathway attribution against a degree-preserving rewired PPI null and report effect-size relative to that null.",
+    "Run leave-one-modality-out ablations and report the predicted performance drop for each modality; missing or zero-drop modalities indicate collapse.",
+    "Provide all of ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores'] in intake before re-running CellStateTrajectoryAgent.",
+    "Provide all of ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn'] in intake before re-running PathwayPPIReasoningAgent.",
+    "calibrate ODE time to calendar time before claiming time-to-event predictions at 3/6/12 months",
+    "compute predictions for each baseline in resistancemap.evaluation.baselines on the pre-specified splits and pass them in intake['baseline_predictions']",
+    "add a pre-registered safety note for 'Panobinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Vorinostat' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Romidepsin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Venetoclax' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Dinaciclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Palbociclib' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Doxorubicin' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Etoposide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "add a pre-registered safety note for 'Cyclophosphamide' to ClinicalTranslationSafetyAgent.DRUG_SAFETY_NOTES",
+    "report analytical validity metrics on a held-out test set (intake['analytical_validity_metrics'])",
+    "demonstrate clinical validity in an INDEPENDENT cohort (intake['clinical_validity_evidence']) before any clinical claim is made",
+    "demonstrate clinical utility in a prospective decision-impact study (intake['clinical_utility_evidence']) before any clinical-utility claim is made",
+    "report per-subgroup metrics for at least: cytogenetic risk (standard / high), age stratum, sex, race/ethnicity, prior lines of therapy, ISS stage",
+    "add an OOD detector and route OOD patients to a 'defer to clinician' abstention path",
+    "report abstention_rate so reviewers can see how often the model defers vs. acts"
+  ],
+  "verification_chain": [
+    "2bf123fd625102fa1833c6ba88487cd68b313346a16e7e8a7e2a03745077011e",
+    "f6d43a750e6bccaf74b6ab878d526dfc36e8a58043b5698efe9f027773547e2f",
+    "864ce7e48e9b54c191fc0f6dc0000c4f01b4f648a2bcdfc70947e1439fe1a513",
+    "ec37425186a3ef544e754fe28405f302f3fa78983a3afaf729f84d32592a93c1",
+    "52343866da942371a67425a2b46037d13f7790c7b2f52550bcbe57952aadacc1",
+    "aaf9a2cae669fa9545e2b4b83e4012c784d819930c962b7a4984b87f21d672e0",
+    "caa7571cc1281a6ff2b41c18d3a31e5cdddf70d83b0555eef2277a78d3214142",
+    "32700af2f45ef458817fdbdf8f6ea5af74ff220a0cb960dc9d9c6f74b8893ac0",
+    "4d1b1265317a7147ab6bd7724e4bad38b8a1e4ebe46bfae612962df42f31d7db",
+    "037e78cbe07a3dcb8247eabaeedda577ad4c4a91044011eb155c2dd1a88a8bed"
+  ],
+  "timing": {
+    "eval_data_adequacy": 0.00035452842712402344,
+    "eval_measurement_integration": 10.665087699890137,
+    "eval_bias_fairness_shift": 0.0008482933044433594,
+    "architecture_auditor": 0.0001952648162841797,
+    "cell_state_trajectory": 0.0006248950958251953,
+    "pathway_ppi_reasoning": 0.00013256072998046875,
+    "forecasting_uncertainty_agent": 5.412101745605469e-05,
+    "baseline_adversary_agent": 6.532669067382812e-05,
+    "clinical_translation_safety_agent": 0.000118255615234375,
+    "principal_integrator_agent": 0.0005979537963867188
+  },
+  "charter_notes": [],
+  "metadata": {}
+}

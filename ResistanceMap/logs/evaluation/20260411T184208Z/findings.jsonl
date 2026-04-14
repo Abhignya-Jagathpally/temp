@@ -1,0 +1,4 @@
+{"agent_name": "a1", "tier": "A", "verdict": "pass", "score": 1.0, "criteria_results": {"fake_criterion": true}, "evidence": ["in-process fixture"], "failure_modes": [], "required_changes": []}
+{"agent_name": "b1", "tier": "B", "verdict": "pass", "score": 1.0, "criteria_results": {"fake_criterion": true}, "evidence": ["in-process fixture"], "failure_modes": [], "required_changes": []}
+{"agent_name": "c1", "tier": "C", "verdict": "pass", "score": 1.0, "criteria_results": {"fake_criterion": true}, "evidence": ["in-process fixture"], "failure_modes": [], "required_changes": []}
+{"agent_name": "d1", "tier": "D", "verdict": "pass", "score": 1.0, "criteria_results": {"fake_criterion": true}, "evidence": ["in-process fixture"], "failure_modes": [], "required_changes": []}

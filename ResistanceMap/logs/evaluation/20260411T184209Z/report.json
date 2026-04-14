@@ -1,0 +1,71 @@
+{
+  "run_id": "20260411T184209Z",
+  "per_tier_verdicts": {
+    "A": "pass",
+    "B": "pass",
+    "C": {},
+    "D": {}
+  },
+  "per_tier_agent_verdicts": {
+    "A": {
+      "a1": "pass"
+    },
+    "B": {
+      "b1": "pass"
+    }
+  },
+  "findings": [
+    {
+      "agent_name": "a1",
+      "tier": "A",
+      "verdict": "pass",
+      "score": 1.0,
+      "criteria_results": {
+        "fake_criterion": true
+      },
+      "evidence": [
+        "in-process fixture"
+      ],
+      "failure_modes": [],
+      "required_changes": []
+    },
+    {
+      "agent_name": "b1",
+      "tier": "B",
+      "verdict": "pass",
+      "score": 1.0,
+      "criteria_results": {
+        "fake_criterion": true
+      },
+      "evidence": [
+        "in-process fixture"
+      ],
+      "failure_modes": [],
+      "required_changes": []
+    }
+  ],
+  "overall_verdict": "pass",
+  "maturity_grade": {
+    "trl": 4,
+    "justification": "All evaluation criteria PASS; component-level lab validation.",
+    "counts": {
+      "total": 2,
+      "pass": 2,
+      "fail": 0,
+      "blocked": 0,
+      "skipped": 0,
+      "conditional": 0
+    }
+  },
+  "required_changes": [],
+  "verification_chain": [
+    "e2054e3433405959c8647efb6de67e46c748defac0f1b5efa3b8ddf987252966",
+    "10e689c679293d4945c20350dae35e9c96ca89868390d939ea6cf5bd6c442a49"
+  ],
+  "timing": {
+    "a1": 0.050168514251708984,
+    "b1": 0.05011463165283203
+  },
+  "charter_notes": [],
+  "metadata": {}
+}

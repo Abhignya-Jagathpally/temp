@@ -1,0 +1,91 @@
+2026-04-14 09:44:47 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-14 09:44:47 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-14 09:44:47 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-04-14 09:44:47 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-04-14 09:44:47 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-04-14 09:44:47 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-04-14 09:44:47 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-04-14 09:44:47 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-04-14 09:44:47 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:44:47 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-04-14 09:44:47 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-04-14 09:44:47 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-04-14 09:44:47 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-04-14 09:44:47 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-13T06:59:07.032158+00:00)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-04-14 09:44:47 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-04-14 09:44:47 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-04-14 09:44:48 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-13T06:59:07.032158+00:00)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.specialized | ESM-2 embed: validated 19177 proteins for model facebook/esm2_t33_650M_UR50D
+2026-04-14 09:44:48 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-04-14 09:44:48 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-04-13T07:00:51.838576+00:00)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=a10dd06d...)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-04-14 09:44:48 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-13T07:01:06.723519+00:00)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-04-14 09:44:48 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-13T07:03:54.503927+00:00)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=f775403a...)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-04-14 09:44:48 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-04-14 09:44:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-04-13T07:11:29.066928+00:00)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=d7fbe35e...)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-04-14 09:44:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-04-13T07:19:10.792556+00:00)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=completed)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator |   fusion: COMPLETED (hash=08bd0faf...)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.base | landscape: Starting execution
+2026-04-14 09:44:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-04-13T07:19:11.928657+00:00)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.base | landscape: Execution complete (status=completed)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator |   landscape: COMPLETED (hash=f980a022...)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.base | validation: Starting execution
+2026-04-14 09:44:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/pipeline_validated.pt (saved 2026-04-13T07:19:12.594460+00:00)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.base | validation: Execution complete (status=completed)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator |   validation: COMPLETED (hash=d56df36f...)
+2026-04-14 09:44:50 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 3.6s. Completed: 10/10
+2026-04-14 09:44:50 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:44:50 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-04-14 09:44:50 | INFO    | resistancemap.main |   Total time: 3.7s
+2026-04-14 09:44:50 | INFO    | resistancemap.main |   Agents completed: 10/10
+2026-04-14 09:44:50 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-04-14 09:44:50 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:44:50 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+
+============================================================
+ResistanceMap Pipeline Complete
+  Mode: Agentic (DAG parallel execution)
+  Agents: 10/10 completed
+  Layers: 9
+  Verification chain: 10 hashes
+  Elapsed: 3.7s
+============================================================
+

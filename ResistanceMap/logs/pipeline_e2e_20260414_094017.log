@@ -1,0 +1,126 @@
+2026-04-14 09:40:20 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-14 09:40:20 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-14 09:40:20 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-04-14 09:40:20 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-04-14 09:40:20 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-04-14 09:40:20 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-04-14 09:40:20 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-04-14 09:40:20 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:40:20 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-04-14 09:40:20 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-04-14 09:40:20 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-04-14 09:40:20 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.specialized | DataPrepAgent failed
+Traceback (most recent call last):
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/resistancemap/agents/specialized.py", line 115, in execute
+    ckpt = ckpt_mgr.load("data_ready")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/resistancemap/utils/checkpoint.py", line 124, in load
+    state = torch.load(ckpt_path, map_location=map_location, weights_only=True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/venv/lib/python3.12/site-packages/torch/serialization.py", line 1359, in load
+    raise pickle.UnpicklingError(_get_wo_message(str(e))) from None
+_pickle.UnpicklingError: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=failed)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   data_prep: FAILED (Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   vae_pretrain: FAILED (Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   esm2_embed: FAILED (Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   vae_finetune: FAILED (Dependency vae_pretrain failed: Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   trajectory: FAILED (Dependency vae_finetune failed: Dependency vae_pretrain failed: Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   protein_net: FAILED (Dependency esm2_embed failed: Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   fusion: FAILED (Dependency trajectory failed: Dependency vae_finetune failed: Dependency vae_pretrain failed: Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   landscape: FAILED (Dependency fusion failed: Dependency trajectory failed: Dependency vae_finetune failed: Dependency vae_pretrain failed: Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-04-14 09:40:20 | ERROR   | resistancemap.agents.orchestrator |   validation: FAILED (Dependency landscape failed: Dependency fusion failed: Dependency trajectory failed: Dependency vae_finetune failed: Dependency vae_pretrain failed: Dependency data_prep failed: Data prep failed: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL resistancemap.data.loaders.MultiOmicsDataset was not an allowed global by default. Please use `torch.serialization.add_safe_globals([MultiOmicsDataset])` to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.)
+2026-04-14 09:40:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 0.4s. Completed: 1/10
+2026-04-14 09:40:20 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:40:20 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Total time: 0.5s
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Agents completed: 1/10
+2026-04-14 09:40:20 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-04-14 09:40:20 | WARNING | resistancemap.main |   Failed agents: ['data_prep', 'vae_pretrain', 'esm2_embed', 'vae_finetune', 'trajectory', 'protein_net', 'fusion', 'landscape', 'validation']
+2026-04-14 09:40:20 | INFO    | resistancemap.main | ========================================================================
+2026-04-14 09:40:20 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+
+============================================================
+ResistanceMap Pipeline Complete
+  Mode: Agentic (DAG parallel execution)
+  Agents: 1/10 completed
+  Layers: 9
+  Verification chain: 10 hashes
+  Elapsed: 0.5s
+  FAILED: ['data_prep', 'vae_pretrain', 'esm2_embed', 'vae_finetune', 'trajectory', 'protein_net', 'fusion', 'landscape', 'validation']
+============================================================
+

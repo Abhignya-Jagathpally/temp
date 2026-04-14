@@ -1,0 +1,70 @@
+{
+  "run_id": "20260411T183938Z",
+  "per_tier_verdicts": {
+    "A": {
+      "a1": "fail"
+    },
+    "B": {
+      "b1": "blocked"
+    },
+    "C": {},
+    "D": {}
+  },
+  "findings": [
+    {
+      "agent_name": "a1",
+      "tier": "A",
+      "verdict": "fail",
+      "score": 0.0,
+      "criteria_results": {},
+      "evidence": {},
+      "failure_modes": [
+        "Agent did not return an EvalFinding (status=completed)"
+      ],
+      "required_changes": [
+        "Have the agent's assess() return an EvalFinding."
+      ]
+    },
+    {
+      "agent_name": "b1",
+      "tier": "B",
+      "verdict": "blocked",
+      "score": 0.0,
+      "criteria_results": {},
+      "evidence": {},
+      "failure_modes": [
+        "Tier A hard-stop: a1 returned FAIL"
+      ],
+      "required_changes": [
+        "Resolve the upstream Tier A failure, then re-run."
+      ]
+    }
+  ],
+  "overall_verdict": "fail",
+  "maturity_grade": {
+    "trl": 1,
+    "justification": "Hard-stop: 1 FAIL / 1 BLOCKED of 2 findings.",
+    "counts": {
+      "total": 2,
+      "pass": 0,
+      "fail": 1,
+      "blocked": 1,
+      "skipped": 0,
+      "conditional": 0
+    }
+  },
+  "required_changes": [
+    "Have the agent's assess() return an EvalFinding.",
+    "Resolve the upstream Tier A failure, then re-run."
+  ],
+  "verification_chain": [
+    "f0b323c61cd0ca1db64acb46e183789bda9d2e94b1f6ead698fa5b8f1cbe18d9",
+    "efef57b8aea18caa22ed08991a131faee1b9f8456b4bcf106c03189d86dc3640"
+  ],
+  "timing": {
+    "a1": 0.05013132095336914,
+    "b1": 0.0
+  },
+  "charter_notes": [],
+  "metadata": {}
+}

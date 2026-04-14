@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-04-14T14:44:50.953640",
+  "observability": {
+    "total_traces": 0,
+    "total_spans": 0,
+    "total_duration_ms": 0,
+    "total_cost_usd": 0,
+    "total_tokens": 0,
+    "agent_handoff_latencies_ms": {},
+    "tool_execution_latencies_ms": {}
+  },
+  "evaluation": {
+    "task_completion_rate": 0.0,
+    "guardrail_violation_rate": 0.0,
+    "factual_accuracy_rate": 0.0,
+    "clinical_appropriateness": 0.0,
+    "first_pass_approval_rate": 0.0,
+    "violations_by_type": {},
+    "violations_by_severity": {}
+  },
+  "optimization": {
+    "prompt_token_efficiency": 0.0,
+    "retrieval_precision_at_k": {
+      "1": 0.0,
+      "5": 0.0,
+      "10": 0.0
+    },
+    "handoff_success_rate": 0.0,
+    "flow_step_efficiency": 0.0,
+    "improvement_velocity": 0.0,
+    "total_tokens_saved": 0,
+    "total_steps_eliminated": 0
+  },
+  "agent_performance": [],
+  "optimization_suggestions": [
+    "Token efficiency below 70%: Consider summarizing inputs or using more targeted prompts",
+    "Retrieval precision@1 below 50%: Improve query formulation or relevance ranking",
+    "Handoff success rate below 90%: Improve agent communication protocols or context passing",
+    "Flow step efficiency below 70%: 0 steps are unnecessary - simplify workflow"
+  ]
+}
