@@ -397,10 +397,12 @@ class ConformalCalibrator(nn.Module):
                 y_calib - y_upper,
             )
 
-            # Quantile of nonconformity scores
-            q_idx = int(np.ceil((len(y_calib) + 1) * (1 - self.alpha / 2) / len(y_calib)))
-            q_idx = min(q_idx, len(nonconformity) - 1)
-            self.q_hat = torch.quantile(nonconformity, q_idx / len(nonconformity))
+            # Quantile of nonconformity scores: for (1-alpha) coverage, use ceil((n+1)*(1-alpha))/n
+            # This gives the correct tail quantile without double normalization
+            n = len(y_calib)
+            q_level = np.ceil((n + 1) * (1 - self.alpha)) / n
+            q_level = min(q_level, 1.0)  # Ensure quantile is in [0, 1]
+            self.q_hat = torch.quantile(nonconformity, q_level, method='higher')
             self.calibrated = True
 
         logger.info(f"ConformalCalibrator calibrated with q_hat={self.q_hat.item():.4f}")

@@ -193,7 +193,7 @@ class EvidentialResistanceHead(nn.Module):
             alpha: (batch_size, n_states) concentration parameters.
 
         Returns:
-            (batch_size,) aleatoric uncertainty per sample.
+            (batch_size,) aleatoric uncertainty per sample, guaranteed non-negative.
         """
         S = torch.sum(alpha, dim=-1)
 
@@ -201,6 +201,9 @@ class EvidentialResistanceHead(nn.Module):
         # Approximation: (K - S) / (S * (S + 1)) where K = n_states
         K = float(self.n_states)
         aleatoric = (K - S) / (S * (S + 1.0))
+
+        # Ensure non-negative: clamp to [0, inf)
+        aleatoric = torch.clamp(aleatoric, min=0.0)
 
         return aleatoric
 
@@ -217,6 +220,12 @@ class ResistanceLandscape(nn.Module):
 
     Optionally supports evidential uncertainty quantification via Dirichlet distribution
     for state prediction, providing epistemic and aleatoric uncertainty estimates.
+
+    ARCHITECTURAL NOTE: This landscape predictor produces predictions that may conflict with
+    the trajectory forecaster's outputs. Downstream consumers should use one or the other,
+    or explicitly combine them with a documented fusion strategy. The landscape output is
+    for current state prediction and future resistance trajectory, while trajectory forecaster
+    predicts time-indexed survival/event probabilities.
 
     Architecture:
     - Input: fused_dim (from L4)
@@ -444,15 +453,17 @@ class ResistanceLandscapePredictor:
         target_scores = outputs["target_scores"].squeeze(0)  # (n_proteins,)
 
         # Parse drug resistance by timepoint
+        # Reshape flat output (n_drugs * n_timepoints,) to (n_drugs, n_timepoints)
         drug_probs_np = drug_probs.cpu().numpy()
+        drug_probs_reshaped = drug_probs_np.reshape(len(self.drug_names), self.model.n_timepoints)
         drug_resistance_3m = {}
         drug_resistance_6m = {}
         drug_resistance_12m = {}
 
         for i, drug_name in enumerate(self.drug_names):
-            drug_resistance_3m[drug_name] = float(drug_probs_np[i * 3])
-            drug_resistance_6m[drug_name] = float(drug_probs_np[i * 3 + 1])
-            drug_resistance_12m[drug_name] = float(drug_probs_np[i * 3 + 2])
+            drug_resistance_3m[drug_name] = float(drug_probs_reshaped[i, 0])
+            drug_resistance_6m[drug_name] = float(drug_probs_reshaped[i, 1])
+            drug_resistance_12m[drug_name] = float(drug_probs_reshaped[i, 2])
 
         # Handle evidential vs standard state output
         if self.model.use_evidential:
@@ -561,15 +572,17 @@ class ResistanceLandscapePredictor:
         results = []
         for i in range(batch_size):
             # Extract drug resistance by timepoint for this sample
+            # Reshape flat output (n_drugs * n_timepoints,) to (n_drugs, n_timepoints)
             drug_probs_np = drug_probs[i].cpu().numpy()
+            drug_probs_reshaped = drug_probs_np.reshape(len(self.drug_names), self.model.n_timepoints)
             drug_resistance_3m = {}
             drug_resistance_6m = {}
             drug_resistance_12m = {}
 
             for j, drug_name in enumerate(self.drug_names):
-                drug_resistance_3m[drug_name] = float(drug_probs_np[j * 3])
-                drug_resistance_6m[drug_name] = float(drug_probs_np[j * 3 + 1])
-                drug_resistance_12m[drug_name] = float(drug_probs_np[j * 3 + 2])
+                drug_resistance_3m[drug_name] = float(drug_probs_reshaped[j, 0])
+                drug_resistance_6m[drug_name] = float(drug_probs_reshaped[j, 1])
+                drug_resistance_12m[drug_name] = float(drug_probs_reshaped[j, 2])
 
             # Determine current state (argmax)
             current_state_idx = int(np.argmax(state_probs[i]))

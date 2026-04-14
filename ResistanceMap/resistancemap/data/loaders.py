@@ -51,6 +51,7 @@ class MultiOmicsDataset(Dataset):
         drug_names: Optional[list[str]] = None,
         drug_target_mean: Optional[torch.Tensor] = None,
         drug_target_std: Optional[torch.Tensor] = None,
+        patient_ids: Optional[list[str]] = None,
     ) -> None:
         """Initialize MultiOmicsDataset.
 
@@ -65,8 +66,34 @@ class MultiOmicsDataset(Dataset):
             ppi_edges: Optional PPI edges for graph construction.
             ppi_scores: Optional PPI confidence scores.
             source: Source label for the data.
+            patient_ids: Optional list of patient IDs for group-stratified splits.
         """
-        assert proteomics.shape[0] == epigenomics.shape[0] == len(sample_ids)
+        # Validate all 5 required input dimensions
+        n_samples = proteomics.shape[0]
+        assert (
+            epigenomics.shape[0] == n_samples
+        ), f"epigenomics shape {epigenomics.shape[0]} != proteomics {n_samples}"
+        assert (
+            len(sample_ids) == n_samples
+        ), f"sample_ids count {len(sample_ids)} != proteomics {n_samples}"
+        assert (
+            len(lineage) == n_samples
+        ), f"lineage count {len(lineage)} != proteomics {n_samples}"
+        assert (
+            drug_sensitivity.shape[0] == n_samples
+        ), f"drug_sensitivity shape {drug_sensitivity.shape[0]} != proteomics {n_samples}"
+        if patient_ids is not None:
+            assert (
+                len(patient_ids) == n_samples
+            ), f"patient_ids count {len(patient_ids)} != proteomics {n_samples}"
+
+        # Validate feature dimensions
+        assert (
+            len(protein_names) == proteomics.shape[1]
+        ), f"protein_names count {len(protein_names)} != proteomics features {proteomics.shape[1]}"
+        assert (
+            len(epigenome_feature_names) == epigenomics.shape[1]
+        ), f"epigenome_feature_names count {len(epigenome_feature_names)} != epigenomics features {epigenomics.shape[1]}"
         self.proteomics = proteomics
         self.epigenomics = epigenomics
         self.sample_ids = sample_ids
@@ -83,6 +110,7 @@ class MultiOmicsDataset(Dataset):
         self.drug_names = drug_names
         self.drug_target_mean = drug_target_mean
         self.drug_target_std = drug_target_std
+        self.patient_ids = patient_ids
 
     def __len__(self) -> int:
         return self.proteomics.shape[0]
@@ -98,6 +126,11 @@ class MultiOmicsDataset(Dataset):
         """Return a new dataset filtered to specific tissue lineages."""
         mask = [lin in lineages for lin in self.lineage]
         indices = [i for i, m in enumerate(mask) if m]
+        patient_ids_subset = (
+            [self.patient_ids[i] for i in indices]
+            if self.patient_ids is not None
+            else None
+        )
         return MultiOmicsDataset(
             proteomics=self.proteomics[indices],
             epigenomics=self.epigenomics[indices],
@@ -112,6 +145,7 @@ class MultiOmicsDataset(Dataset):
             drug_names=self.drug_names,
             drug_target_mean=self.drug_target_mean,
             drug_target_std=self.drug_target_std,
+            patient_ids=patient_ids_subset,
         )
 
 

@@ -129,7 +129,15 @@ async def run_agentic_pipeline(config: ResistanceMapConfig) -> dict:
     config._ckpt_mgr = ckpt_mgr  # shared by all agents via _get_ckpt_mgr()
 
     if config.hardware.deterministic:
+        import random
+        random.seed(config.hardware.seed)
+        np.random.seed(config.hardware.seed)
+        torch.manual_seed(config.hardware.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(config.hardware.seed)
         torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     # ── 1. Build and validate DAG ────────────────────────────────────────
     orchestrator = build_agent_dag()
@@ -306,6 +314,7 @@ def prepare_data(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
 
 def pretrain_vae(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
     """Pretrain the conditional VAE on pan-cancer CCLE data."""
+    import copy
     from resistancemap.models.vae import ProteomeToEpigenomeVAE, train_vae
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
@@ -315,16 +324,17 @@ def pretrain_vae(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     log_stage_start("vae_pretrain")
     data_ckpt = ckpt_mgr.load("data_ready")
     dataset = data_ckpt["dataset"]
-    config.vae.input_dim = dataset.proteomics.shape[1]
-    config.vae.epigenome_dim = dataset.epigenomics.shape[1]
+    local_config = copy.deepcopy(config)
+    local_config.vae.input_dim = dataset.proteomics.shape[1]
+    local_config.vae.epigenome_dim = dataset.epigenomics.shape[1]
 
-    model = ProteomeToEpigenomeVAE(config.vae).to(config.device)
-    model = _maybe_compile(model, config)
-    model = _maybe_distribute(model, config)
+    model = ProteomeToEpigenomeVAE(local_config.vae).to(local_config.device)
+    model = _maybe_compile(model, local_config)
+    model = _maybe_distribute(model, local_config)
 
     result = train_vae(
         model=model, dataset=dataset, splits=data_ckpt["splits"],
-        config=config.vae, subset="pan_cancer", ckpt_mgr=ckpt_mgr, stage_name="vae_pretrained",
+        config=local_config.vae, subset="pan_cancer", ckpt_mgr=ckpt_mgr, stage_name="vae_pretrained",
     )
     log_stage_end("vae_pretrain", metrics=result["metrics"])
     return result["checkpoint_path"]
@@ -503,7 +513,7 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
             count = 0
 
             for si in range(bi, min(bi + pn_inner_batch, len(train_idx))):
-                idx = train_idx[perm[si]]
+                idx = train_idx[int(perm[si])]
                 # Build 66-dim node features for this sample
                 prot_vals = dataset.proteomics[idx].to(device).unsqueeze(-1)  # (P, 1)
                 latent_broadcast = all_latents[idx].to(device).unsqueeze(0).expand(n_proteins, -1)  # (P, 64)
@@ -694,7 +704,7 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
 
         for bi in range(0, len(train_idx), 64):
             batch_end = min(bi + 64, len(train_idx))
-            idxs = [train_idx[perm[j]] for j in range(bi, batch_end)]
+            idxs = [train_idx[int(perm[j])] for j in range(bi, batch_end)]
 
             epi_b = epi_states[idxs].to(device)
             traj_b = traj_states[idxs].to(device)
@@ -838,7 +848,7 @@ def train_landscape(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) ->
 
         for bi in range(0, len(train_idx), 64):
             batch_end = min(bi + 64, len(train_idx))
-            idxs = [train_idx[perm[j]] for j in range(bi, batch_end)]
+            idxs = [train_idx[int(perm[j])] for j in range(bi, batch_end)]
 
             fused_b = fused_reprs[idxs].to(device)
             target_b = dataset.drug_sensitivity[idxs].to(device)

@@ -232,9 +232,8 @@ class ResistanceMapPipeline:
                 # Import GNN model (assumes it's in protein_network module)
                 from resistancemap.models.protein_network import PPIGraphNetwork
                 gnn_model = PPIGraphNetwork(
-                    input_dim=config.get("esm2_dim", 1280),
+                    in_dim=config.get("esm2_dim", 1280),
                     hidden_dim=config.get("gnn_hidden", 256),
-                    output_dim=config.get("gnn_output_dim", 256),
                     n_layers=config.get("gnn_layers", 4),
                     n_heads=config.get("gnn_heads", 8),
                     dropout=config.get("gnn_dropout", 0.2),
@@ -453,10 +452,12 @@ class ResistanceMapPipeline:
             except Exception as e:
                 logger.warning(f"L3 GNN propagation failed: {e}. Using projection of proteomics.")
                 # Fallback: project proteomics to expected GNN output dimension
-                protein_network_output = torch.zeros(1, 256, device=self.device)
+                gnn_dim = self.config.get("gnn_hidden", 256)
+                protein_network_output = torch.zeros(1, gnn_dim, device=self.device)
         else:
             logger.warning("L3: GNN model not available. Using zero vector as network output.")
-            protein_network_output = torch.zeros(1, 256, device=self.device)
+            gnn_dim = self.config.get("gnn_hidden", 256)
+            protein_network_output = torch.zeros(1, gnn_dim, device=self.device)
 
         # ========================= L4: Multi-Modal Fusion =========================
         fused_repr = None
@@ -499,6 +500,7 @@ class ResistanceMapPipeline:
             )
             fused_repr = torch.cat([fused_repr, padding], dim=-1)
         elif fused_repr.shape[-1] > fusion_dim:
+            logger.warning(f"Truncating fusion output from {fused_repr.shape[-1]} to {fusion_dim} dims")
             fused_repr = fused_repr[:, :fusion_dim]
 
         logger.debug(f"L4: Fusion output adjusted to shape {fused_repr.shape}")
@@ -546,18 +548,46 @@ class ResistanceMapPipeline:
             else:
                 batch_tensor = torch.tensor(batch_samples, dtype=torch.float32).to(self.device)
 
-            # Truncate to fusion_dim
-            fusion_dim = self.landscape_model.fusion_dim
-            batch_tensor = batch_tensor[:, :fusion_dim]
+            # Handle dimension issues
+            if batch_tensor.dim() == 1:
+                batch_tensor = batch_tensor.unsqueeze(0)  # Add batch dim
+            elif batch_tensor.dim() > 2:
+                # Flatten extra dimensions
+                batch_tensor = batch_tensor.reshape(batch_tensor.shape[0], -1)
 
-            # Pad if needed
-            if batch_tensor.shape[1] < fusion_dim:
+            # Normalize proteomics (L0)
+            prot_min = batch_tensor.min(dim=1, keepdim=True)[0]
+            prot_max = batch_tensor.max(dim=1, keepdim=True)[0]
+            batch_normalized = torch.where(
+                prot_max > prot_min,
+                (batch_tensor - prot_min) / (prot_max - prot_min),
+                batch_tensor
+            )
+
+            # Route through VAE encoder (L1) if available
+            if self.vae_model is not None:
+                try:
+                    mu, log_var = self.vae_model.encode(batch_normalized)
+                    batch_tensor = mu  # Use latent representation
+                    logger.debug(f"L1: VAE encoded batch. Shape: {batch_tensor.shape}")
+                except Exception as e:
+                    logger.warning(f"L1 VAE encoding failed: {e}. Using normalized proteomics.")
+                    batch_tensor = batch_normalized
+            else:
+                # Fallback to normalized proteomics
+                batch_tensor = batch_normalized
+
+            # Ensure output matches fusion_dim
+            fusion_dim = self.landscape_model.fusion_dim
+            if batch_tensor.shape[-1] < fusion_dim:
                 padding = torch.zeros(
                     batch_tensor.shape[0],
-                    fusion_dim - batch_tensor.shape[1],
+                    fusion_dim - batch_tensor.shape[-1],
                     device=self.device
                 )
-                batch_tensor = torch.cat([batch_tensor, padding], dim=1)
+                batch_tensor = torch.cat([batch_tensor, padding], dim=-1)
+            elif batch_tensor.shape[-1] > fusion_dim:
+                batch_tensor = batch_tensor[:, :fusion_dim]
 
             # Predict batch
             batch_results = self.landscape_predictor.predict_batch(batch_tensor)

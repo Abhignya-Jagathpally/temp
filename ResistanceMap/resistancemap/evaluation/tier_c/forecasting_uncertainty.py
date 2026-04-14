@@ -236,7 +236,7 @@ class ForecastingUncertaintyAgent(EvalAgent):
                         if y_true_event.ndim == 2
                         else y_true_event
                     )
-                    ece = float(expected_calibration_error(labels_h, risks_h))
+                    ece = float(expected_calibration_error(risks_h, labels_h))
                     curve = reliability_curve(labels_h, risks_h)
                     calibration_per_horizon[f"h={h}"] = {
                         "ece": ece,
@@ -264,9 +264,14 @@ class ForecastingUncertaintyAgent(EvalAgent):
             and pinball_loss is not None
         ):
             try:
-                pl = float(
-                    pinball_loss(y_true_time, y_pred_quantiles, quantile_levels)
-                )
+                # Compute pinball loss by averaging over quantiles
+                pl_values = []
+                for q_idx, q_level in enumerate(quantile_levels):
+                    # Extract quantile predictions for this level
+                    q_preds = y_pred_quantiles[:, :, q_idx] if y_pred_quantiles.ndim == 3 else y_pred_quantiles[:, q_idx]
+                    loss_q = pinball_loss(y_true_time, q_preds, q_level)
+                    pl_values.append(loss_q)
+                pl = float(np.mean(pl_values))
                 criteria_results["pinball_loss"] = pl
                 evidence["pinball_loss"] = pl
             except Exception as exc:  # pragma: no cover

@@ -78,12 +78,12 @@ def _softmax(logits: np.ndarray) -> np.ndarray:
         Probabilities of same shape, rows summing to 1.
     """
     if logits.ndim == 1:
-        # Binary: apply sigmoid
-        x = logits - np.max(logits, axis=0, keepdims=True)
+        # Binary: apply sigmoid with per-sample max normalization
+        x = logits - np.max(logits)
         ex = np.exp(x)
         return ex / (1.0 + ex)
     else:
-        # Multiclass: apply softmax
+        # Multiclass: apply softmax with per-sample max normalization
         x = logits - np.max(logits, axis=1, keepdims=True)
         ex = np.exp(x)
         return ex / ex.sum(axis=1, keepdims=True)
@@ -296,14 +296,18 @@ class IsotonicCalibrator:
         probs = np.asarray(probs, dtype=np.float64)
 
         if self._mode == "binary":
-            probs_cal = self._isotonic_regressors[1].transform(probs)
+            probs_cal = self._isotonic_regressors[1].predict(probs)
+            # Clamp to valid probability range [0, 1]
+            probs_cal = np.clip(probs_cal, 0.0, 1.0)
             return probs_cal
         else:
             probs_cal = np.zeros_like(probs)
             for k in range(self._n_classes):
-                probs_cal[:, k] = self._isotonic_regressors[k].transform(
+                probs_cal[:, k] = self._isotonic_regressors[k].predict(
                     probs[:, k]
                 )
+            # Clamp individual calibrated probabilities before renormalization
+            probs_cal = np.clip(probs_cal, 0.0, 1.0)
             # Renormalize to sum to 1
             row_sums = probs_cal.sum(axis=1, keepdims=True)
             row_sums = np.where(row_sums > 0, row_sums, 1.0)

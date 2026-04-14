@@ -399,6 +399,11 @@ def harmonize_omics(
     # two non-NaN observations are passed through unscaled with mean=0,
     # std=1 sentinels (the model will see them as zero-mean noise rather
     # than as exploded outliers).
+    #
+    # WARNING: This computes z-score statistics on the FULL dataset before
+    # train/test split. This causes data leakage: test set statistics influence
+    # training normalization. The fix is applied in build_train_val_test_splits()
+    # which re-normalizes using train-only statistics. See fit_on_train_only parameter.
     drug_target_mean = torch.zeros(raw_drug_tensor.shape[1])
     drug_target_std = torch.ones(raw_drug_tensor.shape[1])
     drug_tensor = raw_drug_tensor.clone()
@@ -464,31 +469,111 @@ def harmonize_omics(
     return dataset
 
 
+def _zscore_normalize_on_train(
+    data: torch.Tensor,
+    train_idx: np.ndarray,
+    fit_on_train_only: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Normalize using training statistics only to prevent data leakage.
+
+    Args:
+        data: Full tensor to normalize, shape (N, D).
+        train_idx: Integer array of training indices.
+        fit_on_train_only: If True, fit mean/std on train indices only.
+                          If False, fit on full data (legacy behavior).
+
+    Returns:
+        Tuple of (normalized_data, mean, std).
+    """
+    data_np = data.numpy() if isinstance(data, torch.Tensor) else data
+
+    if fit_on_train_only:
+        train_data = data_np[train_idx]
+        mean = np.nanmean(train_data, axis=0)
+        std = np.nanstd(train_data, axis=0) + 1e-8
+    else:
+        mean = np.nanmean(data_np, axis=0)
+        std = np.nanstd(data_np, axis=0) + 1e-8
+
+    normalized = (data_np - mean) / std
+
+    if isinstance(data, torch.Tensor):
+        normalized = torch.tensor(normalized, dtype=data.dtype)
+
+    return normalized, mean, std
+
+
 def build_train_val_test_splits(
     dataset: MultiOmicsDataset,
     config: DataConfig,
-) -> dict[str, list[int]]:
-    """Create stratified train/val/test splits.
+    fit_on_train_only: bool = True,
+) -> dict[str, np.ndarray]:
+    """Create stratified train/val/test splits with optional patient grouping.
 
-    Stratifies by lineage to ensure representation across splits.
+    If dataset has patient IDs, performs group-stratified splits to keep all samples
+    from the same patient in the same split. Otherwise, performs random splits.
+    Optionally re-normalizes drug targets using training statistics only
+    to prevent data leakage.
 
     Args:
         dataset: The MultiOmicsDataset to split.
         config: Data configuration with split fractions.
+        fit_on_train_only: If True, re-normalize drug targets using training
+                          statistics only. Prevents test data leakage.
 
     Returns:
-        Dict with keys 'train', 'val', 'test', each mapping to index lists.
+        Dict with keys 'train', 'val', 'test', each mapping to numpy arrays of indices.
     """
     n = len(dataset)
     rng = np.random.RandomState(config.random_seed)
-    indices = rng.permutation(n)
 
-    n_test = int(n * config.test_fraction)
-    n_val = int(n * config.val_fraction)
+    # Check for patient grouping
+    if hasattr(dataset, 'patient_ids') and dataset.patient_ids is not None:
+        from sklearn.model_selection import GroupShuffleSplit
 
-    test_idx = indices[:n_test].tolist()
-    val_idx = indices[n_test:n_test + n_val].tolist()
-    train_idx = indices[n_test + n_val:].tolist()
+        logger.info("Performing group-stratified splits by patient ID")
+        groups = np.asarray(dataset.patient_ids)
+
+        # Split into train+val and test
+        gss_test = GroupShuffleSplit(
+            n_splits=1,
+            test_size=config.test_fraction,
+            random_state=config.random_seed,
+        )
+        trainval_idx, test_idx = next(gss_test.split(np.zeros(n), groups=groups))
+
+        # Further split train+val into train and val
+        gss_val = GroupShuffleSplit(
+            n_splits=1,
+            test_size=config.val_fraction / (1 - config.test_fraction),
+            random_state=config.random_seed,
+        )
+        train_idx, val_idx = next(gss_val.split(trainval_idx, groups=groups[trainval_idx]))
+        train_idx = trainval_idx[train_idx]
+        val_idx = trainval_idx[val_idx]
+
+        logger.info("Group splits respect patient boundaries")
+    else:
+        # Fallback: simple random split
+        indices = rng.permutation(n)
+        n_test = int(n * config.test_fraction)
+        n_val = int(n * config.val_fraction)
+
+        test_idx = indices[:n_test]
+        val_idx = indices[n_test : n_test + n_val]
+        train_idx = indices[n_test + n_val :]
+
+    # Re-normalize drug targets using training statistics only
+    if fit_on_train_only and dataset.drug_sensitivity is not None:
+        drug_norm, train_mean, train_std = _zscore_normalize_on_train(
+            dataset.drug_sensitivity,
+            train_idx,
+            fit_on_train_only=True,
+        )
+        dataset.drug_sensitivity = drug_norm
+        dataset.drug_target_mean = torch.tensor(train_mean, dtype=torch.float32)
+        dataset.drug_target_std = torch.tensor(train_std, dtype=torch.float32)
+        logger.info("Re-normalized drug targets using training statistics only")
 
     logger.info(
         f"Splits: train={len(train_idx)}, val={len(val_idx)}, test={len(test_idx)}"

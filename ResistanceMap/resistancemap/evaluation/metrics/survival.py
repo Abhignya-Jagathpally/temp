@@ -160,7 +160,7 @@ def integrated_brier_score(
         contrib[mask_event] = np.where(
             np.isnan(contrib_e[mask_event]), 0.0, contrib_e[mask_event]
         )
-        # Category 2
+        # Category 2: Controls must also be weighted by IPCW at eval time
         if g_at_t > 0:
             contrib[mask_risk] = ((1.0 - surv_pred[mask_risk, k]) ** 2) / g_at_t
         bs_per_t[k] = contrib.sum() / n

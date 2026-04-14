@@ -381,13 +381,16 @@ def load_config(path: Path) -> ResistanceMapConfig:
         if section_name in raw:
             for key, value in raw[section_name].items():
                 if hasattr(section_obj, key):
-                    # Convert string paths to Path objects
+                    # Convert string paths to Path objects. Note: with
+                    # `from __future__ import annotations`, dataclass field
+                    # types are strings, so compare by name.
                     field_type = section_cls.__dataclass_fields__[key].type
-                    if field_type == Path or field_type == "Path":
+                    type_name = field_type if isinstance(field_type, str) else getattr(field_type, "__name__", str(field_type))
+                    if (type_name == "Path" or "Path" in type_name) and value is not None:
                         value = Path(value)
-                    elif field_type in (float, "float") and isinstance(value, str):
+                    elif type_name == "float" and isinstance(value, str):
                         value = float(value)
-                    elif field_type in (int, "int") and isinstance(value, str):
+                    elif type_name == "int" and isinstance(value, str):
                         value = int(value)
                     setattr(section_obj, key, value)
 

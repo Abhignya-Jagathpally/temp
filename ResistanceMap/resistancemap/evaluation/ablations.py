@@ -1,336 +1,911 @@
-"""Ablation framework.
-
-An ablation is a deliberate, falsifiable removal/replacement of a single
-architectural component, paired with a hypothesis about what it should
-break and a metric to measure the breakage. This module:
-
-1. Defines :class:`AblationSpec`, a frozen contract for one ablation.
-2. Pre-populates the canonical ablations for ResistanceMap.
-3. Provides :class:`AblationRunner`, which can either *describe* the
-   experiment as a JSON manifest (no model required) or *run* it via a
-   user-supplied model factory + bootstrap CIs on the metric delta.
-
-The runner does NOT execute training itself and does NOT fabricate metric
-values. Without a real model factory it raises a clear error rather than
-return synthetic numbers.
-"""
-
 from __future__ import annotations
 
-import json
 import logging
-from dataclasses import dataclass, asdict, field
-from pathlib import Path
-from typing import Any, Callable, Optional
+import json
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Optional, Tuple, Dict, Any, List
 
 import numpy as np
+import torch
+from scipy import stats
+from scipy.special import expit
+from sklearn.metrics import roc_auc_score, brier_score_loss
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class AblationSpec:
-    """A pre-registered ablation experiment.
+class TRIPODAIChecklist:
+    """TRIPOD+AI 27-item compliance checklist."""
 
-    Attributes:
-        name: Short identifier.
-        component: Architectural component being ablated.
-        scientific_hypothesis: What we believe the component contributes.
-        metric: Quantitative measurement used to detect the contribution.
-        falsifier: Empirical condition under which the hypothesis is
-            considered FALSIFIED (i.e. the ablation does NOT break what we
-            said it would, so the component is NOT pulling the weight we
-            attributed to it).
-        expected_effect_direction: One of {"decrease", "increase"} -- which
-            way the metric should move when the component is removed.
-        expected_effect_magnitude: Minimum effect size the ablation must
-            produce to be considered confirmatory.
-    """
+    title: str = ""
+    abstract: str = ""
+    introduction: str = ""
+    objectives: str = ""
+    data_source: str = ""
+    study_design: str = ""
+    participants: str = ""
+    outcome: str = ""
+    predictors: str = ""
+    sample_size: str = ""
+    missing_data: str = ""
+    statistical_methods: str = ""
+    model_selection: str = ""
+    model_training: str = ""
+    hyperparameters: str = ""
+    validation_strategy: str = ""
+    model_specification: str = ""
+    algorithm_architecture: str = ""
+    training_details: str = ""
+    validation_data: str = ""
+    results_performance: str = ""
+    discrimination: str = ""
+    calibration: str = ""
+    decision_curve: str = ""
+    discussion: str = ""
+    limitations: str = ""
+    conclusion: str = ""
+    availability: str = ""
 
-    name: str
-    component: str
-    scientific_hypothesis: str
-    metric: str
-    falsifier: str
-    expected_effect_direction: str
-    expected_effect_magnitude: float
+    def to_dict(self) -> Dict[str, str]:
+        """Convert to dict for easy scoring."""
+        return {
+            "title": self.title,
+            "abstract": self.abstract,
+            "introduction": self.introduction,
+            "objectives": self.objectives,
+            "data_source": self.data_source,
+            "study_design": self.study_design,
+            "participants": self.participants,
+            "outcome": self.outcome,
+            "predictors": self.predictors,
+            "sample_size": self.sample_size,
+            "missing_data": self.missing_data,
+            "statistical_methods": self.statistical_methods,
+            "model_selection": self.model_selection,
+            "model_training": self.model_training,
+            "hyperparameters": self.hyperparameters,
+            "validation_strategy": self.validation_strategy,
+            "model_specification": self.model_specification,
+            "algorithm_architecture": self.algorithm_architecture,
+            "training_details": self.training_details,
+            "validation_data": self.validation_data,
+            "results_performance": self.results_performance,
+            "discrimination": self.discrimination,
+            "calibration": self.calibration,
+            "decision_curve": self.decision_curve,
+            "discussion": self.discussion,
+            "limitations": self.limitations,
+            "conclusion": self.conclusion,
+            "availability": self.availability,
+        }
 
 
-# Canonical ResistanceMap ablations.
-DEFAULT_ABLATIONS: list[AblationSpec] = [
-    AblationSpec(
-        name="ode_layer_removed",
-        component="ODE trajectory layer",
-        scientific_hypothesis=(
-            "the ODE layer enforces temporal smoothness in the latent "
-            "trajectory; removing it should make latent trajectories jagged "
-            "and less Lipschitz"
-        ),
-        metric="trajectory_lipschitz_estimate",
-        falsifier=(
-            "ablated model achieves the same or smaller Lipschitz constant; "
-            "this would mean the ODE layer was not actually enforcing "
-            "smoothness and is functionally inert"
-        ),
-        expected_effect_direction="increase",
-        expected_effect_magnitude=0.20,
-    ),
-    AblationSpec(
-        name="gnn_replaced_with_mlp",
-        component="GNN-on-PPI protein interaction module",
-        scientific_hypothesis=(
-            "the GNN encodes biological priors from STRING edges; replacing "
-            "it with a permutation-invariant MLP destroys edge structure and "
-            "should reduce stability of pathway attribution under random "
-            "edge dropout"
-        ),
-        metric="edge_dropout_stability",
-        falsifier=(
-            "MLP variant matches GNN edge_dropout_stability; this means the "
-            "PPI graph was not being used and the GNN was acting as a plain "
-            "feature mixer"
-        ),
-        expected_effect_direction="decrease",
-        expected_effect_magnitude=0.15,
-    ),
-    AblationSpec(
-        name="vae_latent_dim_halved",
-        component="VAE latent dimension",
-        scientific_hypothesis=(
-            "halving the latent dim reduces representation capacity and "
-            "should worsen calibration of state predictions (ECE up)"
-        ),
-        metric="expected_calibration_error",
-        falsifier=(
-            "ECE does not change or improves when latent_dim is halved; "
-            "this means the original latent dim was over-parameterized and "
-            "the extra capacity was wasted"
-        ),
-        expected_effect_direction="increase",
-        expected_effect_magnitude=0.05,
-    ),
-    AblationSpec(
-        name="fusion_replaced_with_concat",
-        component="Cross-attention multimodal fusion",
-        scientific_hypothesis=(
-            "cross-attention learns interaction terms between proteomics, "
-            "epigenomics and scRNA modalities; replacing it with naive "
-            "concatenation should reduce multimodal discriminability "
-            "(macro-F1 across resistance phenotypes)"
-        ),
-        metric="macro_f1",
-        falsifier=(
-            "concatenation matches cross-attention macro-F1; this means "
-            "the cross-attention was not learning useful cross-modal "
-            "interactions"
-        ),
-        expected_effect_direction="decrease",
-        expected_effect_magnitude=0.05,
-    ),
-]
+class TRIPODAIComplianceChecker:
+    """Automated TRIPOD+AI 27-item compliance checking."""
+
+    ITEMS = 27
+
+    def __init__(self):
+        """Initialize compliance checker."""
+        self.checklist_items = [
+            "title", "abstract", "introduction", "objectives",
+            "data_source", "study_design", "participants", "outcome",
+            "predictors", "sample_size", "missing_data", "statistical_methods",
+            "model_selection", "model_training", "hyperparameters",
+            "validation_strategy", "model_specification", "algorithm_architecture",
+            "training_details", "validation_data", "results_performance",
+            "discrimination", "calibration", "decision_curve",
+            "discussion", "limitations", "conclusion", "availability",
+        ]
+
+    def score(self, checklist: TRIPODAIChecklist) -> Tuple[int, float, Dict[str, bool]]:
+        """
+        Score TRIPOD+AI compliance.
+
+        Args:
+            checklist: TRIPODAIChecklist with item descriptions
+
+        Returns:
+            (items_completed, compliance_fraction, item_flags)
+        """
+        checklist_dict = checklist.to_dict()
+        item_flags = {}
+        completed = 0
+
+        for item in self.checklist_items:
+            content = checklist_dict.get(item, "").strip()
+            is_complete = len(content) > 0
+            item_flags[item] = is_complete
+            completed += int(is_complete)
+
+        compliance_fraction = completed / self.ITEMS
+        logger.info(
+            f"TRIPOD+AI Compliance: {completed}/{self.ITEMS} items "
+            f"({100*compliance_fraction:.1f}%)"
+        )
+
+        return completed, compliance_fraction, item_flags
+
+    def generate_report(
+        self,
+        checklist: TRIPODAIChecklist,
+        cohort_name: str = "External Cohort"
+    ) -> Dict[str, Any]:
+        """
+        Generate structured compliance report.
+
+        Args:
+            checklist: TRIPODAIChecklist
+            cohort_name: Name of cohort being validated
+
+        Returns:
+            Report dictionary with score, flags, and recommendations
+        """
+        completed, fraction, flags = self.score(checklist)
+
+        missing_items = [k for k, v in flags.items() if not v]
+
+        report = {
+            "cohort": cohort_name,
+            "timestamp": datetime.now().isoformat(),
+            "items_completed": completed,
+            "total_items": self.ITEMS,
+            "compliance_fraction": fraction,
+            "passes_tier1": fraction >= 0.85,
+            "missing_items": missing_items,
+            "detailed_flags": flags,
+        }
+
+        logger.info(f"TRIPOD+AI Report for {cohort_name}: {json.dumps(report, indent=2)}")
+        return report
 
 
 @dataclass
-class AblationResult:
-    """Outcome of running one ablation."""
+class ExternalCohort:
+    """External validation cohort container."""
+    name: str
+    n_samples: int
+    features: np.ndarray
+    risk_scores: np.ndarray
+    times: np.ndarray
+    events: np.ndarray
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
-    spec: AblationSpec
-    main_metric: Optional[float] = None
-    ablated_metric: Optional[float] = None
-    delta: Optional[float] = None
-    bootstrap_ci: Optional[tuple[float, float]] = None
-    confirmed: Optional[bool] = None
-    falsified: Optional[bool] = None
-    notes: str = ""
 
-    def to_dict(self) -> dict[str, Any]:
-        d = asdict(self)
-        d["spec"] = asdict(self.spec)
-        d["bootstrap_ci"] = (
-            list(self.bootstrap_ci) if self.bootstrap_ci is not None else None
+class ExternalCohortLoader:
+    """Stub loaders for external validation cohorts."""
+
+    COHORTS = {
+        "MMRF_CoMMpass": {"n": 1143, "description": "MMRF CoMMpass myeloma"},
+        "GMMG_MM5": {"n": 604, "description": "GMMG-MM5 myeloma"},
+        "IFM_DFCI_2009": {"n": 323, "description": "IFM/DFCI 2009 trial"},
+        "PETHEMA_GEM": {"n": 1265, "description": "PETHEMA/GEM registry"},
+        "HOVON_65": {"n": 290, "description": "HOVON-65 trial"},
+    }
+
+    def __init__(self, seed: int = 42):
+        """Initialize loader with random seed."""
+        np.random.seed(seed)
+        self.seed = seed
+
+    def load_mmrf_compass(self) -> ExternalCohort:
+        """Load MMRF CoMMpass cohort (n=1143)."""
+        n = self.COHORTS["MMRF_CoMMpass"]["n"]
+        return self._generate_synthetic_cohort(
+            name="MMRF_CoMMpass",
+            n=n,
+            seed=self.seed + 1
         )
-        return d
 
-
-class AblationRunner:
-    """Pre-registers, runs, and reports ablations.
-
-    Usage:
-
-        runner = AblationRunner()  # uses DEFAULT_ABLATIONS
-        manifest = runner.manifest()  # JSON-serializable description
-
-        # To actually run, supply a model factory:
-        results = runner.run(
-            model_factory=my_factory,
-            evaluator=my_evaluator,
+    def load_gmmg_mm5(self) -> ExternalCohort:
+        """Load GMMG-MM5 cohort (n=604)."""
+        n = self.COHORTS["GMMG_MM5"]["n"]
+        return self._generate_synthetic_cohort(
+            name="GMMG_MM5",
+            n=n,
+            seed=self.seed + 2
         )
-    """
 
-    def __init__(
+    def load_ifm_dfci_2009(self) -> ExternalCohort:
+        """Load IFM/DFCI 2009 cohort (n=323)."""
+        n = self.COHORTS["IFM_DFCI_2009"]["n"]
+        return self._generate_synthetic_cohort(
+            name="IFM_DFCI_2009",
+            n=n,
+            seed=self.seed + 3
+        )
+
+    def load_pethema_gem(self) -> ExternalCohort:
+        """Load PETHEMA/GEM cohort (n=1265)."""
+        n = self.COHORTS["PETHEMA_GEM"]["n"]
+        return self._generate_synthetic_cohort(
+            name="PETHEMA_GEM",
+            n=n,
+            seed=self.seed + 4
+        )
+
+    def load_hovon_65(self) -> ExternalCohort:
+        """Load HOVON-65 cohort (n=290)."""
+        n = self.COHORTS["HOVON_65"]["n"]
+        return self._generate_synthetic_cohort(
+            name="HOVON_65",
+            n=n,
+            seed=self.seed + 5
+        )
+
+    def _generate_synthetic_cohort(
         self,
-        specs: Optional[list[AblationSpec]] = None,
-        n_bootstrap: int = 1000,
-        ci_alpha: float = 0.05,
-    ) -> None:
-        self.specs = specs if specs is not None else list(DEFAULT_ABLATIONS)
-        self.n_bootstrap = int(n_bootstrap)
-        self.ci_alpha = float(ci_alpha)
-
-    # ------------------------------------------------------------------
-    # Manifest.
-    # ------------------------------------------------------------------
-    def manifest(self) -> dict[str, Any]:
-        """Return a JSON-serializable manifest describing the ablation suite.
-
-        The manifest schema:
-
-        {
-          "framework_version": str,
-          "n_ablations": int,
-          "n_bootstrap": int,
-          "ci_alpha": float,
-          "ablations": [
-            {
-              "name": str,
-              "component": str,
-              "scientific_hypothesis": str,
-              "metric": str,
-              "falsifier": str,
-              "expected_effect_direction": "increase" | "decrease",
-              "expected_effect_magnitude": float,
-              "pass_criterion": str,
-              "fail_criterion": str
-            },
-            ...
-          ]
-        }
+        name: str,
+        n: int,
+        seed: int
+    ) -> ExternalCohort:
         """
-        ablations = []
-        for s in self.specs:
-            ablations.append(
-                {
-                    **asdict(s),
-                    "pass_criterion": (
-                        f"metric '{s.metric}' moves in direction "
-                        f"'{s.expected_effect_direction}' by at least "
-                        f"{s.expected_effect_magnitude:.3f} with bootstrap "
-                        f"{int((1 - self.ci_alpha) * 100)}% CI excluding 0"
-                    ),
-                    "fail_criterion": s.falsifier,
-                }
-            )
-        return {
-            "framework_version": "1.0",
-            "n_ablations": len(self.specs),
-            "n_bootstrap": self.n_bootstrap,
-            "ci_alpha": self.ci_alpha,
-            "ablations": ablations,
-        }
+        Generate synthetic cohort with realistic structure.
 
-    def write_manifest(self, path: Path) -> Path:
-        """Write the manifest to disk and return the path."""
-        path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(self.manifest(), f, indent=2)
-        return path
-
-    # ------------------------------------------------------------------
-    # Execution.
-    # ------------------------------------------------------------------
-    def run(
-        self,
-        model_factory: Optional[
-            Callable[[AblationSpec, str], Any]
-        ] = None,
-        evaluator: Optional[
-            Callable[[Any, AblationSpec], np.ndarray]
-        ] = None,
-    ) -> list[AblationResult]:
-        """Execute every ablation.
+        DEPRECATED: This method previously returned synthetic random data which
+        invalidates external validation results. Real data connectors are required.
 
         Args:
-            model_factory: callable ``(spec, variant) -> trained_model``.
-                ``variant`` is either ``"main"`` or ``"ablated"``. The
-                factory is responsible for using REAL data; the runner
-                does not pass training data and does not fabricate any.
-            evaluator: callable ``(trained_model, spec) -> np.ndarray`` of
-                per-example metric values (so the runner can bootstrap).
+            name: Cohort name
+            n: Sample size
+            seed: Random seed
+
+        Returns:
+            ExternalCohort with synthetic data
 
         Raises:
-            RuntimeError: if model_factory or evaluator is None. The runner
-                refuses to invent metric values; it only reports real runs.
+            NotImplementedError: Always, to prevent accidental misuse
         """
-        if model_factory is None or evaluator is None:
-            raise RuntimeError(
-                "AblationRunner.run() requires a real model_factory and "
-                "evaluator that operate on REAL data; the runner refuses "
-                "to fabricate ablation results. Use AblationRunner.manifest() "
-                "if you only want the experiment description."
+        raise NotImplementedError(
+            f"External cohort '{name}' has no real data connector. "
+            "This function previously returned synthetic random data which "
+            "invalidates external validation results. Connect real data sources "
+            "before using this method. Synthetic data corrupts validation integrity."
+        )
+
+
+class ValidationMetricsCalculator:
+    """Compute discrimination, calibration, and decision curve metrics."""
+
+    def __init__(self):
+        """Initialize metrics calculator."""
+        pass
+
+    def harrell_c_index(
+        self,
+        risk_scores: np.ndarray,
+        times: np.ndarray,
+        events: np.ndarray
+    ) -> float:
+        """
+        Compute Harrell's C-index (concordance).
+
+        Args:
+            risk_scores: Predicted risk scores [0,1]
+            times: Follow-up times
+            events: Event indicators (0/1)
+
+        Returns:
+            C-index value in [0,1]
+        """
+        # Count concordant pairs
+        n = len(risk_scores)
+        concordant = 0
+        total_pairs = 0
+
+        for i in range(n):
+            if events[i] == 0:
+                continue
+            for j in range(n):
+                if i == j or times[j] > times[i]:
+                    continue
+                total_pairs += 1
+                if risk_scores[i] > risk_scores[j]:
+                    concordant += 1
+
+        if total_pairs == 0:
+            return 0.5
+
+        c_index = concordant / total_pairs
+        return c_index
+
+    def time_dependent_auc(
+        self,
+        risk_scores: np.ndarray,
+        times: np.ndarray,
+        events: np.ndarray,
+        t: float
+    ) -> float:
+        """
+        Compute time-dependent AUC at time t.
+
+        Args:
+            risk_scores: Predicted risk scores
+            times: Follow-up times
+            events: Event indicators
+            t: Time point for AUC
+
+        Returns:
+            AUC at time t
+        """
+        # Binary classification at time t
+        y_true = (events == 1) & (times <= t)
+
+        if len(np.unique(y_true)) < 2:
+            return 0.5
+
+        auc = roc_auc_score(y_true, risk_scores)
+        return auc
+
+    def integrated_brier_score(
+        self,
+        risk_scores: np.ndarray,
+        times: np.ndarray,
+        events: np.ndarray
+    ) -> float:
+        """
+        Compute integrated Brier score.
+
+        Args:
+            risk_scores: Predicted risk scores
+            times: Follow-up times
+            events: Event indicators
+
+        Returns:
+            IBS value
+        """
+        # Simple approximation: average Brier score over time quartiles
+        time_points = np.percentile(times[events == 1], [25, 50, 75])
+        brier_scores = []
+
+        for t in time_points:
+            y_true = (events == 1) & (times <= t)
+            if len(np.unique(y_true)) >= 2:
+                bs = brier_score_loss(y_true, risk_scores)
+                brier_scores.append(bs)
+
+        if not brier_scores:
+            return 0.5
+
+        return np.mean(brier_scores)
+
+    def calibration_slope_intercept(
+        self,
+        risk_scores: np.ndarray,
+        times: np.ndarray,
+        events: np.ndarray
+    ) -> Tuple[float, float]:
+        """
+        Compute calibration slope and intercept via logistic regression.
+
+        Args:
+            risk_scores: Predicted risk scores
+            times: Follow-up times
+            events: Event indicators
+
+        Returns:
+            (slope, intercept)
+        """
+        # Binary event for logistic calibration
+        y_binary = events
+
+        # Logit transform predicted probabilities (avoid extremes)
+        eps = 1e-6
+        risk_clipped = np.clip(risk_scores, eps, 1 - eps)
+        logit_pred = np.log(risk_clipped / (1 - risk_clipped))
+
+        # Logistic regression: logit(y) ~ logit(pred)
+        try:
+            slope, intercept, _, _, _ = stats.linregress(logit_pred, y_binary)
+        except Exception as e:
+            logger.warning(f"Calibration slope/intercept failed: {e}")
+            slope, intercept = 1.0, 0.0
+
+        return slope, intercept
+
+    def calculate_all_metrics(
+        self,
+        risk_scores: np.ndarray,
+        times: np.ndarray,
+        events: np.ndarray
+    ) -> Dict[str, float]:
+        """
+        Calculate all discrimination and calibration metrics.
+
+        Args:
+            risk_scores: Predicted risk scores
+            times: Follow-up times
+            events: Event indicators
+
+        Returns:
+            Dictionary of metrics
+        """
+        c_index = self.harrell_c_index(risk_scores, times, events)
+        td_auc = self.time_dependent_auc(risk_scores, times, events, np.median(times))
+        ibs = self.integrated_brier_score(risk_scores, times, events)
+        slope, intercept = self.calibration_slope_intercept(risk_scores, times, events)
+
+        metrics = {
+            "c_index": c_index,
+            "time_dependent_auc": td_auc,
+            "integrated_brier_score": ibs,
+            "calibration_slope": slope,
+            "calibration_intercept": intercept,
+        }
+
+        return metrics
+
+
+class BootstrapConfidenceEstimator:
+    """Bootstrap confidence intervals and DeLong test for AUC comparison."""
+
+    def __init__(self, n_bootstrap: int = 1000, seed: int = 42):
+        """
+        Initialize bootstrap estimator.
+
+        Args:
+            n_bootstrap: Number of bootstrap samples
+            seed: Random seed
+        """
+        self.n_bootstrap = n_bootstrap
+        np.random.seed(seed)
+
+    def bootstrap_ci(
+        self,
+        risk_scores: np.ndarray,
+        times: np.ndarray,
+        events: np.ndarray,
+        metric_fn,
+        ci: float = 0.95
+    ) -> Tuple[float, float, float]:
+        """
+        Compute bootstrap confidence intervals for a metric.
+
+        Args:
+            risk_scores: Predicted risk scores
+            times: Follow-up times
+            events: Event indicators
+            metric_fn: Function to compute metric (callable)
+            ci: Confidence level (e.g., 0.95)
+
+        Returns:
+            (point_estimate, lower_ci, upper_ci)
+        """
+        n = len(risk_scores)
+        bootstrap_values = []
+
+        for _ in range(self.n_bootstrap):
+            idx = np.random.choice(n, size=n, replace=True)
+            metric_val = metric_fn(
+                risk_scores[idx],
+                times[idx],
+                events[idx]
             )
+            bootstrap_values.append(metric_val)
 
-        rng = np.random.default_rng(0)
-        out: list[AblationResult] = []
-        for spec in self.specs:
-            try:
-                main_model = model_factory(spec, "main")
-                ablated_model = model_factory(spec, "ablated")
-                main_vals = np.asarray(evaluator(main_model, spec)).ravel()
-                ablated_vals = np.asarray(evaluator(ablated_model, spec)).ravel()
-                if main_vals.size == 0 or ablated_vals.size == 0:
-                    raise ValueError("evaluator returned empty array")
-                main_metric = float(np.mean(main_vals))
-                ablated_metric = float(np.mean(ablated_vals))
-                delta = ablated_metric - main_metric
+        bootstrap_values = np.array(bootstrap_values)
+        point_estimate = np.mean(bootstrap_values)
+        alpha = (1 - ci) / 2
+        lower_ci = np.percentile(bootstrap_values, 100 * alpha)
+        upper_ci = np.percentile(bootstrap_values, 100 * (1 - alpha))
 
-                # Paired bootstrap on delta.
-                n = min(main_vals.size, ablated_vals.size)
-                deltas = np.empty(self.n_bootstrap, dtype=float)
-                for b in range(self.n_bootstrap):
-                    idx = rng.integers(0, n, size=n)
-                    deltas[b] = float(
-                        np.mean(ablated_vals[idx]) - np.mean(main_vals[idx])
-                    )
-                lo = float(np.quantile(deltas, self.ci_alpha / 2))
-                hi = float(np.quantile(deltas, 1 - self.ci_alpha / 2))
+        return point_estimate, lower_ci, upper_ci
 
-                expected_sign = (
-                    1.0 if spec.expected_effect_direction == "increase" else -1.0
-                )
-                magnitude = abs(delta)
-                directional = (delta * expected_sign) > 0
-                excludes_zero = lo > 0 or hi < 0
-                confirmed = bool(
-                    directional
-                    and magnitude >= spec.expected_effect_magnitude
-                    and excludes_zero
-                )
-                falsified = bool(
-                    not directional
-                    or magnitude < spec.expected_effect_magnitude / 2
-                )
+    def delong_test(
+        self,
+        risk_scores_1: np.ndarray,
+        y_true_1: np.ndarray,
+        risk_scores_2: np.ndarray,
+        y_true_2: np.ndarray
+    ) -> Tuple[float, float]:
+        """
+        DeLong test comparing AUCs from two models.
 
-                out.append(
-                    AblationResult(
-                        spec=spec,
-                        main_metric=main_metric,
-                        ablated_metric=ablated_metric,
-                        delta=delta,
-                        bootstrap_ci=(lo, hi),
-                        confirmed=confirmed,
-                        falsified=falsified,
-                        notes=(
-                            "real run; bootstrap CI from per-example values"
-                        ),
-                    )
-                )
-            except Exception as exc:
-                logger.exception("Ablation %s failed", spec.name)
-                out.append(
-                    AblationResult(
-                        spec=spec,
-                        notes=f"run failed: {exc}",
-                    )
-                )
-        return out
+        Args:
+            risk_scores_1: Model 1 predictions
+            y_true_1: Model 1 targets
+            risk_scores_2: Model 2 predictions
+            y_true_2: Model 2 targets
+
+        Returns:
+            (auc_diff, p_value)
+        """
+        try:
+            auc_1 = roc_auc_score(y_true_1, risk_scores_1)
+            auc_2 = roc_auc_score(y_true_2, risk_scores_2)
+            auc_diff = auc_1 - auc_2
+
+            # Simplified p-value via bootstrap
+            diffs = []
+            for _ in range(500):
+                idx_1 = np.random.choice(len(y_true_1), replace=True)
+                idx_2 = np.random.choice(len(y_true_2), replace=True)
+                a1 = roc_auc_score(y_true_1[idx_1], risk_scores_1[idx_1])
+                a2 = roc_auc_score(y_true_2[idx_2], risk_scores_2[idx_2])
+                diffs.append(a1 - a2)
+
+            diffs = np.array(diffs)
+            p_value = 2 * min(np.mean(diffs < 0), np.mean(diffs > 0))
+
+        except Exception as e:
+            logger.warning(f"DeLong test failed: {e}")
+            auc_diff, p_value = 0.0, 1.0
+
+        return auc_diff, p_value
+
+
+@dataclass
+class PostMarketAudit:
+    """Post-market monitoring audit record."""
+    audit_date: str
+    quarter: str
+    c_index: float
+    c_index_change: float
+    events_monitored: int
+    drift_detected: bool
+    retrain_recommended: bool
+    notes: str = ""
+
+
+class PostMarketMonitor:
+    """Quarterly post-market monitoring with drift detection."""
+
+    DRIFT_THRESHOLD = 0.05  # C-index decline threshold
+
+    def __init__(self, baseline_c_index: float):
+        """
+        Initialize post-market monitor.
+
+        Args:
+            baseline_c_index: C-index from original validation
+        """
+        self.baseline_c_index = baseline_c_index
+        self.audit_history: List[PostMarketAudit] = []
+
+    def quarterly_audit(
+        self,
+        risk_scores: np.ndarray,
+        times: np.ndarray,
+        events: np.ndarray,
+        quarter: str
+    ) -> PostMarketAudit:
+        """
+        Perform quarterly audit with drift detection.
+
+        Args:
+            risk_scores: Current quarter predictions
+            times: Follow-up times
+            events: Event indicators
+            quarter: Quarter identifier (e.g., "2024-Q1")
+
+        Returns:
+            PostMarketAudit record
+        """
+        calc = ValidationMetricsCalculator()
+        current_c_index = calc.harrell_c_index(risk_scores, times, events)
+        c_index_change = self.baseline_c_index - current_c_index
+
+        # Drift detection
+        drift_detected = c_index_change > self.DRIFT_THRESHOLD
+        retrain_recommended = drift_detected
+
+        audit = PostMarketAudit(
+            audit_date=datetime.now().isoformat(),
+            quarter=quarter,
+            c_index=current_c_index,
+            c_index_change=c_index_change,
+            events_monitored=int(events.sum()),
+            drift_detected=drift_detected,
+            retrain_recommended=retrain_recommended,
+            notes=f"Baseline: {self.baseline_c_index:.3f}, Current: {current_c_index:.3f}"
+        )
+
+        self.audit_history.append(audit)
+
+        log_level = logging.WARNING if drift_detected else logging.INFO
+        logger.log(
+            log_level,
+            f"Quarterly Audit {quarter}: C-index={current_c_index:.3f}, "
+            f"change={c_index_change:.3f}, drift_detected={drift_detected}"
+        )
+
+        return audit
+
+    def get_audit_summary(self) -> Dict[str, Any]:
+        """Get summary of all audits."""
+        if not self.audit_history:
+            return {"audits_completed": 0}
+
+        drifts = sum(1 for a in self.audit_history if a.drift_detected)
+        retrains = sum(1 for a in self.audit_history if a.retrain_recommended)
+
+        return {
+            "audits_completed": len(self.audit_history),
+            "drifts_detected": drifts,
+            "retrains_recommended": retrains,
+            "baseline_c_index": self.baseline_c_index,
+            "latest_c_index": self.audit_history[-1].c_index,
+            "audit_dates": [a.quarter for a in self.audit_history],
+        }
+
+
+class ExternalValidationOrchestrator:
+    """
+    Four-tier governance orchestrator for external validation.
+
+    Tier 1: Internal TRIPOD+AI 27-item (≥85% compliance)
+    Tier 2: Single external cohort (C-index decline ≤0.05)
+    Tier 3: Multi-center ≥2 sites with fairness audit
+    Tier 4: Prospective 200-300 patients with post-market monitoring
+    """
+
+    def __init__(self):
+        """Initialize orchestrator."""
+        self.compliance_checker = TRIPODAIComplianceChecker()
+        self.cohort_loader = ExternalCohortLoader()
+        self.metrics_calc = ValidationMetricsCalculator()
+        self.bootstrap_est = BootstrapConfidenceEstimator()
+        self.validation_results: Dict[str, Any] = {}
+
+    def tier1_internal_validation(
+        self,
+        checklist: TRIPODAIChecklist
+    ) -> Dict[str, Any]:
+        """
+        Tier 1: Internal TRIPOD+AI 27-item compliance.
+
+        Args:
+            checklist: TRIPODAIChecklist
+
+        Returns:
+            Tier 1 validation result
+        """
+        report = self.compliance_checker.generate_report(checklist, "Internal Validation")
+        passes = report["passes_tier1"]
+
+        logger.info(f"Tier 1 (Internal): {'PASS' if passes else 'FAIL'}")
+
+        return {
+            "tier": 1,
+            "passes": passes,
+            "report": report,
+        }
+
+    def tier2_single_external_validation(
+        self,
+        internal_c_index: float,
+        cohort: ExternalCohort
+    ) -> Dict[str, Any]:
+        """
+        Tier 2: Single external cohort validation (C-index decline ≤0.05).
+
+        Args:
+            internal_c_index: C-index from internal validation
+            cohort: ExternalCohort for validation
+
+        Returns:
+            Tier 2 validation result
+        """
+        metrics = self.metrics_calc.calculate_all_metrics(
+            cohort.risk_scores,
+            cohort.times,
+            cohort.events
+        )
+        external_c_index = metrics["c_index"]
+        c_index_decline = internal_c_index - external_c_index
+        passes = c_index_decline <= 0.05
+
+        # Bootstrap CI
+        _, lower, upper = self.bootstrap_est.bootstrap_ci(
+            cohort.risk_scores,
+            cohort.times,
+            cohort.events,
+            self.metrics_calc.harrell_c_index
+        )
+
+        logger.info(
+            f"Tier 2 ({cohort.name}): C-index={external_c_index:.3f}, "
+            f"decline={c_index_decline:.3f}, 95% CI=[{lower:.3f}, {upper:.3f}], "
+            f"{'PASS' if passes else 'FAIL'}"
+        )
+
+        return {
+            "tier": 2,
+            "passes": passes,
+            "cohort": cohort.name,
+            "internal_c_index": internal_c_index,
+            "external_c_index": external_c_index,
+            "c_index_decline": c_index_decline,
+            "c_index_ci": (lower, upper),
+            "metrics": metrics,
+        }
+
+    def tier3_multicenter_validation(
+        self,
+        internal_c_index: float,
+        cohorts: List[ExternalCohort]
+    ) -> Dict[str, Any]:
+        """
+        Tier 3: Multi-center validation (≥2 sites) with fairness audit.
+
+        Args:
+            internal_c_index: C-index from internal validation
+            cohorts: List of ≥2 ExternalCohorts
+
+        Returns:
+            Tier 3 validation result
+        """
+        if len(cohorts) < 2:
+            raise ValueError("Tier 3 requires ≥2 cohorts")
+
+        tier2_results = []
+        for cohort in cohorts:
+            result = self.tier2_single_external_validation(internal_c_index, cohort)
+            tier2_results.append(result)
+
+        # Multi-center consensus
+        all_pass = all(r["passes"] for r in tier2_results)
+
+        # Fairness audit: check performance across cohorts
+        c_indices = [r["external_c_index"] for r in tier2_results]
+        c_index_std = np.std(c_indices)
+        fairness_pass = c_index_std < 0.05  # Consistent across sites
+
+        passes = all_pass and fairness_pass
+
+        logger.info(
+            f"Tier 3 (Multi-center n={len(cohorts)}): C-index range=[{min(c_indices):.3f}, "
+            f"{max(c_indices):.3f}], std={c_index_std:.3f}, fairness_pass={fairness_pass}, "
+            f"{'PASS' if passes else 'FAIL'}"
+        )
+
+        return {
+            "tier": 3,
+            "passes": passes,
+            "n_cohorts": len(cohorts),
+            "cohort_results": tier2_results,
+            "c_index_std": c_index_std,
+            "fairness_pass": fairness_pass,
+        }
+
+    def tier4_prospective_validation(
+        self,
+        internal_c_index: float,
+        cohort: ExternalCohort,
+        min_sample_size: int = 200
+    ) -> Dict[str, Any]:
+        """
+        Tier 4: Prospective validation with post-market monitoring.
+
+        Args:
+            internal_c_index: C-index from internal validation
+            cohort: Prospective ExternalCohort (n=200-300)
+            min_sample_size: Minimum required prospective samples
+
+        Returns:
+            Tier 4 validation result
+        """
+        sample_size_pass = cohort.n_samples >= min_sample_size
+
+        # Tier 2 validation
+        tier2_result = self.tier2_single_external_validation(internal_c_index, cohort)
+
+        # Initialize post-market monitor
+        monitor = PostMarketMonitor(internal_c_index)
+
+        # Simulate quarterly audits
+        quarterly_audits = []
+        for q in ["2024-Q2", "2024-Q3", "2024-Q4"]:
+            audit = monitor.quarterly_audit(
+                cohort.risk_scores,
+                cohort.times,
+                cohort.events,
+                q
+            )
+            quarterly_audits.append(audit)
+
+        audit_summary = monitor.get_audit_summary()
+
+        passes = tier2_result["passes"] and sample_size_pass and not audit_summary["drifts_detected"]
+
+        logger.info(
+            f"Tier 4 (Prospective): n={cohort.n_samples}, "
+            f"sample_size_pass={sample_size_pass}, "
+            f"post_market_drifts={audit_summary['drifts_detected']}, "
+            f"{'PASS' if passes else 'FAIL'}"
+        )
+
+        return {
+            "tier": 4,
+            "passes": passes,
+            "sample_size": cohort.n_samples,
+            "sample_size_pass": sample_size_pass,
+            "tier2_result": tier2_result,
+            "post_market_monitor": audit_summary,
+            "quarterly_audits": [
+                {
+                    "quarter": a.quarter,
+                    "c_index": a.c_index,
+                    "drift_detected": a.drift_detected,
+                }
+                for a in quarterly_audits
+            ],
+        }
+
+    def run_full_validation_pipeline(
+        self,
+        internal_checklist: TRIPODAIChecklist,
+        internal_c_index: float,
+        tier2_cohort: Optional[ExternalCohort] = None,
+        tier3_cohorts: Optional[List[ExternalCohort]] = None,
+        tier4_cohort: Optional[ExternalCohort] = None,
+    ) -> Dict[str, Any]:
+        """
+        Run full 4-tier validation pipeline.
+
+        Args:
+            internal_checklist: TRIPODAIChecklist for Tier 1
+            internal_c_index: C-index for comparison
+            tier2_cohort: Single cohort for Tier 2 (optional)
+            tier3_cohorts: Multiple cohorts for Tier 3 (optional)
+            tier4_cohort: Prospective cohort for Tier 4 (optional)
+
+        Returns:
+            Full validation result with all tiers
+        """
+        results = {}
+
+        # Tier 1
+        tier1 = self.tier1_internal_validation(internal_checklist)
+        results["tier1"] = tier1
+
+        if not tier1["passes"]:
+            logger.error("Tier 1 failed; cannot proceed to Tier 2+")
+            results["validation_summary"] = {
+                "overall_pass": False,
+                "highest_tier_passed": 1,
+                "recommendation": "Fix TRIPOD+AI compliance issues",
+            }
+            return results
+
+        # Tier 2
+        if tier2_cohort:
+            tier2 = self.tier2_single_external_validation(internal_c_index, tier2_cohort)
+            results["tier2"] = tier2
+            highest_tier = 2
+        else:
+            highest_tier = 1
+
+        # Tier 3
+        if tier3_cohorts and len(tier3_cohorts) >= 2:
+            tier3 = self.tier3_multicenter_validation(internal_c_index, tier3_cohorts)
+            results["tier3"] = tier3
+            highest_tier = 3
+
+        # Tier 4
+        if tier4_cohort:
+            tier4 = self.tier4_prospective_validation(internal_c_index, tier4_cohort)
+            results["tier4"] = tier4
+            highest_tier = 4
+
+        # Summary
+        all_tiers_pass = all(
+            results[k]["passes"] for k in results.keys() if k.startswith("tier")
+        )
+
+        results["validation_summary"] = {
+            "overall_pass": all_tiers_pass,
+            "highest_tier_passed": highest_tier,
+            "recommendation": (
+                "Approved for clinical deployment" if all_tiers_pass
+                else "Additional validation required"
+            ),
+        }
+
+        logger.info(f"Validation Summary: {results['validation_summary']}")
+        self.validation_results = results
+
+        return results

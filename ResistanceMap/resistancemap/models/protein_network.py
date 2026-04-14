@@ -570,7 +570,8 @@ class PPIGraphNetwork(nn.Module):
                 edge_index_curr = edge_index
 
             residual = x
-            x = conv(x, edge_index_curr, edge_attr=edge_attr if self.edge_dim else None)
+            _edge_attr = edge_attr if (self.edge_dim is not None and self.edge_dim > 0 and edge_attr is not None) else None
+            x = conv(x, edge_index_curr, edge_attr=_edge_attr)
             x = norm(x)
 
             # Optional PairNorm before ReLU
@@ -646,6 +647,10 @@ class PathwayAwareProteinEncoder(nn.Module):
         attn = F.softmax(scores, dim=-1)
         attended = torch.bmm(attn, v).squeeze(1)  # (num_nodes, hidden)
 
+        # Apply mask if provided
+        if mask is not None:
+            attended = attended * mask.unsqueeze(-1)  # Zero out masked positions
+
         return self.output_proj(attended)
 
 
@@ -720,7 +725,7 @@ class ResistancePropagator(nn.Module):
         if self.per_protein_scores is not None:
             per_protein_resistance = self.per_protein_scores(node_emb)
         else:
-            per_protein_resistance = node_emb.mean(dim=1, keepdim=True)
+            per_protein_resistance = node_emb.mean(dim=-1, keepdim=True)  # average features per node
 
         return graph_resistance, per_protein_resistance
 
@@ -876,6 +881,10 @@ class ProteinNetworkPropagator(nn.Module):
                 - 'evidential_alpha': (batch_size, 3) if use_evidential_head=True
                 - 'uncertainty': (batch_size, 1) epistemic uncertainty if use_evidential_head=True
         """
+        # Validate input shapes
+        if latent_states.dim() != 2:
+            raise ValueError(f"Expected 2D tensor (B, D), got shape {latent_states.shape}")
+
         # 1. Embed protein sequences
         esm2_emb = self.esm2_embedder(sequences)  # (num_proteins, 1280)
 

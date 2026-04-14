@@ -234,7 +234,7 @@ class ReplicatorDynamicsODE(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, 1),
-            nn.Sigmoid(),  # Fitness in [0, 1]
+            nn.Tanh(),  # Fitness in [-1, 1] to allow extinction
         )
 
         logger.info(
@@ -312,6 +312,8 @@ class ReplicatorDynamicsODE(nn.Module):
         # Solve ODE
         if HAS_TORCHDIFFEQ:
             traj = odeint(ode_func, frequencies, t_span, method=self.solver)
+            # Renormalize after ODE integration to enforce simplex constraint
+            traj = traj / traj.sum(dim=-1, keepdim=True).clamp(min=1e-8)
         else:
             # Fallback: simple Euler integration
             traj = [frequencies.clone()]

@@ -364,10 +364,12 @@ class CrossModalFusionNet(nn.Module):
         concat = torch.cat([attended[n] for n in self.modality_names], dim=-1)  # (batch, hidden * n_mod)
         gates = self.gate(concat)  # (batch, n_modalities)
 
-        # Apply masking to gates for missing modalities
+        # Apply masking to gates for missing modalities (non-inplace to preserve gradients)
+        mask = torch.ones_like(gates)
         for i, name in enumerate(self.modality_names):
             if not modality_mask[name]:
-                gates[:, i] = 0.0
+                mask[:, i] = 0.0
+        gates = gates * mask
 
         # Renormalize gates after masking
         gate_sum = gates.sum(dim=-1, keepdim=True)

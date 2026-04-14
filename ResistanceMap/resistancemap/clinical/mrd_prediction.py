@@ -231,13 +231,15 @@ class LatentStabilityEstimator(nn.Module):
         latent_dim: Dimensionality of latent representation.
     """
 
-    def __init__(self, latent_dim: int = 128) -> None:
+    def __init__(self, latent_dim: int = 128, var_dim: int = 1) -> None:
         super().__init__()
         self.latent_dim = latent_dim
+        self.var_dim = var_dim
 
         # Map latent space properties to stability
+        # Input: latent_z (latent_dim) + mean_var (var_dim) = latent_dim + var_dim
         self.stability_net = nn.Sequential(
-            nn.Linear(latent_dim, 128),
+            nn.Linear(latent_dim + var_dim, 128),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(128, 64),
@@ -270,8 +272,9 @@ class LatentStabilityEstimator(nn.Module):
         # Concat latent z with variance signal
         features = torch.cat([latent_z, mean_var], dim=1)
 
-        # Stability prediction (higher var → higher stability → malleable state)
-        stability = self.stability_net(features[:, :self.latent_dim])
+        # Stability prediction: use FULL concatenation (latent + variance)
+        # NOT just slicing to latent_dim which discards the variance signal
+        stability = self.stability_net(features)
 
         return stability
 
@@ -572,8 +575,8 @@ class MRDNegPredictor(nn.Module):
             num_heads=num_heads,
         )
 
-        # Latent stability estimator
-        self.stability_estimator = LatentStabilityEstimator(latent_dim)
+        # Latent stability estimator (takes latent + variance dim)
+        self.stability_estimator = LatentStabilityEstimator(latent_dim, var_dim=1)
 
         # Trajectory prediction
         self.trajectory_transformer = TrajectoryTransformer(

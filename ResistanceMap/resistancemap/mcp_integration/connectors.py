@@ -70,11 +70,12 @@ class LRUCache:
 
     def set(self, key: str, value: Any, ttl_seconds: int = 3600) -> None:
         """Set value in cache with TTL."""
-        if len(self._cache) >= self.max_size and key not in self._cache:
-            # Evict least recently used
-            lru_key = next(iter(self._access_order))
-            del self._cache[lru_key]
-            del self._access_order[lru_key]
+        if key not in self._cache and len(self._cache) >= self.max_size:
+            # Evict least recently used (FIFO)
+            while len(self._cache) >= self.max_size:
+                lru_key = next(iter(self._access_order))
+                del self._cache[lru_key]
+                del self._access_order[lru_key]
 
         self._cache[key] = CacheEntry(value, datetime.utcnow(), ttl_seconds)
         self._access_order[key] = True
@@ -123,6 +124,7 @@ class RateLimiter:
             self.tokens = min(self.burst, self.tokens + time_passed * self.rate)
             self.last_update = now
 
+            wait_time = 0.0  # Initialize wait_time
             if self.tokens < tokens:
                 wait_time = (tokens - self.tokens) / self.rate
                 await asyncio.sleep(wait_time)
@@ -131,7 +133,7 @@ class RateLimiter:
             else:
                 self.tokens -= tokens
 
-            return max(0, wait_time) if self.tokens < tokens else 0
+            return wait_time
 
 
 class MCPConnector(ABC):

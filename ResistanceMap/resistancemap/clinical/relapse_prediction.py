@@ -269,9 +269,20 @@ class CumulativeIncidenceFunction(nn.Module):
             cif_k = torch.cumsum(integrand * dt.unsqueeze(0), dim=1)
             cif[:, k, :] = cif_k
 
-        # Softmax normalization: ensure sum of CIFs ≤ 1 at each timepoint
+        # CIF constraint: ensure sum of CIFs ≤ 1 at each timepoint
+        # NOTE: Do NOT use softmax here; CIF should satisfy sum ≤ 1 - S(t), not sum = 1
+        # Instead, clamp per-event probabilities and ensure constraint is satisfied
+        # For now, ensure CIF doesn't exceed max possible value at each time
+        cif = torch.clamp(cif, min=0.0, max=1.0)
         cif_sum = cif.sum(dim=1, keepdim=True)  # (batch_size, 1, num_timepoints)
-        cif = cif / (cif_sum + 1e-8)
+        # If sum > 1 - S(t), we need to re-normalize to respect the constraint
+        # For simplicity, scale down proportionally if sum exceeds 1
+        excess_mask = (cif_sum > 1.0)
+        cif = torch.where(
+            excess_mask,
+            cif / (cif_sum + 1e-8),
+            cif
+        )
 
         return cif, surv_prob, cum_hazards
 
@@ -615,8 +626,13 @@ class RelapseSpecificPredictor(nn.Module):
         _, _, latent_z0 = self.ode_model(biomarkers, torch.tensor([0.0]))
 
         # Recalibrate with landmark data
+        # latent_z0 shape: (batch_size, latent_dim) or (batch_size, 1, latent_dim)
+        # Remove trailing singleton dimension if present
+        latent_z0_squeezed = latent_z0.squeeze(-1) if latent_z0.shape[-1] == 1 else latent_z0
+        if latent_z0_squeezed.dim() > 2:
+            latent_z0_squeezed = latent_z0_squeezed.squeeze(1)
         latent_recal = self.landmark_recalibrator(
-            latent_z0.squeeze(1), landmark_updates, landmark_time
+            latent_z0_squeezed, landmark_updates, landmark_time
         )
 
         # Times from landmark onward

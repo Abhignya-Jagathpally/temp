@@ -251,10 +251,8 @@ class MAMLFewShotAdapter(nn.Module):
             support_responses: Shape (n_support,), binary labels.
 
         Returns:
-            Dictionary of adapted parameters.
+            Dictionary of adapted parameters after inner loop optimization.
         """
-        adapted_params = {name: param.clone().detach() for name, param in self.named_parameters()}
-
         # Create optimizer for inner loop
         optimizer = torch.optim.SGD(self.parameters(), lr=self.inner_lr)
 
@@ -268,6 +266,8 @@ class MAMLFewShotAdapter(nn.Module):
             loss.backward()
             optimizer.step()
 
+        # Return the FINAL adapted parameters after all optimization steps
+        adapted_params = {name: param.clone().detach() for name, param in self.named_parameters()}
         return adapted_params
 
     def outer_loop(

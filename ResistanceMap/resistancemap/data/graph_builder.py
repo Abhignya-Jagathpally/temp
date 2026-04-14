@@ -66,9 +66,13 @@ def build_edge_index(
             weights.extend([score, score])
 
     if not src:
-        logger.warning("No PPI edges matched protein names. Check naming conventions.")
-        # Return self-loop graph as fallback
         n = len(protein_index)
+        logger.warning(
+            f"No PPI edges matched for {n} proteins. "
+            f"Falling back to self-loops - GNN will not propagate information! "
+            f"Check protein naming conventions (PPI names vs proteomics names)."
+        )
+        # Return self-loop graph as fallback (GNN degenerates to node feature MLP)
         edge_index = torch.stack([torch.arange(n), torch.arange(n)])
         edge_attr = torch.ones(n, 1)
         return edge_index, edge_attr

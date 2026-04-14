@@ -32,7 +32,7 @@ except ImportError:
 try:
     from sksurv.metrics import (
         concordance_index_censored,
-        integrated_brier_score,
+        integrated_brier_score as _integrated_brier_score,
         cumulative_dynamic_auc,
     )
     HAS_SKSURV = True
@@ -237,7 +237,7 @@ def integrated_brier_score(
         times = np.percentile(y_time[y_event.astype(bool)], [25, 50, 75])
 
     try:
-        ibs = integrated_brier_score(
+        ibs = _integrated_brier_score(
             y_event.astype(bool),
             y_time,
             survival_probs,

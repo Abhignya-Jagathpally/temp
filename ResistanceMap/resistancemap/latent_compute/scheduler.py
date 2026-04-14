@@ -257,8 +257,10 @@ class LatentComputeScheduler:
     def _are_dependencies_satisfied(self, job: ComputeJob) -> bool:
         """Check if all dependencies of a job are satisfied."""
         for dep_id in job.dependencies:
+            if dep_id in self._failed_jobs:
+                return False  # Failed dependency - skip this job
             if dep_id not in self._completed_jobs:
-                return False
+                return False  # Not yet completed
         return True
 
     async def _execute_job(self, job: ComputeJob) -> None:

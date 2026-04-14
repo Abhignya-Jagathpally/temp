@@ -245,6 +245,9 @@ class ExternalCohortLoader:
         """
         Generate synthetic cohort with realistic structure.
 
+        DEPRECATED: This method previously returned synthetic random data which
+        invalidates external validation results. Real data connectors are required.
+
         Args:
             name: Cohort name
             n: Sample size
@@ -252,42 +255,16 @@ class ExternalCohortLoader:
 
         Returns:
             ExternalCohort with synthetic data
+
+        Raises:
+            NotImplementedError: Always, to prevent accidental misuse
         """
-        np.random.seed(seed)
-
-        # Simulate feature matrix (e.g., 15 clinical/genetic features)
-        n_features = 15
-        features = np.random.randn(n, n_features)
-
-        # Simulate risk scores (calibrated to [0,1])
-        latent_risk = features @ np.random.randn(n_features) + np.random.randn(n)
-        risk_scores = expit(latent_risk)
-
-        # Simulate follow-up times and events
-        times = np.random.exponential(2.0, n)
-        event_probs = risk_scores
-        events = np.random.binomial(1, event_probs)
-
-        cohort = ExternalCohort(
-            name=name,
-            n_samples=n,
-            features=features,
-            risk_scores=risk_scores,
-            times=times,
-            events=events,
-            metadata={
-                "source": self.COHORTS[name]["description"],
-                "generated_at": datetime.now().isoformat(),
-                "seed": seed,
-            }
+        raise NotImplementedError(
+            f"External cohort '{name}' has no real data connector. "
+            "This function previously returned synthetic random data which "
+            "invalidates external validation results. Connect real data sources "
+            "before using this method. Synthetic data corrupts validation integrity."
         )
-
-        logger.info(
-            f"Loaded {name}: n={n}, events={events.sum()}, "
-            f"event_rate={events.mean():.3f}"
-        )
-
-        return cohort
 
 
 class ValidationMetricsCalculator:

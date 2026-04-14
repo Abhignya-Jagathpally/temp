@@ -136,7 +136,8 @@ class SinkhornOT(nn.Module):
                     break
 
         # Compute transport plan in linear space only at the end
-        # transport_plan = exp(log_u[:, None] + log_K + log_v[None, :])
+        # Clamp log_K to prevent overflow and underflow
+        log_K = torch.clamp(log_K, min=-50.0, max=50.0)
         transport_plan = torch.exp(log_u[:, None] + log_K + log_v[None, :])
 
         return transport_plan, (log_u, log_v)
@@ -375,7 +376,32 @@ class SurvivalTimeCalibrator(nn.Module):
         """
         k = F.softplus(self.shape)
         lam = F.softplus(self.scale)
-        return torch.exp(-((t / lam) ** k + 1e-8))
+        return torch.exp(-((t / (lam + 1e-8)) ** k))
+
+    def fit(self, times: torch.Tensor, events: torch.Tensor) -> 'SurvivalTimeCalibrator':
+        """Fit Weibull parameters via MLE on observed (time, event) pairs.
+
+        Args:
+            times: (N,) observed time points.
+            events: (N,) event indicators (1 = event observed, 0 = censored).
+
+        Returns:
+            Self for chaining.
+        """
+        import torch.optim as optim
+
+        optimizer = optim.Adam([self.shape, self.scale], lr=0.01)
+        for _ in range(200):
+            optimizer.zero_grad()
+            k = F.softplus(self.shape)
+            lam = F.softplus(self.scale)
+            # Weibull log-likelihood for right-censored data
+            log_h = torch.log(k / lam) + (k - 1) * torch.log(times / lam + 1e-8)
+            log_S = -((times / lam) ** k)
+            nll = -(events * log_h + log_S).sum()
+            nll.backward()
+            optimizer.step()
+        return self
 
 
 class NeuralJumpSDE(nn.Module):
@@ -433,7 +459,7 @@ class NeuralJumpSDE(nn.Module):
         device = z0.device
         dt = (t_span[1] - t_span[0]) / n_steps
 
-        if not stochastic or not (self.drift_net is not None):
+        if not stochastic or self.drift_net is None:
             # Fall back to deterministic ODE
             return self._integrate_ode(z0, t_span, n_steps)
 
@@ -533,7 +559,8 @@ class ChromatinODE(nn.Module):
 
     def _hill(self, x: torch.Tensor) -> torch.Tensor:
         """Hill function for cooperative binding."""
-        n = F.softplus(self.hill_n)  # Ensure n > 0
+        # Bound n to [1, 10] for Hill coefficient
+        n = 1.0 + 9.0 * torch.sigmoid(self.hill_n)
         k = F.softplus(self.hill_k)
         return x.pow(n) / (k.pow(n) + x.pow(n) + 1e-8)
 
@@ -666,20 +693,21 @@ class MemoryStabilityScorer(nn.Module):
         # Integrate — use Euler with small step size for numerical stability.
         # Large ODE parameters (e.g. dilution rates > 1) require step_size < 1
         # to keep the explicit Euler scheme stable.
+        step_size = self.config.ode_step_size if hasattr(self.config, 'ode_step_size') else 0.1
         trajectory = odeint(
             self.ode,
             state0,
             t_span,
             method="euler",
-            options={"step_size": 0.1},
+            options={"step_size": step_size},
         )
 
         final_state = trajectory[-1]  # (B, 10)
         a_steady = final_state[:, 0:1].clamp(0.0, 10.0)
         r_steady = final_state[:, 1:2].clamp(0.0, 10.0)
         # Replace NaN from diverged ODE with balanced default
-        a_steady = torch.where(a_steady.isnan(), torch.tensor(0.5, device=device), a_steady)
-        r_steady = torch.where(r_steady.isnan(), torch.tensor(0.5, device=device), r_steady)
+        a_steady = torch.where(a_steady.isnan(), torch.tensor(0.5, dtype=a_steady.dtype, device=device), a_steady)
+        r_steady = torch.where(r_steady.isnan(), torch.tensor(0.5, dtype=r_steady.dtype, device=device), r_steady)
 
         return a_steady, r_steady
 
@@ -779,7 +807,7 @@ class MemoryStabilityScorer(nn.Module):
         score = torch.sigmoid(self.basin_scale * (basin_depth - self.basin_center))
 
         # Guard against NaN from ODE divergence on rare samples
-        score = torch.where(score.isnan(), torch.tensor(0.5, device=score.device), score)
+        score = torch.where(score.isnan(), torch.tensor(0.5, dtype=score.dtype, device=score.device), score)
 
         return score
 
@@ -827,14 +855,9 @@ class TrajectoryForecaster(nn.Module):
         # Learnable horizon scaling factor (calibrated from data)
         self.horizon_scale = nn.Parameter(torch.tensor(1.0))
 
-        # Basin transition parameters (learned during training)
-        self.basin_transition_net = nn.Sequential(
-            nn.Linear(64 + 2, 32),  # latent + (a_steady, r_steady)
-            nn.GELU(),
-            nn.Linear(32, 16),
-            nn.GELU(),
-            nn.Linear(16, 2),  # Logits for basin assignment (active vs. repressive)
-        )
+        # Latent-to-ODE-params projection (replaces scalar ±20% modulation)
+        # Projects 64D latent to 8D parameter adjustments
+        self.latent_to_params = nn.Linear(self.latent_dim, 8)
 
         # Stochastic dynamics (if enabled)
         if self.use_sde:
@@ -853,9 +876,9 @@ class TrajectoryForecaster(nn.Module):
     ) -> torch.Tensor:
         """Convert VAE latent state + protein abundances to ODE parameters.
 
-        In a full implementation, we would learn a mapping from the VAE latent
-        state to ODE parameters. For now, we use the chromatin ODE's protein_to_params
-        and incorporate the latent state as a modulation factor.
+        Combines protein abundances with learned latent-to-params projection
+        to modulate ODE parameters per-parameter rather than collapsing to
+        a scalar ±20% modulation.
 
         Args:
             latent_state: (B, 64) VAE memory state.
@@ -865,12 +888,15 @@ class TrajectoryForecaster(nn.Module):
             (B, 8) ODE parameters.
         """
         # Direct protein-to-params mapping
-        ode_params = self.ode.protein_to_params(protein_abundances)
+        ode_params = self.ode.protein_to_params(protein_abundances)  # (B, 8)
 
-        # Optionally modulate ODE parameters by latent state
+        # Per-parameter adjustments from latent state via learned projection
         # (latent state encodes global epigenetic configuration)
-        latent_mod = torch.sigmoid(latent_state.mean(dim=1, keepdim=True))  # (B, 1)
-        ode_params = ode_params * (0.8 + 0.4 * latent_mod)  # Modulate ±20%
+        param_adjustments = self.latent_to_params(latent_state)  # (B, 8)
+        param_adjustments = torch.tanh(param_adjustments) * 0.2  # Bounded [-0.2, 0.2] for ±20%
+
+        # Apply multiplicative modulation per-parameter
+        ode_params = ode_params * (1.0 + param_adjustments)
 
         return ode_params
 
@@ -972,8 +998,11 @@ class TrajectoryForecaster(nn.Module):
         basin_depth = -lambda_max
 
         # Normalize: sigmoid with fixed centering
-        stability = torch.sigmoid(2.0 * (basin_depth - 1.5))
-        stability = torch.where(stability.isnan(), torch.tensor(0.5, device=device), stability)
+        # TODO: Make these learnable via nn.Parameter
+        sigmoid_gain = 2.0  # Could be nn.Parameter for adaptability
+        sigmoid_center = 1.5  # Could be nn.Parameter for adaptability
+        stability = torch.sigmoid(sigmoid_gain * (basin_depth - sigmoid_center))
+        stability = torch.where(stability.isnan(), torch.tensor(0.5, dtype=stability.dtype, device=device), stability)
 
         return stability
 
@@ -1076,6 +1105,8 @@ class TrajectoryForecaster(nn.Module):
         protein_abundances: torch.Tensor,
         horizons: list[int] | None = None,
         n_samples: int = 1,
+        a_init: torch.Tensor | None = None,
+        r_init: torch.Tensor | None = None,
     ) -> dict[str, Any]:
         """Forecast future epigenetic states and stability at multiple horizons.
 
@@ -1084,6 +1115,8 @@ class TrajectoryForecaster(nn.Module):
             protein_abundances: (B, N_rw) chromatin reader/writer protein levels.
             horizons: Time horizons in months (e.g., [3, 6, 12]). Defaults to [3, 6, 12].
             n_samples: Number of Monte Carlo samples for SDE (default 1, ignored if use_sde=False).
+            a_init: (B, 1) initial active mark level. If None, defaults to 0.5 for all.
+            r_init: (B, 1) initial repressive mark level. If None, defaults to 0.5 for all.
 
         Returns:
             Dictionary with keys:
@@ -1111,10 +1144,12 @@ class TrajectoryForecaster(nn.Module):
         # Get ODE parameters from protein abundances
         ode_params = self._latent_to_ode_params(initial_state, protein_abundances)
 
-        # Initialize at balanced (equatorial) state
+        # Initialize at patient-specific or default balanced state
         batch_size = initial_state.shape[0]
-        a_init = torch.full((batch_size, 1), 0.5, device=device)
-        r_init = torch.full((batch_size, 1), 0.5, device=device)
+        if a_init is None:
+            a_init = torch.full((batch_size, 1), 0.5, device=device, dtype=initial_state.dtype)
+        if r_init is None:
+            r_init = torch.full((batch_size, 1), 0.5, device=device, dtype=initial_state.dtype)
 
         # Compute initial stability
         initial_stability = self._compute_stability_at_state(a_init, r_init, ode_params)
@@ -1154,7 +1189,7 @@ class TrajectoryForecaster(nn.Module):
                         results['survival_probs'][horizon] = survival_prob
                 else:
                     # Standard ODE integration (deterministic)
-                    a_final, r_final, traj = self._integrate_trajectory(
+                    a_final, r_final, _ = self._integrate_trajectory(
                         ode_params, time_h, a_init, r_init
                     )
 

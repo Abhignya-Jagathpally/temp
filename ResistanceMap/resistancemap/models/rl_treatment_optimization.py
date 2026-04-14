@@ -495,10 +495,18 @@ class IQLTrainer(nn.Module):
         # ========== V-Loss ==========
         # V(s) ← min(Q(s,a_i) for feasible a_i)
         # This keeps V below Q for all feasible actions, preventing overestimation
+        # TODO: critic_q should output (B, num_actions), not (B,)
+        # For now, replicate single value across actions as fallback
         q_values = self.critic_q(states)  # (B,)
-        q_all = q_values.unsqueeze(1).expand(-1, self.num_actions)
+        if q_values.dim() == 1:
+            q_all = q_values.unsqueeze(1).expand(-1, self.num_actions)
+        else:
+            q_all = q_values  # Already (B, num_actions)
         # For simplicity, approximate: V(s) ← E_a[Q(s,a)] with mask
-        q_targets = rewards + (1 - dones) * self.gamma * self.critic_q_target(next_states)
+        v_target_base = self.critic_q_target(next_states)
+        if v_target_base.dim() > 1:
+            v_target_base = v_target_base.squeeze(-1)
+        q_targets = rewards + (1 - dones) * self.gamma * v_target_base
         v_loss = F.mse_loss(self.critic_v(states), q_targets.detach())
 
         self.optimizer_critic_v.zero_grad()
@@ -565,11 +573,22 @@ class IQLTrainer(nn.Module):
         Returns:
             cql_loss: scalar loss.
         """
-        # For simplicity, use average Q over feasible actions as reference
-        # A more sophisticated version would use sampling
-        q_values = self.critic_q(states)  # (B,)
-        # CQL penalty: assume minimum Q should not be too high
-        return torch.relu(q_values.mean() - 1.0)
+        # Conservative Q-Learning: logsumexp over all actions minus Q(s, a_data)
+        # For now, use critic_q output; in proper implementation, critic_q should
+        # output (B, num_actions) for per-action Q-values
+        q_all = self.critic_q(states).unsqueeze(1).expand(-1, self.num_actions)  # (B, num_actions)
+
+        # logsumexp over actions: log(sum(exp(Q)))
+        logsumexp_q = torch.logsumexp(q_all, dim=1)  # (B,)
+
+        # For this simplified version without action data, use mean Q as reference
+        # In full implementation: q_data = q_all.gather(1, actions.unsqueeze(1)).squeeze(1)
+        q_mean = q_all.mean(dim=1)
+
+        # CQL loss: (logsumexp_q - q_mean)
+        cql_loss = (logsumexp_q - q_mean).mean()
+
+        return cql_loss
 
 
 class RewardCalculator(nn.Module):
@@ -751,7 +770,8 @@ class RLTreatmentOptimizer(nn.Module):
 
         # Compute advantages (approximate via policy output)
         # For interpretability, estimate A(s,a) from Q-residual
-        # Simplified: use value as baseline
+        # TODO: Properly compute advantages as A(s,a) = Q(s,a) - V(s)
+        # This requires critic_q to output per-action values and gathering by taken action
         advantages = torch.zeros_like(values)
 
         # Convert action indices to names
