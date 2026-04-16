@@ -30,6 +30,7 @@ import sys
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.distributed as dist
 
@@ -342,6 +343,7 @@ def pretrain_vae(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
 
 def finetune_vae(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
     """Fine-tune the VAE on hematological cell lines only."""
+    import copy
     from resistancemap.models.vae import ProteomeToEpigenomeVAE, train_vae
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
@@ -352,20 +354,23 @@ def finetune_vae(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     data_ckpt = ckpt_mgr.load("data_ready")
     pretrained = ckpt_mgr.load("vae_pretrained")
     dataset = data_ckpt["dataset"]
-    config.vae.input_dim = dataset.proteomics.shape[1]
-    config.vae.epigenome_dim = dataset.epigenomics.shape[1]
+    # Use a deep copy to avoid mutating the shared config object —
+    # pretrain_vae already does this; finetune must do the same.
+    local_config = copy.deepcopy(config)
+    local_config.vae.input_dim = dataset.proteomics.shape[1]
+    local_config.vae.epigenome_dim = dataset.epigenomics.shape[1]
 
-    model = ProteomeToEpigenomeVAE(config.vae).to(config.device)
+    model = ProteomeToEpigenomeVAE(local_config.vae).to(local_config.device)
     # Strip _orig_mod. prefix from compiled model state dicts
     state_dict = pretrained["model_state_dict"]
     state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
     model.load_state_dict(state_dict)
-    model = _maybe_compile(model, config)
-    model = _maybe_distribute(model, config)
+    model = _maybe_compile(model, local_config)
+    model = _maybe_distribute(model, local_config)
 
     result = train_vae(
         model=model, dataset=dataset, splits=data_ckpt["splits"],
-        config=config.vae, subset="hematological", ckpt_mgr=ckpt_mgr, stage_name="vae_finetuned",
+        config=local_config.vae, subset="hematological", ckpt_mgr=ckpt_mgr, stage_name="vae_finetuned",
     )
     log_stage_end("vae_finetune", metrics=result["metrics"])
     return result["checkpoint_path"]
@@ -389,14 +394,257 @@ def calibrate_trajectory(config: ResistanceMapConfig, ckpt_mgr: CheckpointManage
     return result["checkpoint_path"]
 
 
+def train_trajectory_forecaster(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
+    """Train the trajectory forecaster on top of the calibrated ODE.
+
+    Builds a TrajectoryForecaster that predicts chromatin state evolution at
+    3/6/12 month horizons via the ChromatinODE. Supervised by drug sensitivity
+    as a proxy: samples with high resistance (high IC50 z-score) should show
+    trajectories that converge toward the resistant (high-r) basin, while
+    sensitive samples should remain in the active (high-a) basin.
+
+    The forecaster's learnable parameters (latent_to_params, horizon_scale)
+    are trained so that future stability scores correlate with observed drug
+    response.  This makes the trajectory modality genuinely distinct from
+    the static MemoryStabilityScorer used earlier.
+
+    Checkpoint saved: "trajectory_forecaster_trained"
+    """
+    import copy
+    from resistancemap.models.vae import ProteomeToEpigenomeVAE
+    from resistancemap.models.trajectory import TrajectoryForecaster, MemoryStabilityScorer
+    from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
+
+    if ckpt_mgr.exists("trajectory_forecaster_trained"):
+        return ckpt_mgr.path("trajectory_forecaster_trained")
+
+    log_stage_start("trajectory_forecast")
+    data_ckpt = ckpt_mgr.load("data_ready")
+    vae_ckpt = ckpt_mgr.load("vae_finetuned")
+    traj_ckpt = ckpt_mgr.load("stability_calibrated")
+    dataset = data_ckpt["dataset"]
+    protein_names = dataset.protein_names
+    device = config.device
+
+    # ── 1. Load frozen VAE for latent extraction ────────────────────────
+    local_config = copy.deepcopy(config)
+    local_config.vae.input_dim = dataset.proteomics.shape[1]
+    local_config.vae.epigenome_dim = dataset.epigenomics.shape[1]
+    vae = ProteomeToEpigenomeVAE(local_config.vae).to(device)
+    vae_sd = {k.replace("_orig_mod.", ""): v for k, v in vae_ckpt["model_state_dict"].items()}
+    vae.load_state_dict(vae_sd)
+    vae.eval()
+
+    # ── 2. Build trajectory forecaster ──────────────────────────────────
+    # Re-use the calibrated ODE weights from MemoryStabilityScorer by
+    # loading the scorer, then copying its ODE into the forecaster.
+    scorer = MemoryStabilityScorer(config.trajectory).to(device)
+    scorer_sd = {k.replace("_orig_mod.", ""): v for k, v in traj_ckpt["model_state_dict"].items()}
+    scorer.load_state_dict(scorer_sd)
+    scorer.eval()
+
+    forecaster = TrajectoryForecaster(
+        config=config.trajectory,
+        protein_names=config.trajectory.reader_writer_proteins,
+        use_sde=config.trajectory.use_sde,
+    ).to(device)
+
+    # Transfer the calibrated ODE parameters from scorer → forecaster.
+    # Both share a ChromatinODE; copy the learned protein_to_params weights
+    # so the forecaster starts from the calibrated ODE, not random.
+    forecaster.ode.load_state_dict(scorer.ode.state_dict())
+    logger.info("Transferred calibrated ODE weights from MemoryStabilityScorer to TrajectoryForecaster")
+
+    # ── 3. Pre-compute VAE latents and reader/writer abundances ─────────
+    logger.info("Pre-computing VAE latents and reader/writer levels for trajectory training...")
+    all_latents = []
+    all_rw_levels = []
+    with torch.no_grad():
+        for i in range(len(dataset)):
+            prot = dataset.proteomics[i:i+1].to(device)
+            mu, _ = vae.encode(prot)
+            all_latents.append(mu.squeeze(0).cpu())
+            rw = scorer.extract_reader_writer_levels(prot, protein_names)
+            all_rw_levels.append(rw.squeeze(0).cpu())
+    all_latents = torch.stack(all_latents)      # (N, 64)
+    all_rw_levels = torch.stack(all_rw_levels)  # (N, 20)
+    logger.info(f"Pre-computed: latents {all_latents.shape}, rw_levels {all_rw_levels.shape}")
+
+    # ── 4. Build supervision targets ────────────────────────────────────
+    # Strategy: The drug sensitivity z-scores are our proxy for resistance.
+    # A sample with HIGH average z-scored IC50 across drugs is RESISTANT
+    # (drugs are less effective). We want the forecaster's future stability
+    # scores to predict this: resistant samples should show declining
+    # stability (moving toward resistant basin) at longer horizons.
+    #
+    # Target per sample: mean drug sensitivity (NaN-aware), normalized [0,1].
+    # 1.0 = most resistant → expect low future stability at long horizons
+    # 0.0 = most sensitive → expect high future stability (locked in sensitive basin)
+    drug_sens = dataset.drug_sensitivity  # (N, D)
+    per_sample_resistance = torch.zeros(len(dataset))
+    for i in range(len(dataset)):
+        valid = drug_sens[i][~torch.isnan(drug_sens[i])]
+        if len(valid) > 0:
+            per_sample_resistance[i] = valid.mean().item()
+        else:
+            per_sample_resistance[i] = float("nan")
+
+    valid_mask = ~torch.isnan(per_sample_resistance)
+    if valid_mask.sum() > 0:
+        vr = per_sample_resistance[valid_mask]
+        per_sample_resistance_norm = torch.zeros_like(per_sample_resistance)
+        per_sample_resistance_norm[valid_mask] = (vr - vr.min()) / (vr.max() - vr.min() + 1e-8)
+    else:
+        per_sample_resistance_norm = torch.full((len(dataset),), 0.5)
+        valid_mask = torch.ones(len(dataset), dtype=torch.bool)
+
+    # ── 5. Training loop ────────────────────────────────────────────────
+    # Only train the forecaster-specific parameters; freeze the ODE core
+    # (it was already calibrated). The trainable params are:
+    #   - latent_to_params: Linear(64→8) — per-parameter ODE modulation from latent
+    #   - horizon_scale: scalar — learned time scaling
+    trainable_params = [
+        {"params": forecaster.latent_to_params.parameters(), "lr": 1e-3},
+        {"params": [forecaster.horizon_scale], "lr": 5e-4},
+    ]
+    optimizer = torch.optim.Adam(trainable_params, weight_decay=1e-5)
+    splits = data_ckpt["splits"]
+    train_idx = splits["train"]
+    val_idx = splits["val"]
+    valid_train = [i for i in train_idx if valid_mask[i]]
+    valid_val = [i for i in val_idx if valid_mask[i]]
+
+    # Use euler solver during training — dopri5 with tight tolerances
+    # can underflow dt when gradients push ODE into stiff regimes.
+    _orig_solver = getattr(config.trajectory, "ode_solver", "euler")
+    config.trajectory.ode_solver = "euler"
+
+    best_val_loss = float("inf")
+    patience, patience_counter = 20, 0
+    batch_size = 32
+    n_epochs = 200
+
+    for epoch in range(n_epochs):
+        forecaster.train()
+        # But keep the core ODE frozen — only latent_to_params and horizon_scale learn
+        for p in forecaster.ode.parameters():
+            p.requires_grad = False
+
+        perm = torch.randperm(len(valid_train))
+        epoch_losses = []
+
+        for bi in range(0, len(valid_train), batch_size):
+            batch_end = min(bi + batch_size, len(valid_train))
+            idxs = [valid_train[int(perm[j])] for j in range(bi, batch_end)]
+
+            latent_b = all_latents[idxs].to(device)   # (B, 64)
+            rw_b = all_rw_levels[idxs].to(device)     # (B, 20)
+            target_b = per_sample_resistance_norm[idxs].to(device)  # (B,)
+
+            optimizer.zero_grad()
+
+            # Forward: compute stability scores at 3/6/12 month horizons
+            # using internal differentiable methods (forecast() uses
+            # torch.no_grad and self.eval(), blocking gradient flow).
+            ode_params = forecaster._latent_to_ode_params(latent_b, rw_b)
+            batch_size_b = latent_b.shape[0]
+            a_init_b = torch.full((batch_size_b, 1), 0.5, device=device, dtype=latent_b.dtype)
+            r_init_b = torch.full((batch_size_b, 1), 0.5, device=device, dtype=latent_b.dtype)
+
+            target_stability = 1.0 - target_b
+            horizon_weights = {3: 0.2, 6: 0.3, 12: 0.5}
+            total_loss = torch.tensor(0.0, device=device, requires_grad=True)
+            for h, w in horizon_weights.items():
+                time_h = forecaster.horizon_times.get(h, float(h * 10.0))
+                # horizon_scale modulates integration time; detach to float
+                # for the ODE solver (gradients flow through ode_params instead)
+                time_h = time_h * torch.nn.functional.softplus(forecaster.horizon_scale).item()
+                a_final, r_final, _ = forecaster._integrate_trajectory(
+                    ode_params, time_h, a_init_b, r_init_b
+                )
+                pred_stab = forecaster._compute_stability_at_state(a_final, r_final, ode_params)
+                total_loss = total_loss + w * torch.nn.functional.mse_loss(pred_stab, target_stability)
+
+            total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(
+                list(forecaster.latent_to_params.parameters()) + [forecaster.horizon_scale], 1.0
+            )
+            optimizer.step()
+            epoch_losses.append(total_loss.item())
+
+        # ── Validation ──
+        forecaster.eval()
+        val_losses = []
+        with torch.no_grad():
+            for bi in range(0, len(valid_val), batch_size):
+                idxs = valid_val[bi:min(bi + batch_size, len(valid_val))]
+                latent_b = all_latents[idxs].to(device)
+                rw_b = all_rw_levels[idxs].to(device)
+                target_b = per_sample_resistance_norm[idxs].to(device)
+                target_stability = 1.0 - target_b
+
+                ode_params_v = forecaster._latent_to_ode_params(latent_b, rw_b)
+                bs_v = latent_b.shape[0]
+                a_init_v = torch.full((bs_v, 1), 0.5, device=device, dtype=latent_b.dtype)
+                r_init_v = torch.full((bs_v, 1), 0.5, device=device, dtype=latent_b.dtype)
+                total_loss = torch.tensor(0.0, device=device)
+                for h, w in horizon_weights.items():
+                    time_h = forecaster.horizon_times.get(h, float(h * 10.0))
+                    time_h = time_h * torch.nn.functional.softplus(forecaster.horizon_scale).item()
+                    a_f, r_f, _ = forecaster._integrate_trajectory(
+                        ode_params_v, time_h, a_init_v, r_init_v
+                    )
+                    pred_stab = forecaster._compute_stability_at_state(a_f, r_f, ode_params_v)
+                    total_loss = total_loss + w * torch.nn.functional.mse_loss(pred_stab, target_stability)
+                val_losses.append(total_loss.item())
+
+        val_loss = sum(val_losses) / max(len(val_losses), 1)
+        train_loss = sum(epoch_losses) / max(len(epoch_losses), 1)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+            ckpt_mgr.save("trajectory_forecaster_trained", {
+                "model_state_dict": forecaster.state_dict(),
+                "metrics": {"val_loss": val_loss, "train_loss": train_loss},
+                "config": config.trajectory,
+                "epoch": epoch,
+            })
+        else:
+            patience_counter += 1
+
+        if (epoch + 1) % 25 == 0:
+            logger.info(
+                f"[trajectory_forecast] Epoch {epoch+1}/{n_epochs} "
+                f"train={train_loss:.4f} val={val_loss:.4f} "
+                f"horizon_scale={torch.nn.functional.softplus(forecaster.horizon_scale).item():.4f}"
+            )
+        if patience_counter >= patience:
+            logger.info(f"[trajectory_forecast] Early stopping at epoch {epoch+1}")
+            break
+
+    # Restore original solver
+    config.trajectory.ode_solver = _orig_solver
+
+    metrics = {"trajectory_forecast_val_loss": best_val_loss}
+    log_stage_end("trajectory_forecast", metrics=metrics)
+    return ckpt_mgr.path("trajectory_forecaster_trained")
+
+
 def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
     """Train protein network GNN on PPI graph.
 
-    Following MyeloMemory pattern: node features = protein abundance (1) +
-    VAE latent state (64) + stability score (1) = 66-dim per protein node.
+    Node features per protein:
+      - ESM-2 bottleneck embedding (256-dim) if sequences available, else abundance (1)
+      - VAE latent state broadcast (64)
+      - Stability score (1)
+    Total: 321-dim (with ESM-2) or 66-dim (fallback).
+
     Trained with masked MSE against drug sensitivity + reversibility proxy.
     """
-    from resistancemap.models.protein_network import PPIGraphNetwork
+    from resistancemap.models.protein_network import (
+        PPIGraphNetwork, ESM2Embedder, ESM2Bottleneck,
+    )
     from resistancemap.models.vae import ProteomeToEpigenomeVAE
     from resistancemap.models.trajectory import MemoryStabilityScorer
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
@@ -445,6 +693,50 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
     all_stability = torch.stack(all_stability)  # (N,)
     logger.info(f"Pre-computed: latents {all_latents.shape}, stability {all_stability.shape}")
 
+    # ── 3b. ESM-2 protein embeddings (optional) ─────────────────────────
+    # If the dataset provides protein sequences, compute ESM-2 embeddings
+    # and compress via bottleneck (1280→256). This replaces the 1-dim
+    # abundance feature per node with a 256-dim structural embedding,
+    # giving the GNN much richer node features.
+    esm2_embeddings = None
+    esm2_bottleneck_dim = getattr(config.protein_net, "esm2_bottleneck_dim", 256)
+    protein_sequences = getattr(dataset, "protein_sequences", None)
+
+    if protein_sequences and len(protein_sequences) == n_proteins:
+        logger.info(f"Computing ESM-2 embeddings for {n_proteins} proteins...")
+        try:
+            esm2_model_name = getattr(config.protein_net, "esm2_model", "facebook/esm2_t33_650M_UR50D")
+            embedder = ESM2Embedder(
+                model_name=esm2_model_name,
+                cache_size=n_proteins,
+                device=str(device),
+            )
+            bottleneck = ESM2Bottleneck(
+                input_dim=1280,
+                output_dim=esm2_bottleneck_dim,
+            ).to(device)
+            # Compute in batches to avoid OOM on large proteomes
+            esm2_batch_size = 64
+            esm2_raw = []
+            for bi in range(0, n_proteins, esm2_batch_size):
+                batch_seqs = protein_sequences[bi:bi + esm2_batch_size]
+                raw_emb = embedder.embed_proteins(batch_seqs)  # (batch, 1280)
+                esm2_raw.append(raw_emb.cpu())
+            esm2_raw = torch.cat(esm2_raw, dim=0)  # (n_proteins, 1280)
+            with torch.no_grad():
+                esm2_embeddings = bottleneck(esm2_raw.to(device)).cpu()  # (n_proteins, 256)
+            logger.info(f"ESM-2 embeddings: {esm2_embeddings.shape}")
+            # Free the large ESM-2 model from GPU memory
+            del embedder
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        except Exception as e:
+            logger.warning(f"ESM-2 embedding failed ({e}); falling back to abundance features")
+            esm2_embeddings = None
+    else:
+        logger.info("No protein sequences available; using abundance-only node features")
+
+    use_esm2 = esm2_embeddings is not None
+
     # ── 4. Build PPI edge index ──────────────────────────────────────────
     ppi_edges = dataset.ppi_edges or []
     ppi_scores = dataset.ppi_scores or []
@@ -470,8 +762,10 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
     edge_attr = torch.tensor(weights, dtype=torch.float32, device=device).unsqueeze(-1)
 
     # ── 5. Build GNN + prediction head ───────────────────────────────────
-    # Node features: protein abundance (1) + VAE latent (64) + stability (1) = 66
-    node_feat_dim = 1 + config.vae.latent_dim + 1
+    # Node features:
+    #   With ESM-2: bottleneck(256) + VAE latent(64) + stability(1) = 321
+    #   Without:    abundance(1) + VAE latent(64) + stability(1) = 66
+    node_feat_dim = (esm2_bottleneck_dim if use_esm2 else 1) + config.vae.latent_dim + 1
     gnn = PPIGraphNetwork(
         in_dim=node_feat_dim, hidden_dim=config.protein_net.gnn_hidden,
         n_layers=config.protein_net.gnn_layers, n_heads=config.protein_net.gnn_heads,
@@ -514,11 +808,14 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
 
             for si in range(bi, min(bi + pn_inner_batch, len(train_idx))):
                 idx = train_idx[int(perm[si])]
-                # Build 66-dim node features for this sample
-                prot_vals = dataset.proteomics[idx].to(device).unsqueeze(-1)  # (P, 1)
+                # Build node features: ESM2(256) or abundance(1) + latent(64) + stab(1)
+                if use_esm2:
+                    prot_feat = esm2_embeddings.to(device)  # (P, 256)
+                else:
+                    prot_feat = dataset.proteomics[idx].to(device).unsqueeze(-1)  # (P, 1)
                 latent_broadcast = all_latents[idx].to(device).unsqueeze(0).expand(n_proteins, -1)  # (P, 64)
                 stab_broadcast = all_stability[idx].to(device).unsqueeze(0).expand(n_proteins).unsqueeze(-1)  # (P, 1)
-                node_feat = torch.cat([prot_vals, latent_broadcast, stab_broadcast], dim=-1)  # (P, 66)
+                node_feat = torch.cat([prot_feat, latent_broadcast, stab_broadcast], dim=-1)  # (P, node_feat_dim)
 
                 ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
                 node_emb = gnn(ppi_data)  # (P, hidden)
@@ -543,10 +840,13 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
         val_losses = []
         with torch.no_grad():
             for idx in val_idx:
-                prot_vals = dataset.proteomics[idx].to(device).unsqueeze(-1)
+                if use_esm2:
+                    prot_feat = esm2_embeddings.to(device)
+                else:
+                    prot_feat = dataset.proteomics[idx].to(device).unsqueeze(-1)
                 latent_broadcast = all_latents[idx].to(device).unsqueeze(0).expand(n_proteins, -1)
                 stab_broadcast = all_stability[idx].to(device).unsqueeze(0).expand(n_proteins).unsqueeze(-1)
-                node_feat = torch.cat([prot_vals, latent_broadcast, stab_broadcast], dim=-1)
+                node_feat = torch.cat([prot_feat, latent_broadcast, stab_broadcast], dim=-1)
                 ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
                 node_emb = gnn(ppi_data)
                 global_repr = node_emb.mean(dim=0, keepdim=True)
@@ -569,6 +869,8 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
                 "config": config.protein_net,
                 "edge_index": edge_index.cpu(), "edge_attr": edge_attr.cpu(),
                 "node_feat_dim": node_feat_dim,
+                "use_esm2": use_esm2,
+                "esm2_embeddings": esm2_embeddings if use_esm2 else None,
             })
         else:
             patience_counter += 1
@@ -588,12 +890,14 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     """Train multi-modal fusion layer.
 
     Combines four modalities (epigenetic state, trajectory, protein network,
-    stability) via cross-attention fusion, trained against drug sensitivity.
+    stability) via CrossModalFusionNet with learned cross-attention and gated
+    fusion, trained against drug sensitivity.
     """
-    from resistancemap.models.fusion import ResistanceMapFusion
+    import copy
     from resistancemap.models.vae import ProteomeToEpigenomeVAE
-    from resistancemap.models.trajectory import MemoryStabilityScorer
+    from resistancemap.models.trajectory import MemoryStabilityScorer, TrajectoryForecaster
     from resistancemap.models.protein_network import PPIGraphNetwork
+    from resistancemap.models.fusion import CrossModalFusionNet
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
     if ckpt_mgr.exists("fusion_trained"):
@@ -603,6 +907,7 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     data_ckpt = ckpt_mgr.load("data_ready")
     vae_ckpt = ckpt_mgr.load("vae_finetuned")
     traj_ckpt = ckpt_mgr.load("stability_calibrated")
+    forecaster_ckpt = ckpt_mgr.load("trajectory_forecaster_trained")
     pnet_ckpt = ckpt_mgr.load("protein_net_trained")
     dataset = data_ckpt["dataset"]
     protein_names = dataset.protein_names
@@ -610,15 +915,25 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     device = config.device
 
     # ── 1. Load frozen upstream models ───────────────────────────────────
-    config.vae.input_dim = dataset.proteomics.shape[1]
-    config.vae.epigenome_dim = dataset.epigenomics.shape[1]
-    vae = ProteomeToEpigenomeVAE(config.vae).to(device)
+    local_config = copy.deepcopy(config)
+    local_config.vae.input_dim = dataset.proteomics.shape[1]
+    local_config.vae.epigenome_dim = dataset.epigenomics.shape[1]
+    vae = ProteomeToEpigenomeVAE(local_config.vae).to(device)
     vae_sd = {k.replace("_orig_mod.", ""): v for k, v in vae_ckpt["model_state_dict"].items()}
     vae.load_state_dict(vae_sd); vae.eval()
 
     scorer = MemoryStabilityScorer(config.trajectory).to(device)
     scorer_sd = {k.replace("_orig_mod.", ""): v for k, v in traj_ckpt["model_state_dict"].items()}
     scorer.load_state_dict(scorer_sd); scorer.eval()
+
+    # Load the trained trajectory forecaster for real trajectory embeddings
+    forecaster = TrajectoryForecaster(
+        config=config.trajectory,
+        protein_names=config.trajectory.reader_writer_proteins,
+        use_sde=config.trajectory.use_sde,
+    ).to(device)
+    fc_sd = {k.replace("_orig_mod.", ""): v for k, v in forecaster_ckpt["model_state_dict"].items()}
+    forecaster.load_state_dict(fc_sd); forecaster.eval()
 
     gnn = PPIGraphNetwork(
         in_dim=pnet_ckpt["node_feat_dim"], hidden_dim=config.protein_net.gnn_hidden,
@@ -631,13 +946,33 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     edge_index = pnet_ckpt["edge_index"].to(device)
     edge_attr = pnet_ckpt["edge_attr"].to(device)
 
+    # Check if ESM-2 embeddings were used during protein network training
+    pnet_use_esm2 = pnet_ckpt.get("use_esm2", False)
+    pnet_esm2_embeddings = pnet_ckpt.get("esm2_embeddings", None)
+
     # ── 2. Pre-compute all modality embeddings ───────────────────────────
     logger.info("Pre-computing modality embeddings for fusion training...")
     from torch_geometric.data import Data as PyGData
     epi_states = []     # (N, 64) — VAE latent
-    traj_states = []    # (N, 64) — reuse VAE latent as trajectory proxy
-    pnet_outputs = []   # (N, 256) — GNN global pool
+    traj_states = []    # (N, traj_dim) — real trajectory forecaster output
+    pnet_outputs = []   # (N, gnn_hidden) — GNN global pool
     stab_scores = []    # (N, 1)
+
+    # Trajectory embedding: concatenate stability scores at 3/6/12 month
+    # horizons + initial stability + transition probabilities at each horizon.
+    # This gives a 10-dim trajectory vector per sample:
+    #   [initial_stab(1), stab_3m(1), stab_6m(1), stab_12m(1),
+    #    trans_3m(1), trans_6m(1), trans_12m(1),
+    #    a_3m(1), a_12m(1), r_12m(1)]
+    # We'll pad/project this to 64-dim to keep the fusion input dims unchanged.
+    traj_raw_dim = 10
+    traj_projector = torch.nn.Sequential(
+        torch.nn.Linear(traj_raw_dim, 64),
+        torch.nn.GELU(),
+    ).to(device)
+    # Initialize with small weights so early training is stable
+    torch.nn.init.xavier_uniform_(traj_projector[0].weight, gain=0.5)
+    torch.nn.init.zeros_(traj_projector[0].bias)
 
     with torch.no_grad():
         for i in range(len(dataset)):
@@ -645,39 +980,69 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
             # Epigenetic state = VAE latent
             mu, _ = vae.encode(prot)
             epi_states.append(mu.squeeze(0).cpu())
-            # Trajectory = use same latent (trajectory forecaster not separately trained)
-            traj_states.append(mu.squeeze(0).cpu())
             # Stability
             stab = scorer(prot, protein_names)
             stab_scores.append(stab.view(1).cpu())
-            # Protein network
-            prot_vals = prot.squeeze(0).unsqueeze(-1)  # (P, 1)
+
+            # Real trajectory: forecast at 3/6/12 months using the trained forecaster
+            rw = scorer.extract_reader_writer_levels(prot, protein_names)
+            forecast_result = forecaster.forecast(mu, rw, horizons=[3, 6, 12])
+            # Build trajectory feature vector
+            traj_vec = torch.cat([
+                forecast_result["initial_stability"].unsqueeze(-1),          # (1, 1)
+                forecast_result["stability_scores"][3].unsqueeze(-1),        # (1, 1)
+                forecast_result["stability_scores"][6].unsqueeze(-1),        # (1, 1)
+                forecast_result["stability_scores"][12].unsqueeze(-1),       # (1, 1)
+                forecast_result["transition_probs"][3].unsqueeze(-1),        # (1, 1)
+                forecast_result["transition_probs"][6].unsqueeze(-1),        # (1, 1)
+                forecast_result["transition_probs"][12].unsqueeze(-1),       # (1, 1)
+                forecast_result["states"][3][0],                             # (1, 1) a at 3m
+                forecast_result["states"][12][0],                            # (1, 1) a at 12m
+                forecast_result["states"][12][1],                            # (1, 1) r at 12m
+            ], dim=-1)  # (1, 10)
+            traj_states.append(traj_vec.squeeze(0).cpu())
+
+            # Protein network — match node feature construction from train_protein_network
+            if pnet_use_esm2 and pnet_esm2_embeddings is not None:
+                prot_feat = pnet_esm2_embeddings.to(device)  # (P, 256)
+            else:
+                prot_feat = prot.squeeze(0).unsqueeze(-1)  # (P, 1)
             lat_bc = mu.expand(n_proteins, -1)         # (P, 64)
             stab_bc = stab.expand(n_proteins).unsqueeze(-1)  # (P, 1)
-            node_feat = torch.cat([prot_vals, lat_bc, stab_bc], dim=-1)
+            node_feat = torch.cat([prot_feat, lat_bc, stab_bc], dim=-1)
             ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
             node_emb = gnn(ppi_data)  # (P, hidden)
             pnet_outputs.append(node_emb.mean(dim=0).cpu())  # (hidden,)
 
     epi_states = torch.stack(epi_states)      # (N, 64)
-    traj_states = torch.stack(traj_states)    # (N, 64)
+    traj_states = torch.stack(traj_states)    # (N, 10) — raw trajectory features
     pnet_outputs = torch.stack(pnet_outputs)  # (N, gnn_hidden)
     stab_scores = torch.stack(stab_scores)    # (N, 1)
-    logger.info(f"Embeddings: epi={epi_states.shape}, pnet={pnet_outputs.shape}, stab={stab_scores.shape}")
+    logger.info(
+        f"Embeddings: epi={epi_states.shape}, traj_raw={traj_states.shape}, "
+        f"pnet={pnet_outputs.shape}, stab={stab_scores.shape}"
+    )
 
-    # ── 3. Build fusion model + drug prediction head ─────────────────────
+    # ── 3. Build CrossModalFusionNet + drug prediction head ───────────────
     pnet_dim = pnet_outputs.shape[1]
-    total_input_dim = 64 + 64 + pnet_dim + 1  # epi + traj + pnet + stab
+    # Modality dimensions fed into CrossModalFusionNet:
+    #   epigenetic: 64 (VAE latent, projected from traj_projector-equivalent)
+    #   trajectory: 64 (10-dim raw → traj_projector → 64)
+    #   protein_network: gnn_hidden (e.g. 128)
+    #   stability: 1
+    modality_dims = {
+        "epigenetic": 64,
+        "trajectory": 64,
+        "protein_network": pnet_dim,
+        "stability": 1,
+    }
     fusion_output_dim = config.fusion.hidden_dim
-
-    # Build a simple concat fusion since modality dims differ from defaults
-    fusion = torch.nn.Sequential(
-        torch.nn.Linear(total_input_dim, fusion_output_dim),
-        torch.nn.ReLU(),
-        torch.nn.Dropout(config.fusion.dropout),
-        torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
-        torch.nn.ReLU(),
-        torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+    fusion = CrossModalFusionNet(
+        modality_dims=modality_dims,
+        hidden_dim=config.fusion.hidden_dim,
+        n_heads=config.fusion.n_heads,
+        dropout=config.fusion.dropout,
+        output_dim=fusion_output_dim,
     ).to(device)
 
     n_drugs = dataset.drug_sensitivity.shape[1]
@@ -687,7 +1052,12 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
         torch.nn.Linear(64, n_drugs),
     ).to(device)
 
-    params = list(fusion.parameters()) + list(drug_head.parameters())
+    # Include traj_projector in trainable params so it learns alongside fusion
+    params = (
+        list(fusion.parameters())
+        + list(drug_head.parameters())
+        + list(traj_projector.parameters())
+    )
     optimizer = torch.optim.Adam(params, lr=config.fusion.fusion_lr, weight_decay=config.fusion.weight_decay)
     splits = data_ckpt["splits"]
     train_idx = splits["train"]
@@ -698,7 +1068,7 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     patience, patience_counter = 15, 0
 
     for epoch in range(config.fusion.fusion_epochs):
-        fusion.train(); drug_head.train()
+        fusion.train(); drug_head.train(); traj_projector.train()
         perm = torch.randperm(len(train_idx))
         epoch_losses = []
 
@@ -707,15 +1077,21 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
             idxs = [train_idx[int(perm[j])] for j in range(bi, batch_end)]
 
             epi_b = epi_states[idxs].to(device)
-            traj_b = traj_states[idxs].to(device)
+            traj_raw_b = traj_states[idxs].to(device)   # (B, 10) raw trajectory
+            traj_b = traj_projector(traj_raw_b)          # (B, 64) projected
             pnet_b = pnet_outputs[idxs].to(device)
             stab_b = stab_scores[idxs].to(device)
             target_b = dataset.drug_sensitivity[idxs].to(device)
 
             optimizer.zero_grad()
 
-            concat = torch.cat([epi_b, traj_b, pnet_b, stab_b], dim=-1)
-            fused = fusion(concat)
+            modality_dict = {
+                "epigenetic": epi_b,
+                "trajectory": traj_b,
+                "protein_network": pnet_b,
+                "stability": stab_b,
+            }
+            fused, _ = fusion(modality_dict)
             pred = drug_head(fused)
             mask = ~torch.isnan(target_b)
             if mask.any():
@@ -726,18 +1102,24 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
                 epoch_losses.append(loss.item())
 
         # Validation
-        fusion.eval(); drug_head.eval()
+        fusion.eval(); drug_head.eval(); traj_projector.eval()
         val_losses = []
         with torch.no_grad():
             for bi in range(0, len(val_idx), 64):
                 idxs = val_idx[bi:min(bi+64, len(val_idx))]
                 epi_b = epi_states[idxs].to(device)
-                traj_b = traj_states[idxs].to(device)
+                traj_raw_b = traj_states[idxs].to(device)
+                traj_b = traj_projector(traj_raw_b)
                 pnet_b = pnet_outputs[idxs].to(device)
                 stab_b = stab_scores[idxs].to(device)
                 target_b = dataset.drug_sensitivity[idxs].to(device)
-                concat = torch.cat([epi_b, traj_b, pnet_b, stab_b], dim=-1)
-                fused = fusion(concat)
+                modality_dict = {
+                    "epigenetic": epi_b,
+                    "trajectory": traj_b,
+                    "protein_network": pnet_b,
+                    "stability": stab_b,
+                }
+                fused, _ = fusion(modality_dict)
                 pred = drug_head(fused)
                 mask = ~torch.isnan(target_b)
                 if mask.any():
@@ -752,9 +1134,13 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
             ckpt_mgr.save("fusion_trained", {
                 "fusion_state_dict": fusion.state_dict(),
                 "drug_head_state_dict": drug_head.state_dict(),
+                "traj_projector_state_dict": traj_projector.state_dict(),
                 "metrics": {"val_loss": val_loss, "train_loss": train_loss},
                 "config": config.fusion,
                 "fusion_output_dim": fusion_output_dim,
+                "fusion_type": "cross_attention",
+                "modality_dims": modality_dims,
+                "traj_raw_dim": traj_raw_dim,
                 "epi_states": epi_states, "traj_states": traj_states,
                 "pnet_outputs": pnet_outputs, "stab_scores": stab_scores,
             })
@@ -779,6 +1165,7 @@ def train_landscape(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) ->
     the landscape model with drug resistance, state, and target heads.
     """
     from resistancemap.landscape.predictor import ResistanceLandscape
+    from resistancemap.models.fusion import CrossModalFusionNet
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
     if ckpt_mgr.exists("landscape_trained"):
@@ -792,22 +1179,47 @@ def train_landscape(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) ->
 
     # Load pre-computed fused representations
     fusion_output_dim = fusion_ckpt["fusion_output_dim"]
+    traj_raw_dim = fusion_ckpt.get("traj_raw_dim", 10)
     epi_states = fusion_ckpt["epi_states"]
-    traj_states = fusion_ckpt["traj_states"]
+    traj_states = fusion_ckpt["traj_states"]    # (N, traj_raw_dim) raw trajectory features
     pnet_outputs = fusion_ckpt["pnet_outputs"]
     stab_scores = fusion_ckpt["stab_scores"]
 
-    # Rebuild fusion model and compute fused representations
-    pnet_dim = pnet_outputs.shape[1]
-    total_input_dim = 64 + 64 + pnet_dim + 1
-    fusion = torch.nn.Sequential(
-        torch.nn.Linear(total_input_dim, fusion_output_dim),
-        torch.nn.ReLU(),
-        torch.nn.Dropout(config.fusion.dropout),
-        torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
-        torch.nn.ReLU(),
-        torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+    # Rebuild trajectory projector (10→64) and fusion model
+    traj_projector = torch.nn.Sequential(
+        torch.nn.Linear(traj_raw_dim, 64),
+        torch.nn.GELU(),
     ).to(device)
+    if "traj_projector_state_dict" in fusion_ckpt:
+        traj_projector.load_state_dict(fusion_ckpt["traj_projector_state_dict"])
+    traj_projector.eval()
+
+    pnet_dim = pnet_outputs.shape[1]
+    # Rebuild CrossModalFusionNet (backward compat: fall back to concat if old ckpt)
+    fusion_type = fusion_ckpt.get("fusion_type", "concat")
+    if fusion_type == "cross_attention":
+        modality_dims = fusion_ckpt.get("modality_dims", {
+            "epigenetic": 64, "trajectory": 64,
+            "protein_network": pnet_dim, "stability": 1,
+        })
+        fusion = CrossModalFusionNet(
+            modality_dims=modality_dims,
+            hidden_dim=config.fusion.hidden_dim,
+            n_heads=config.fusion.n_heads,
+            dropout=config.fusion.dropout,
+            output_dim=fusion_output_dim,
+        ).to(device)
+    else:
+        # Legacy concat fusion for old checkpoints
+        total_input_dim = 64 + 64 + pnet_dim + 1
+        fusion = torch.nn.Sequential(
+            torch.nn.Linear(total_input_dim, fusion_output_dim),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(config.fusion.dropout),
+            torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
+            torch.nn.ReLU(),
+            torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+        ).to(device)
     fusion.load_state_dict(fusion_ckpt["fusion_state_dict"])
     fusion.eval()
 
@@ -816,21 +1228,32 @@ def train_landscape(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) ->
     fused_reprs = []
     with torch.no_grad():
         for i in range(len(dataset)):
-            concat = torch.cat([
-                epi_states[i:i+1].to(device),
-                traj_states[i:i+1].to(device),
-                pnet_outputs[i:i+1].to(device),
-                stab_scores[i:i+1].to(device),
-            ], dim=-1)
-            fused_reprs.append(fusion(concat).squeeze(0).cpu())
+            traj_proj = traj_projector(traj_states[i:i+1].to(device))  # (1, 64)
+            if fusion_type == "cross_attention":
+                modality_dict = {
+                    "epigenetic": epi_states[i:i+1].to(device),
+                    "trajectory": traj_proj,
+                    "protein_network": pnet_outputs[i:i+1].to(device),
+                    "stability": stab_scores[i:i+1].to(device),
+                }
+                fused_out, _ = fusion(modality_dict)
+                fused_reprs.append(fused_out.squeeze(0).cpu())
+            else:
+                concat = torch.cat([
+                    epi_states[i:i+1].to(device), traj_proj,
+                    pnet_outputs[i:i+1].to(device), stab_scores[i:i+1].to(device),
+                ], dim=-1)
+                fused_reprs.append(fusion(concat).squeeze(0).cpu())
     fused_reprs = torch.stack(fused_reprs)  # (N, fusion_dim)
     logger.info(f"Fused representations: {fused_reprs.shape}")
 
     n_drugs = dataset.drug_sensitivity.shape[1]
+    use_evidential = getattr(config.landscape, "use_evidential", False)
     model = ResistanceLandscape(
         fusion_dim=fused_reprs.shape[1],
         n_drugs=n_drugs,
         n_proteins=min(len(dataset.protein_names), 100),
+        use_evidential=use_evidential,
     ).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-4)
@@ -892,6 +1315,7 @@ def train_landscape(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) ->
                 "metrics": {"val_loss": val_loss, "train_loss": train_loss},
                 "config": config.landscape,
                 "fusion_dim": fused_reprs.shape[1],
+                "use_evidential": use_evidential,
             })
         else:
             patience_counter += 1
@@ -914,6 +1338,7 @@ def validate_pipeline(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) 
     and evaluates landscape predictions against drug sensitivity ground truth.
     """
     from resistancemap.landscape.predictor import ResistanceLandscape
+    from resistancemap.models.fusion import CrossModalFusionNet
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
 
     if ckpt_mgr.exists("pipeline_validated"):
@@ -928,43 +1353,81 @@ def validate_pipeline(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) 
     test_idx = splits["test"]
     device = config.device
 
-    # Load fusion model to compute fused representations for test set
+    # Load fusion model + trajectory projector to compute fused representations for test set
     pnet_dim = fusion_ckpt["pnet_outputs"].shape[1]
-    total_input_dim = 64 + 64 + pnet_dim + 1
     fusion_output_dim = fusion_ckpt["fusion_output_dim"]
+    traj_raw_dim = fusion_ckpt.get("traj_raw_dim", 10)
 
-    fusion = torch.nn.Sequential(
-        torch.nn.Linear(total_input_dim, fusion_output_dim),
-        torch.nn.ReLU(),
-        torch.nn.Dropout(config.fusion.dropout),
-        torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
-        torch.nn.ReLU(),
-        torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+    # Rebuild trajectory projector
+    traj_projector = torch.nn.Sequential(
+        torch.nn.Linear(traj_raw_dim, 64),
+        torch.nn.GELU(),
     ).to(device)
+    if "traj_projector_state_dict" in fusion_ckpt:
+        traj_projector.load_state_dict(fusion_ckpt["traj_projector_state_dict"])
+    traj_projector.eval()
+
+    # Rebuild CrossModalFusionNet (backward compat: fall back to concat if old ckpt)
+    fusion_type = fusion_ckpt.get("fusion_type", "concat")
+    if fusion_type == "cross_attention":
+        modality_dims = fusion_ckpt.get("modality_dims", {
+            "epigenetic": 64, "trajectory": 64,
+            "protein_network": pnet_dim, "stability": 1,
+        })
+        fusion = CrossModalFusionNet(
+            modality_dims=modality_dims,
+            hidden_dim=config.fusion.hidden_dim,
+            n_heads=config.fusion.n_heads,
+            dropout=config.fusion.dropout,
+            output_dim=fusion_output_dim,
+        ).to(device)
+    else:
+        total_input_dim = 64 + 64 + pnet_dim + 1
+        fusion = torch.nn.Sequential(
+            torch.nn.Linear(total_input_dim, fusion_output_dim),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(config.fusion.dropout),
+            torch.nn.Linear(fusion_output_dim, fusion_output_dim // 2),
+            torch.nn.ReLU(),
+            torch.nn.Linear(fusion_output_dim // 2, fusion_output_dim),
+        ).to(device)
     fusion.load_state_dict(fusion_ckpt["fusion_state_dict"])
     fusion.eval()
 
     # Compute test fused representations
     epi_s = fusion_ckpt["epi_states"]
-    traj_s = fusion_ckpt["traj_states"]
+    traj_s = fusion_ckpt["traj_states"]      # (N, traj_raw_dim) raw trajectory
     pnet_o = fusion_ckpt["pnet_outputs"]
     stab_s = fusion_ckpt["stab_scores"]
 
     test_fused = []
     with torch.no_grad():
         for idx in test_idx:
-            concat = torch.cat([
-                epi_s[idx:idx+1].to(device), traj_s[idx:idx+1].to(device),
-                pnet_o[idx:idx+1].to(device), stab_s[idx:idx+1].to(device),
-            ], dim=-1)
-            test_fused.append(fusion(concat).squeeze(0).cpu())
+            traj_proj = traj_projector(traj_s[idx:idx+1].to(device))
+            if fusion_type == "cross_attention":
+                modality_dict = {
+                    "epigenetic": epi_s[idx:idx+1].to(device),
+                    "trajectory": traj_proj,
+                    "protein_network": pnet_o[idx:idx+1].to(device),
+                    "stability": stab_s[idx:idx+1].to(device),
+                }
+                fused_out, _ = fusion(modality_dict)
+                test_fused.append(fused_out.squeeze(0).cpu())
+            else:
+                concat = torch.cat([
+                    epi_s[idx:idx+1].to(device), traj_proj,
+                    pnet_o[idx:idx+1].to(device), stab_s[idx:idx+1].to(device),
+                ], dim=-1)
+                test_fused.append(fusion(concat).squeeze(0).cpu())
     test_fused = torch.stack(test_fused).to(device)
 
     # Load landscape model
     n_drugs = dataset.drug_sensitivity.shape[1]
+    landscape_use_evidential = landscape_ckpt.get("use_evidential", False)
     landscape = ResistanceLandscape(
         fusion_dim=fusion_output_dim, n_drugs=n_drugs,
         n_proteins=min(len(dataset.protein_names), 100),
+        use_evidential=landscape_use_evidential,
     ).to(device)
     landscape.load_state_dict(landscape_ckpt["model_state_dict"])
     landscape.eval()
@@ -1006,16 +1469,17 @@ def serve_api(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> None:
 
 # Sequential stage registry
 STAGES = [
-    ("data_validate",        validate_data_files),
-    ("data_prep",            prepare_data),
-    ("vae_pretrain",         pretrain_vae),
-    ("vae_finetune",         finetune_vae),
-    ("trajectory_calibrate", calibrate_trajectory),
-    ("protein_net_train",    train_protein_network),
-    ("fusion_train",         train_fusion),
-    ("landscape_train",      train_landscape),
-    ("validate",             validate_pipeline),
-    ("serve",                serve_api),
+    ("data_validate",          validate_data_files),
+    ("data_prep",              prepare_data),
+    ("vae_pretrain",           pretrain_vae),
+    ("vae_finetune",           finetune_vae),
+    ("trajectory_calibrate",   calibrate_trajectory),
+    ("trajectory_forecast",    train_trajectory_forecaster),
+    ("protein_net_train",      train_protein_network),
+    ("fusion_train",           train_fusion),
+    ("landscape_train",        train_landscape),
+    ("validate",               validate_pipeline),
+    ("serve",                  serve_api),
 ]
 
 

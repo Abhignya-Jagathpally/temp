@@ -102,7 +102,7 @@ vae:
 # ODE-based resistance trajectory modeling
 trajectory:
   # ODE solver
-  ode_solver: euler     # euler | dopri5 | rk4
+  ode_solver: dopri5    # euler | dopri5 | rk4
   ode_rtol: 0.00001
   ode_atol: 0.0000001
   integration_time: 100.0  # Arbitrary time units
@@ -136,18 +136,14 @@ protein_net:
   esm2_model: facebook/esm2_t33_650M_UR50D
   esm2_dim: 1280         # ESM2-T33 output dimension
 
-  # Graph neural network. The previous defaults (4 layers x 8 heads x 256
-  # hidden) were tuned for an empty PPI graph (the GNN degenerated to
-  # self-loops, ~19k edges). With the ENSP -> gene-symbol fix the real
-  # STRING graph has ~929k directed edges, and per-edge GATConv attention
-  # × 4 layers × 8 heads accumulates ~30+ GB of forward activations per
-  # sample. With 32 samples accumulated per optimizer step that crosses
-  # the 90 GB mark and OOMs even an H100. Slimming the GAT to 2 layers /
-  # 2 heads / 128 hidden keeps the inductive bias (graph attention with
-  # edge weights) while staying well inside GPU budget.
-  gnn_hidden: 128
-  gnn_layers: 2
-  gnn_heads: 2           # Multi-head attention
+  # Graph neural network. With ESM-2 bottleneck embeddings (256-dim node
+  # features) and the inner-batch=4 accumulation strategy in main.py, we
+  # can afford 3 layers / 4 heads / 256 hidden on the real STRING graph
+  # (~929k directed edges) without exceeding H100 memory. JumpingKnowledge
+  # (cat mode) + PairNorm + DropEdge prevent over-smoothing at 3 layers.
+  gnn_hidden: 256
+  gnn_layers: 3
+  gnn_heads: 4           # Multi-head attention
   gnn_dropout: 0.2
   gnn_conv_type: gat     # gat | gcn | graphsage
 
@@ -160,7 +156,7 @@ protein_net:
   use_pairnorm: true
   use_jumping_knowledge: true
   jk_mode: cat           # cat | max | lstm
-  use_graphmask: false
+  use_graphmask: true
   graphmask_sparsity_weight: 0.01
 
   # ESM-2 bottleneck (Agent 5 §5.2)
@@ -171,7 +167,7 @@ protein_net:
   n_drug_types: 11
 
   # Evidential classification (Agent 5 §5.6)
-  use_evidential_head: false
+  use_evidential_head: true
   evidential_n_classes: 3
 
   # Phosphoproteomics augmentation
@@ -214,7 +210,7 @@ landscape:
   umap_min_dist: 0.1
 
   # Evidential landscape (Agent 6 §6.4)
-  use_evidential: false
+  use_evidential: true
 
 # Hardware and distributed training settings
 hardware:

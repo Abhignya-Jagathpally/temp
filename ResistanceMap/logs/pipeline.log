@@ -3921,3 +3921,297 @@ Check the documentation of torch.load to learn more about types accepted by defa
 2026-04-14 09:44:50 | INFO    | resistancemap.main |   Verification chain: 10 hashes
 2026-04-14 09:44:50 | INFO    | resistancemap.main | ========================================================================
 2026-04-14 09:44:50 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-04-16 15:15:43 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:15:44 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:15:44 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-04-16 15:15:44 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-04-16 15:15:44 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 15:15:54 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:15:54 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:15:55 | INFO    | resistancemap | >>> STAGE START: data_prep
+2026-04-16 15:15:55 | INFO    | resistancemap.data.loaders | Loading CCLE proteomics from data/raw/ccle_proteomics.csv
+2026-04-16 15:16:03 | INFO    | resistancemap.data.loaders | Loaded proteomics: 1393 cell lines, 19177 proteins
+2026-04-16 15:16:03 | INFO    | resistancemap.data.loaders | After coverage filter (70%): 19177 proteins retained
+2026-04-16 15:16:03 | INFO    | resistancemap.data.loaders | Stripped '(entrez_id)' decoration from 19177/19177 protein names
+2026-04-16 15:16:03 | INFO    | resistancemap.data.loaders | Loading CCLE epigenomics from data/raw/ccle_epigenomics
+2026-04-16 15:16:03 | INFO    | resistancemap.data.loaders |   chromatin_profiling: 897 lines, 42 features
+2026-04-16 15:16:03 | INFO    | resistancemap.data.loaders | Loading STRING PPI network from data/raw/string_ppi.txt
+2026-04-16 15:16:43 | INFO    | resistancemap.data.loaders |   STRING scores on 0-1000 scale — normalizing to 0-1
+2026-04-16 15:16:43 | INFO    | resistancemap.data.loaders | PPI edges after confidence filter (>=0.7): 473860
+2026-04-16 15:16:43 | INFO    | resistancemap.data.loaders |   Loaded STRING protein info from 9606.protein.info.v12.0.txt.gz: 19699 ENSP -> gene_symbol entries
+2026-04-16 15:16:43 | INFO    | resistancemap.data.loaders | Translated STRING ENSP -> gene symbols: 473860/473860 edges retained after mapping
+2026-04-16 15:16:44 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse124310.h5ad
+2026-04-16 15:16:44 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 27796 cells, 33694 genes
+2026-04-16 15:16:44 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE124310: 27796 cells
+2026-04-16 15:16:44 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse271107.h5ad
+2026-04-16 15:16:45 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 143748 cells, 36601 genes
+2026-04-16 15:16:45 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE271107: 143748 cells
+2026-04-16 15:16:45 | INFO    | resistancemap.data.loaders | MMRF CoMMpass directory not found at data/raw/mmrf_commpass (graceful degradation)
+2026-04-16 15:16:45 | INFO    | resistancemap.data.preprocessors | Harmonizing multi-omics data
+2026-04-16 15:16:45 | INFO    | resistancemap.data.preprocessors |   Additional scRNA-seq datasets: ['GSE124310', 'GSE271107']
+2026-04-16 15:16:45 | INFO    | resistancemap.data.preprocessors |   ID mapping: 0 CCLEName → ModelID entries
+2026-04-16 15:16:45 | INFO    | resistancemap.data.preprocessors | Cell lines in common across modalities: 886
+2026-04-16 15:17:07 | INFO    | resistancemap.data.loaders | Loading drug sensitivity data
+2026-04-16 15:17:07 | INFO    | resistancemap.data.loaders |   GDSC: 575197 records
+2026-04-16 15:17:07 | INFO    | resistancemap.data.loaders |   GDSC: standardized columns
+2026-04-16 15:17:07 | WARNING | resistancemap.data.loaders |   CTRPv2: not found at data/raw/ctrpv2_drug_sensitivity.csv, skipping
+2026-04-16 15:17:08 | INFO    | resistancemap.data.loaders | Drug sensitivity matrix: 977 samples × 11 drugs
+2026-04-16 15:17:08 | INFO    | resistancemap.data.preprocessors |   Drug sensitivity ID mapping via cell_line_name: 498 matches
+2026-04-16 15:17:08 | INFO    | resistancemap.data.preprocessors | Drug-sensitivity targets z-scored: 11/11 drugs with usable variance
+2026-04-16 15:17:08 | INFO    | resistancemap.data.preprocessors |   Lineage labels: 886/886 matched
+2026-04-16 15:17:08 | INFO    | resistancemap.data.preprocessors | PPI-proteomics overlap: 15904 proteins
+2026-04-16 15:17:08 | INFO    | resistancemap.data.preprocessors | MultiOmicsDataset: 886 samples, 19177 proteins, 42 epigenomic features, 473860 PPI edges
+2026-04-16 15:17:08 | INFO    | resistancemap.data.preprocessors | Re-normalized drug targets using training statistics only
+2026-04-16 15:17:08 | INFO    | resistancemap.data.preprocessors | Splits: train=622, val=132, test=132
+2026-04-16 15:17:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/data_ready.pt
+2026-04-16 15:17:08 | INFO    | resistancemap | <<< STAGE END: data_prep (1.2 min)
+2026-04-16 15:17:08 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 15:17:21 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:17:21 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:17:21 | INFO    | resistancemap | >>> STAGE START: vae_pretrain
+2026-04-16 15:17:22 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 15:17:24 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 1/200 — train_loss=2.0117 val_loss=1.1165 recon=2.0117 kl=44.4486 kl_weight=0.0000
+2026-04-16 15:17:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-04-16 15:17:25 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 2/200 — train_loss=4.2459 val_loss=91.7011 recon=1.6578 kl=64.7043 kl_weight=0.0400
+2026-04-16 15:17:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 3/200 — train_loss=4.9522 val_loss=50.4486 recon=1.7155 kl=40.4590 kl_weight=0.0800
+2026-04-16 15:17:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 4/200 — train_loss=4.8265 val_loss=15.9267 recon=1.7490 kl=25.6458 kl_weight=0.1200
+2026-04-16 15:17:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 5/200 — train_loss=4.3009 val_loss=12.2294 recon=1.6917 kl=16.3073 kl_weight=0.1600
+2026-04-16 15:17:27 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 6/200 — train_loss=3.9194 val_loss=10.2167 recon=1.6572 kl=11.3107 kl_weight=0.2000
+2026-04-16 15:17:27 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 7/200 — train_loss=3.6117 val_loss=7.9902 recon=1.5847 kl=8.4455 kl_weight=0.2400
+2026-04-16 15:17:27 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 8/200 — train_loss=3.4423 val_loss=6.5166 recon=1.5749 kl=6.6694 kl_weight=0.2800
+2026-04-16 15:17:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 9/200 — train_loss=3.3186 val_loss=5.2970 recon=1.5142 kl=5.6386 kl_weight=0.3200
+2026-04-16 15:17:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 10/200 — train_loss=3.3277 val_loss=4.3710 recon=1.5544 kl=4.9259 kl_weight=0.3600
+2026-04-16 15:17:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 11/200 — train_loss=3.2517 val_loss=3.5949 recon=1.5082 kl=4.3587 kl_weight=0.4000
+2026-04-16 15:17:29 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 12/200 — train_loss=3.1876 val_loss=3.0935 recon=1.5005 kl=3.8344 kl_weight=0.4400
+2026-04-16 15:17:29 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 13/200 — train_loss=3.0938 val_loss=2.6108 recon=1.4750 kl=3.3726 kl_weight=0.4800
+2026-04-16 15:17:29 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 14/200 — train_loss=3.0153 val_loss=2.3269 recon=1.4290 kl=3.0506 kl_weight=0.5200
+2026-04-16 15:17:30 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 15/200 — train_loss=2.9595 val_loss=2.1670 recon=1.4255 kl=2.7393 kl_weight=0.5600
+2026-04-16 15:17:30 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 16/200 — train_loss=2.9324 val_loss=2.0321 recon=1.4306 kl=2.5030 kl_weight=0.6000
+2026-04-16 15:17:30 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 17/200 — train_loss=2.9216 val_loss=1.8591 recon=1.4204 kl=2.3456 kl_weight=0.6400
+2026-04-16 15:17:31 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 18/200 — train_loss=2.8081 val_loss=1.7294 recon=1.3892 kl=2.0866 kl_weight=0.6800
+2026-04-16 15:17:31 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 19/200 — train_loss=2.7745 val_loss=1.6420 recon=1.3941 kl=1.9172 kl_weight=0.7200
+2026-04-16 15:17:31 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 20/200 — train_loss=2.7298 val_loss=1.6040 recon=1.3879 kl=1.7657 kl_weight=0.7600
+2026-04-16 15:17:32 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 21/200 — train_loss=2.7105 val_loss=1.5611 recon=1.3787 kl=1.6648 kl_weight=0.8000
+2026-04-16 15:17:32 | INFO    | resistancemap.models.vae | Early stopping at epoch 21
+2026-04-16 15:17:32 | INFO    | resistancemap | <<< STAGE END: vae_pretrain (0.2 min) | best_val_loss=1.1165 final_epoch=21 total_steps=21
+2026-04-16 15:17:32 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 15:17:50 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:17:50 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:17:50 | INFO    | resistancemap | >>> STAGE START: vae_finetune
+2026-04-16 15:17:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 15:17:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-04-16T20:17:24.749314+00:00)
+2026-04-16 15:17:53 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 1/100 — train_loss=1.7873 val_loss=1.2003 recon=1.7873 kl=61.5285 kl_weight=0.0000
+2026-04-16 15:17:53 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_finetuned.pt
+2026-04-16 15:17:54 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 2/100 — train_loss=7.3114 val_loss=26.9453 recon=1.6920 kl=67.4321 kl_weight=0.0833
+2026-04-16 15:17:54 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 3/100 — train_loss=11.7432 val_loss=23.5288 recon=1.6129 kl=60.7815 kl_weight=0.1667
+2026-04-16 15:17:54 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 4/100 — train_loss=14.7771 val_loss=20.0765 recon=1.6752 kl=52.4079 kl_weight=0.2500
+2026-04-16 15:17:55 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 5/100 — train_loss=16.4016 val_loss=17.7818 recon=1.6282 kl=44.3203 kl_weight=0.3333
+2026-04-16 15:17:55 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 6/100 — train_loss=17.2481 val_loss=16.4729 recon=1.6153 kl=37.5187 kl_weight=0.4167
+2026-04-16 15:17:55 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 7/100 — train_loss=17.9561 val_loss=15.6959 recon=1.6593 kl=32.5936 kl_weight=0.5000
+2026-04-16 15:17:56 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 8/100 — train_loss=18.7089 val_loss=15.2970 recon=1.6434 kl=29.2552 kl_weight=0.5833
+2026-04-16 15:17:56 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 9/100 — train_loss=18.7733 val_loss=15.1856 recon=1.7037 kl=25.6045 kl_weight=0.6667
+2026-04-16 15:17:56 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 10/100 — train_loss=19.6021 val_loss=15.2661 recon=1.7007 kl=23.8685 kl_weight=0.7500
+2026-04-16 15:17:57 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 11/100 — train_loss=19.8525 val_loss=15.2242 recon=1.6696 kl=21.8195 kl_weight=0.8333
+2026-04-16 15:17:57 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 12/100 — train_loss=19.9075 val_loss=15.0672 recon=1.7043 kl=19.8580 kl_weight=0.9167
+2026-04-16 15:17:57 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 13/100 — train_loss=20.6434 val_loss=14.8149 recon=1.6863 kl=18.9571 kl_weight=1.0000
+2026-04-16 15:17:57 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 14/100 — train_loss=19.6518 val_loss=13.4547 recon=1.7082 kl=17.9436 kl_weight=1.0000
+2026-04-16 15:17:58 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 15/100 — train_loss=18.7985 val_loss=12.2714 recon=1.6979 kl=17.1006 kl_weight=1.0000
+2026-04-16 15:17:58 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 16/100 — train_loss=18.0794 val_loss=11.3074 recon=1.7115 kl=16.3679 kl_weight=1.0000
+2026-04-16 15:17:58 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 17/100 — train_loss=17.2323 val_loss=10.4833 recon=1.7254 kl=15.5069 kl_weight=1.0000
+2026-04-16 15:17:59 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 18/100 — train_loss=15.6759 val_loss=9.7444 recon=1.7509 kl=13.9250 kl_weight=1.0000
+2026-04-16 15:17:59 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 19/100 — train_loss=15.6913 val_loss=9.1521 recon=1.6882 kl=14.0031 kl_weight=1.0000
+2026-04-16 15:17:59 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 20/100 — train_loss=15.0532 val_loss=8.6698 recon=1.6985 kl=13.3548 kl_weight=1.0000
+2026-04-16 15:18:00 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 21/100 — train_loss=14.1636 val_loss=8.2598 recon=1.6857 kl=12.4779 kl_weight=1.0000
+2026-04-16 15:18:00 | INFO    | resistancemap.models.vae | Early stopping at epoch 21
+2026-04-16 15:18:00 | INFO    | resistancemap | <<< STAGE END: vae_finetune (0.2 min) | best_val_loss=1.2003 final_epoch=21 total_steps=21
+2026-04-16 15:18:00 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 15:18:24 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:18:25 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:18:25 | INFO    | resistancemap | >>> STAGE START: trajectory_calibrate
+2026-04-16 15:18:25 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 15:18:26 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 15:18:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:31 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:38 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:52 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 50/500 loss=0.5119 basin_center=1.4801 basin_scale=1.5109
+2026-04-16 15:18:52 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:53 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:53 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:55 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:58 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:18:59 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:00 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:03 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:07 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:14 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:16 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:43 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:47 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:19:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:20:04 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 100/500 loss=0.0358 basin_center=1.4521 basin_scale=1.4969
+2026-04-16 15:20:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:20:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:20:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:20:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:43 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:57 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 150/500 loss=0.0117 basin_center=1.4487 basin_scale=1.4985
+2026-04-16 15:21:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:21:59 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:22:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:23:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:24:05 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 200/500 loss=0.0076 basin_center=1.4479 basin_scale=1.4991
+2026-04-16 15:24:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:25:06 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:26:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:26:16 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 250/500 loss=0.0094 basin_center=1.4467 basin_scale=1.5003
+2026-04-16 15:27:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:27:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:28:33 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 300/500 loss=0.0088 basin_center=1.4462 basin_scale=1.5010
+2026-04-16 15:28:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:28:39 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:28:39 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:28:39 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 15:29:18 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:29:18 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:29:19 | INFO    | resistancemap | >>> STAGE START: trajectory_forecast
+2026-04-16 15:29:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 15:29:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 15:29:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:28:36.950212+00:00)
+2026-04-16 15:29:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:29:20 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-04-16 15:29:59 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:30:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:30:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:30:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:31:00 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 350/500 loss=0.0036 basin_center=1.4455 basin_scale=1.5021
+2026-04-16 15:31:11 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:31:11 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:31:11 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:31:11 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:31:12 | INFO    | resistancemap | >>> STAGE START: trajectory_forecast
+2026-04-16 15:31:12 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 15:31:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 15:31:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:30:54.798207+00:00)
+2026-04-16 15:31:13 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-04-16 15:31:14 | INFO    | resistancemap | >>> STAGE START: protein_net_train
+2026-04-16 15:31:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 15:31:15 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 15:31:15 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:30:54.798207+00:00)
+2026-04-16 15:33:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:34:37 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 400/500 loss=0.0076 basin_center=1.4454 basin_scale=1.5022
+2026-04-16 15:36:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-04-16 15:36:59 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 450/500 loss=0.0064 basin_center=1.4452 basin_scale=1.5027
+2026-04-16 15:39:32 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 500/500 loss=0.0035 basin_center=1.4451 basin_scale=1.5028
+2026-04-16 15:39:32 | INFO    | resistancemap | <<< STAGE END: trajectory_calibrate (21.1 min) | best_calibration_loss=0.0011 n_valid_samples=498
+2026-04-16 15:39:32 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 15:44:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-04-16 15:45:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-04-16 15:46:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-04-16 15:48:47 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-04-16 15:52:40 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 15:52:40 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 15:52:41 | INFO    | resistancemap | >>> STAGE START: trajectory_forecast
+2026-04-16 15:52:41 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 15:52:41 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 15:52:41 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:36:54.139420+00:00)
+2026-04-16 15:52:42 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-04-16 15:52:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/trajectory_forecaster_trained.pt
+2026-04-16 15:52:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/trajectory_forecaster_trained.pt
+2026-04-16 15:53:47 | INFO    | resistancemap | <<< STAGE END: trajectory_forecast (1.1 min) | trajectory_forecast_val_loss=0.0120
+2026-04-16 15:53:47 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 15:54:52 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-04-16 16:09:59 | INFO    | resistancemap | <<< STAGE END: protein_net_train (38.7 min) | protein_net_val_loss=1.8183
+2026-04-16 16:09:59 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 16:12:29 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 16:12:29 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 16:12:31 | INFO    | resistancemap | >>> STAGE START: fusion_train
+2026-04-16 16:12:32 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 16:12:32 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 16:12:32 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:36:54.139420+00:00)
+2026-04-16 16:12:32 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-04-16T20:52:51.140799+00:00)
+2026-04-16 16:12:32 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-04-16T20:54:51.982739+00:00)
+2026-04-16 16:12:33 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-04-16 16:22:36 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 16:22:36 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 16:22:38 | INFO    | resistancemap | >>> STAGE START: fusion_train
+2026-04-16 16:22:39 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 16:22:39 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 16:22:39 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:36:54.139420+00:00)
+2026-04-16 16:22:39 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-04-16T20:52:51.140799+00:00)
+2026-04-16 16:22:39 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-04-16T20:54:51.982739+00:00)
+2026-04-16 16:22:40 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-04-16 16:32:46 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 16:32:46 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 16:32:49 | INFO    | resistancemap | >>> STAGE START: fusion_train
+2026-04-16 16:32:49 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 16:32:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-04-16 16:32:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:36:54.139420+00:00)
+2026-04-16 16:32:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-04-16T20:52:51.140799+00:00)
+2026-04-16 16:32:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-04-16T20:54:51.982739+00:00)
+2026-04-16 16:32:50 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-04-16 17:14:15 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=256, output_dim=256
+2026-04-16 17:14:15 | INFO    | resistancemap | Checkpoint saved: checkpoints/fusion_trained.pt
+2026-04-16 17:14:17 | INFO    | resistancemap | <<< STAGE END: fusion_train (61.8 min) | fusion_val_loss=1.2653
+2026-04-16 17:14:17 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 17:14:52 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 17:14:52 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 17:14:52 | INFO    | resistancemap | >>> STAGE START: landscape_train
+2026-04-16 17:14:52 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 17:14:52 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-04-16T22:14:15.644560+00:00)
+2026-04-16 17:14:53 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=256, output_dim=256
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-04-16 17:14:57 | INFO    | resistancemap | <<< STAGE END: landscape_train (0.1 min) | landscape_val_loss=1.2491
+2026-04-16 17:14:57 | INFO    | resistancemap | Sequential pipeline complete.
+2026-04-16 17:14:59 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-04-16 17:14:59 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-04-16 17:14:59 | INFO    | resistancemap | >>> STAGE START: validate
+2026-04-16 17:15:00 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-04-16 17:15:00 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-04-16T22:14:15.644560+00:00)
+2026-04-16 17:15:00 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-04-16T22:14:56.857960+00:00)
+2026-04-16 17:15:00 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=256, output_dim=256
+2026-04-16 17:15:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-04-16 17:15:01 | INFO    | resistancemap | <<< STAGE END: validate (0.0 min) | test_mse=2.3274 n_test_samples=132 n_drugs=11 split=test
+2026-04-16 17:15:01 | INFO    | resistancemap | Sequential pipeline complete.

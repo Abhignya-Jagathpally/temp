@@ -1,0 +1,76 @@
+{
+  "release": "v3-artifacts",
+  "git_sha": "9d414e8",
+  "config_hash": "sha256:REPLACE_WITH_configs/default.yaml_HASH",
+  "created_utc": "2026-04-14T00:00:00Z",
+
+  "checkpoints": {
+    "vae_pretrained.pt": {
+      "stage": "L2_VAEPretrain",
+      "size_mb": 512,
+      "trained_on": "CCLE_prot_v24Q2",
+      "esm2_bundled": false,
+      "reload_from": "facebook/esm2_t33_650M_UR50D",
+      "sha256": "TBD"
+    },
+    "vae_finetuned.pt": {
+      "stage": "L3_VAEFinetune",
+      "size_mb": 512,
+      "trained_on": "CCLE_hematologic",
+      "sha256": "TBD"
+    },
+    "protein_net.pt": {
+      "stage": "L5_ProteinNet",
+      "size_mb": 18,
+      "arch": "GraphSAGE (was GAT; changed per §9.1)",
+      "n_layers": 4,
+      "sha256": "TBD"
+    },
+    "fusion.pt": {
+      "stage": "L6_Fusion",
+      "size_mb": 1.1,
+      "hidden_dim": 256,
+      "sha256": "TBD"
+    },
+    "landscape.pt": {
+      "stage": "L7_Landscape",
+      "size_mb": 0.6,
+      "note": "Lookup table over drug x mechanism, not a trained model. See §9.1.",
+      "sha256": "TBD"
+    }
+  },
+
+  "data_raw": {
+    "parts": [
+      "data_raw.tar.zst.part-00",
+      "data_raw.tar.zst.part-01"
+    ],
+    "concat_cmd": "cat data_raw.tar.zst.part-* | zstd -d | tar -x",
+    "concatenated_sha256": "TBD",
+    "covers": [
+      "CCLE_prot (subsampled 20%)",
+      "STRING_v12_MM_subnet",
+      "GDSC_MM_drugs"
+    ],
+    "excludes": [
+      "GSE124310",
+      "GSE271107",
+      "MMRF_CoMMpass (dbGaP DAR required; excluded from public release)"
+    ],
+    "reproducibility_note": "Numbers quoted in README Performance table were computed on FULL data as described in RUNS.md. This release bundle covers only the fraction needed to reload the provided checkpoints and reproduce a public-subsample sanity table."
+  },
+
+  "reproduction": {
+    "command": "bash reproduce.sh",
+    "expected_wall_time_minutes": 25,
+    "expected_metrics_band": "configs/reproduction_band.yaml",
+    "hardware_recommended": "1x A100 40GB or equivalent"
+  },
+
+  "verification": {
+    "label": "Per-stage SHA256 content-hash chain for reproducibility",
+    "nist_zta_compliant": false,
+    "sha256sums_file": "SHA256SUMS",
+    "policy": "SHA256SUMS must cover the CONCATENATED data_raw.tar.zst, not the parts."
+  }
+}

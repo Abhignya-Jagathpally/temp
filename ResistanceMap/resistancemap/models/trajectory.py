@@ -690,17 +690,31 @@ class MemoryStabilityScorer(nn.Module):
             [0.0, self.config.integration_time], device=device
         )
 
-        # Integrate — use Euler with small step size for numerical stability.
-        # Large ODE parameters (e.g. dilution rates > 1) require step_size < 1
-        # to keep the explicit Euler scheme stable.
-        step_size = self.config.ode_step_size if hasattr(self.config, 'ode_step_size') else 0.1
-        trajectory = odeint(
-            self.ode,
-            state0,
-            t_span,
-            method="euler",
-            options={"step_size": step_size},
-        )
+        # Integrate using the solver specified in config. For fixed-step methods
+        # (euler, rk4) we pass step_size; for adaptive methods (dopri5) we pass
+        # rtol/atol instead.
+        solver = getattr(self.config, "ode_solver", "euler")
+        if solver in ("euler", "rk4"):
+            step_size = self.config.ode_step_size if hasattr(self.config, 'ode_step_size') else 0.1
+            trajectory = odeint(
+                self.ode,
+                state0,
+                t_span,
+                method=solver,
+                options={"step_size": step_size},
+            )
+        else:
+            # Adaptive solver (dopri5, etc.) — use rtol/atol from config
+            rtol = getattr(self.config, "ode_rtol", 1e-5)
+            atol = getattr(self.config, "ode_atol", 1e-7)
+            trajectory = odeint(
+                self.ode,
+                state0,
+                t_span,
+                method=solver,
+                rtol=rtol,
+                atol=atol,
+            )
 
         final_state = trajectory[-1]  # (B, 10)
         a_steady = final_state[:, 0:1].clamp(0.0, 10.0)
@@ -931,14 +945,27 @@ class TrajectoryForecaster(nn.Module):
         # Time span: from 0 to horizon
         t_eval = torch.linspace(0, time_horizon, 50, device=device)
 
-        # Integrate ODE
-        trajectory = odeint(
-            self.ode,
-            state0,
-            t_eval,
-            method="euler",
-            options={"step_size": time_horizon / 100.0},
-        )
+        # Integrate ODE using config solver
+        solver = getattr(self.config, "ode_solver", "euler")
+        if solver in ("euler", "rk4"):
+            trajectory = odeint(
+                self.ode,
+                state0,
+                t_eval,
+                method=solver,
+                options={"step_size": time_horizon / 100.0},
+            )
+        else:
+            rtol = getattr(self.config, "ode_rtol", 1e-5)
+            atol = getattr(self.config, "ode_atol", 1e-7)
+            trajectory = odeint(
+                self.ode,
+                state0,
+                t_eval,
+                method=solver,
+                rtol=rtol,
+                atol=atol,
+            )
 
         final_state = trajectory[-1]
         a_final = final_state[:, 0:1].clamp(0.0, 10.0)
