@@ -194,21 +194,44 @@ class ESM2EmbedAgent(BaseAgent):
             ds = ckpt["dataset"]
             protein_names = ds.protein_names
 
-            logger.info(
-                f"ESM-2 embed: validated {len(protein_names)} proteins "
-                f"for model {config.protein_net.esm2_model}"
-            )
+            # v7: be explicit about whether this layer actually produces ESM-2
+            # embeddings or just validates protein metadata. The dataset only
+            # has FASTA sequences when the user supplied them upstream; CCLE
+            # proteomics by itself does not. main.train_protein_network() is
+            # the only place that runs the real ESM-2 forward, and only when
+            # ds.protein_sequences is non-empty.
+            has_sequences = bool(getattr(ds, "protein_sequences", None))
+            embeddings_produced = False  # this agent never produces them itself
+
+            if has_sequences:
+                logger.info(
+                    f"ESM-2 embed: {len(protein_names)} proteins ready for "
+                    f"{config.protein_net.esm2_model}; sequences present — "
+                    "real embeddings will be produced inside ProteinNetAgent."
+                )
+            else:
+                logger.warning(
+                    f"ESM-2 embed: {len(protein_names)} proteins validated, "
+                    "but dataset.protein_sequences is empty. ProteinNetAgent "
+                    "will fall back to abundance/latent/stability features "
+                    "(no real ESM-2 forward pass). To enable, populate "
+                    "dataset.protein_sequences with FASTA sequences during data_prep."
+                )
 
             output = {
                 "n_proteins": len(protein_names),
                 "esm2_model": config.protein_net.esm2_model,
                 "embedding_dim": config.protein_net.esm2_dim,
                 "protein_names_sample": protein_names[:10],
+                "has_sequences": has_sequences,
+                "embeddings_produced_here": embeddings_produced,
             }
             metadata = {
                 "n_proteins": len(protein_names),
                 "esm2_model": config.protein_net.esm2_model,
                 "embedding_dim": config.protein_net.esm2_dim,
+                "has_sequences": has_sequences,
+                "embeddings_produced_here": embeddings_produced,
             }
             log_stage_end("esm2_embed", metadata)
             return self._make_result(AgentState.COMPLETED, output, metadata=metadata)

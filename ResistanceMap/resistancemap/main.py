@@ -44,7 +44,12 @@ logger = logging.getLogger(__name__)
 # Agentic Pipeline — DAG-based parallel execution with zero-trust verification
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def build_agent_dag():
+def build_agent_dag(
+    tracer=None,
+    evaluator=None,
+    optimizer=None,
+    guardrails=None,
+):
     """Construct the 10-agent DAG with dependency edges.
 
     DAG topology (layers for parallel execution):
@@ -75,7 +80,15 @@ def build_agent_dag():
         ValidationAgent,
     )
 
-    orchestrator = Orchestrator()
+    # v7: thread agentops + guardrails through so the orchestrator emits
+    # spans / records task results / runs GuardrailEngine.check_all on
+    # each agent's output. None-args preserve legacy behavior.
+    orchestrator = Orchestrator(
+        tracer=tracer,
+        evaluator=evaluator,
+        optimizer=optimizer,
+        guardrails=guardrails,
+    )
 
     # Register agents (dependencies declared in each agent's __init__)
     orchestrator.add_agent(DataValidationAgent())   # Layer 0 — no deps
@@ -140,8 +153,28 @@ async def run_agentic_pipeline(config: ResistanceMapConfig) -> dict:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    # ── 1. Build and validate DAG ────────────────────────────────────────
-    orchestrator = build_agent_dag()
+    # ── 1. Initialize AgentOps + zero-trust BEFORE building the DAG so we
+    #       can inject them into the orchestrator (v7 fix for the
+    #       "AgentOps initialized but never receives events" gap).
+    tracer = Tracer.get_instance()
+    evaluator = Evaluator()
+    optimizer = Optimizer()
+    dashboard = AgentOpsDashboard(tracer=tracer, evaluator=evaluator, optimizer=optimizer)
+    logger.info("AgentOps initialized: Tracer + Evaluator + Optimizer")
+
+    verifier = ZeroTrustVerifier()
+    guardrails = GuardrailEngine()
+    logger.info(
+        f"Zero-trust verification active: {len(guardrails.guardrails)} guardrails loaded"
+    )
+
+    # ── 2. Build and validate DAG (now wired to AgentOps + guardrails) ──
+    orchestrator = build_agent_dag(
+        tracer=tracer,
+        evaluator=evaluator,
+        optimizer=optimizer,
+        guardrails=guardrails,
+    )
     is_valid, error_msg = orchestrator.prepare_execution()
     if not is_valid:
         logger.error(f"DAG validation failed: {error_msg}")
@@ -154,22 +187,6 @@ async def run_agentic_pipeline(config: ResistanceMapConfig) -> dict:
     )
     for i, layer in enumerate(execution_plan):
         logger.info(f"  Layer {i}: {layer}")
-
-    # ── 2. Initialize AgentOps ───────────────────────────────────────────
-    tracer = Tracer.get_instance()
-    evaluator = Evaluator()
-    optimizer = Optimizer()
-    dashboard = AgentOpsDashboard(tracer=tracer, evaluator=evaluator, optimizer=optimizer)
-
-    logger.info("AgentOps initialized: Tracer + Evaluator + Optimizer")
-
-    # ── 3. Initialize zero-trust verification ────────────────────────────
-    verifier = ZeroTrustVerifier()
-    guardrails = GuardrailEngine()
-
-    logger.info(
-        f"Zero-trust verification active: {len(guardrails.guardrails)} guardrails loaded"
-    )
 
     # ── 4. Data quality pre-check ────────────────────────────────────────
     profiler = DataProfiler()
@@ -214,6 +231,29 @@ async def run_agentic_pipeline(config: ResistanceMapConfig) -> dict:
     except Exception as e:
         logger.warning(f"Could not export dashboard: {e}")
 
+    # v7: surface guardrail violations from this run (collected by the
+    # orchestrator during _run_agent_isolated). Empty list means everything
+    # passed; non-empty is informational unless severity=='error'.
+    guardrail_violations = getattr(orchestrator, "_guardrail_violations", [])
+    n_err = sum(1 for v in guardrail_violations if v.get("severity") == "error")
+    if guardrail_violations:
+        logger.info(
+            f"Guardrails: {len(guardrail_violations)} violations "
+            f"({n_err} error / {len(guardrail_violations) - n_err} non-error)"
+        )
+
+    # ── 8. Run evaluation governance (Tier A/B/C/D) automatically ───────
+    # v7: previously this only ran behind --evaluate. We now invoke it
+    # post-training so Tier-A FAILs are visible from the same command. It
+    # is non-blocking by default — if you want hard-stop, set
+    # config.evaluation.tier_a_hard_stop=True.
+    governance_report = None
+    try:
+        if getattr(config.evaluation, "enabled", False):
+            governance_report = await run_evaluation_governance(config)
+    except Exception:
+        logger.exception("Post-training governance run failed (continuing)")
+
     return {
         "results": {name: r.to_dict() for name, r in results.items()},
         "timing_report": timing_report,
@@ -221,6 +261,8 @@ async def run_agentic_pipeline(config: ResistanceMapConfig) -> dict:
         "results_summary": results_summary,
         "pipeline_elapsed_seconds": pipeline_elapsed,
         "execution_plan": execution_plan,
+        "guardrail_violations": guardrail_violations,
+        "governance_report": governance_report,
     }
 
 
@@ -1444,13 +1486,218 @@ def validate_pipeline(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) 
         else:
             test_mse = float("nan")
 
+    # v7: per-drug breakdown. README claims drug-level performance but v6
+    # only persisted a single aggregate. We compute (n, MSE, MAE, Spearman)
+    # per drug on observed cells only, matching scripts/run_baselines_real.py
+    # so the two are directly comparable.
+    drug_names = list(getattr(dataset, "drug_names", [f"drug_{i}" for i in range(n_drugs)]))
+    per_drug_metrics: list[dict] = []
+    pred_np = pred.detach().cpu().numpy()
+    target_np = target.detach().cpu().numpy()
+    for d in range(n_drugs):
+        col_target = target_np[:, d]
+        col_pred = pred_np[:, d]
+        col_mask = ~np.isnan(col_target)
+        n_obs = int(col_mask.sum())
+        if n_obs == 0:
+            per_drug_metrics.append({
+                "drug": drug_names[d] if d < len(drug_names) else f"drug_{d}",
+                "n_obs": 0, "mse": float("nan"), "mae": float("nan"),
+                "spearman": float("nan"), "reliable": False,
+            })
+            continue
+        diffs = col_pred[col_mask] - col_target[col_mask]
+        mse_d = float(np.mean(diffs ** 2))
+        mae_d = float(np.mean(np.abs(diffs)))
+        # Spearman rho via rank-correlation; gracefully handle constant arrays.
+        spearman_d = float("nan")
+        try:
+            from scipy.stats import spearmanr
+            if np.std(col_pred[col_mask]) > 1e-12 and np.std(col_target[col_mask]) > 1e-12:
+                rho, _ = spearmanr(col_pred[col_mask], col_target[col_mask])
+                if rho is not None and not np.isnan(rho):
+                    spearman_d = float(rho)
+        except Exception:
+            pass
+        per_drug_metrics.append({
+            "drug": drug_names[d] if d < len(drug_names) else f"drug_{d}",
+            "n_obs": n_obs,
+            "mse": mse_d,
+            "mae": mae_d,
+            "spearman": spearman_d,
+            "reliable": n_obs >= 10,
+        })
+
+    # Persist a CSV next to the checkpoint for the metrics-auditor subagent.
+    try:
+        import csv
+        log_dir = Path(config.log_dir)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        csv_path = log_dir / "per_drug_metrics.csv"
+        with open(csv_path, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=["drug", "n_obs", "mse", "mae", "spearman", "reliable"])
+            w.writeheader()
+            for row in per_drug_metrics:
+                w.writerow(row)
+        logger.info(f"Per-drug metrics CSV: {csv_path}")
+    except Exception:
+        logger.exception("Failed to write per_drug_metrics.csv (continuing)")
+
+    # v7: persist a minimal checkpoint NOW so the baseline runner (which
+    # reads pipeline_validated.pt to grab ResistanceMap's test_mse) sees
+    # the current value. We re-save below after baseline_summary is filled in.
+    _partial_metrics = {
+        "test_mse": test_mse,
+        "n_test_samples": len(test_idx),
+        "n_drugs": n_drugs,
+        "split": "test",
+        "per_drug_metrics": per_drug_metrics,
+    }
+    ckpt_mgr.save("pipeline_validated", {"metrics": _partial_metrics, "config": config})
+
+    # v7: best-effort baseline comparison. Calls scripts/run_baselines_real.py
+    # via subprocess so import-time pickle issues / package-not-installed
+    # do not break validation. The script writes paper/tables/baseline_comparison.{json,md}.
+    baseline_summary = None
+    try:
+        import subprocess, sys as _sys
+        repo_root = Path(__file__).resolve().parent.parent
+        script = repo_root / "scripts" / "run_baselines_real.py"
+        if script.exists():
+            r = subprocess.run(
+                [_sys.executable, str(script)],
+                cwd=str(repo_root),
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
+            if r.returncode == 0:
+                bjson = repo_root / "paper" / "tables" / "baseline_comparison.json"
+                if bjson.exists():
+                    import json as _json
+                    bdata = _json.loads(bjson.read_text())
+                    ranked = sorted(
+                        bdata.get("results", []),
+                        key=lambda x: (x.get("test_mse") if x.get("test_mse") is not None else float("inf")),
+                    )
+                    rm_rank = next(
+                        (i for i, r in enumerate(ranked, 1) if "ResistanceMap" in (r.get("model") or "")),
+                        None,
+                    )
+                    baseline_summary = {
+                        "n_models": len(ranked),
+                        "best_model": ranked[0].get("model") if ranked else None,
+                        "best_test_mse": ranked[0].get("test_mse") if ranked else None,
+                        "resistancemap_rank": rm_rank,
+                        "comparison_path": str(bjson),
+                    }
+                    logger.info(
+                        f"Baselines: {len(ranked)} models compared; "
+                        f"best={baseline_summary['best_model']} ({baseline_summary['best_test_mse']:.4f}); "
+                        f"ResistanceMap rank={rm_rank}/{len(ranked)}"
+                    )
+            else:
+                logger.warning(
+                    f"Baselines runner exited {r.returncode}: {r.stderr[:300]}"
+                )
+    except Exception:
+        logger.exception("Baseline comparison failed (continuing without)")
+
+    # v8: real-world actionability scoring.
+    # A drug is "actionable for compound-prioritization screening" if its
+    # rank-correlation against ground-truth IC50 is meaningful and there are
+    # enough observations to trust the estimate. Calibration (low absolute
+    # MSE) is a SEPARATE, stricter requirement.
+    DRUG_CLASS = {
+        "Bortezomib": "Proteasome",
+        "Lenalidomide": "IMiD",
+        "Panobinostat": "HDAC", "Vorinostat": "HDAC", "Romidepsin": "HDAC",
+        "Venetoclax": "BCL2",
+        "Dinaciclib": "CDK", "Palbociclib": "CDK",
+        "Doxorubicin": "DNA-damage", "Etoposide": "DNA-damage",
+        "Cyclophosphamide": "DNA-damage",
+    }
+    actionable_drugs = []
+    well_calibrated_drugs = []
+    failure_drugs = []
+    for r in per_drug_metrics:
+        r["drug_class"] = DRUG_CLASS.get(r["drug"], "Other")
+        spearman = r.get("spearman", float("nan"))
+        mse = r.get("mse", float("nan"))
+        n = r.get("n_obs", 0)
+        # Actionable: useful for ranking compounds (rank-correlation matters,
+        # absolute calibration doesn't). Threshold 0.25 chosen as the
+        # rule-of-thumb floor for "better than random" in pharmacological
+        # screening literature.
+        r["actionable_for_screening"] = bool(
+            n >= 30 and not np.isnan(spearman) and spearman >= 0.25
+        )
+        # Well-calibrated: usable for absolute IC50 prediction (much higher bar)
+        r["well_calibrated"] = bool(
+            r["actionable_for_screening"] and not np.isnan(mse) and mse < 1.0
+        )
+        # Failure mode: not actionable
+        r["failure_mode"] = not r["actionable_for_screening"]
+        if r["actionable_for_screening"]:
+            actionable_drugs.append(r["drug"])
+        if r["well_calibrated"]:
+            well_calibrated_drugs.append(r["drug"])
+        if r["failure_mode"]:
+            failure_drugs.append(r["drug"])
+
+    # Drug-class aggregated stats
+    by_class: dict[str, list] = {}
+    for r in per_drug_metrics:
+        by_class.setdefault(r["drug_class"], []).append(r)
+    drug_class_metrics = {}
+    for cls, rows in by_class.items():
+        valid = [r for r in rows if not np.isnan(r.get("mse", float("nan")))]
+        if not valid:
+            continue
+        drug_class_metrics[cls] = {
+            "n_drugs": len(rows),
+            "mean_mse": float(np.mean([r["mse"] for r in valid])),
+            "mean_spearman": float(np.nanmean([r["spearman"] for r in valid])),
+            "n_actionable": sum(1 for r in rows if r.get("actionable_for_screening")),
+            "drugs": [r["drug"] for r in rows],
+        }
+
+    actionability_summary = {
+        "n_drugs_total": n_drugs,
+        "n_actionable_for_screening": len(actionable_drugs),
+        "n_well_calibrated": len(well_calibrated_drugs),
+        "n_failure_modes": len(failure_drugs),
+        "actionable_drugs": actionable_drugs,
+        "well_calibrated_drugs": well_calibrated_drugs,
+        "failure_drugs": failure_drugs,
+        "by_class": drug_class_metrics,
+        "thresholds": {
+            "actionable_min_spearman": 0.25,
+            "actionable_min_n_obs": 30,
+            "well_calibrated_max_mse": 1.0,
+        },
+        "interpretation": (
+            f"ResistanceMap rank-prioritizes compounds for {len(actionable_drugs)}/{n_drugs} drugs "
+            f"({100*len(actionable_drugs)/n_drugs:.0f}%). "
+            f"{len(well_calibrated_drugs)}/{n_drugs} are also well-calibrated for absolute IC50 prediction. "
+            f"Known failure modes: {failure_drugs or 'none'}."
+        ),
+    }
+    logger.info(
+        f"Actionability: {len(actionable_drugs)}/{n_drugs} drugs actionable for screening "
+        f"({len(well_calibrated_drugs)} well-calibrated). Failures: {failure_drugs or 'none'}"
+    )
+
     metrics = {
         "test_mse": test_mse,
         "n_test_samples": len(test_idx),
         "n_drugs": n_drugs,
         "split": "test",
+        "per_drug_metrics": per_drug_metrics,
+        "baseline_summary": baseline_summary,
+        "actionability_summary": actionability_summary,
     }
-    logger.info(f"Validation: test_mse={test_mse:.4f} on {len(test_idx)} samples")
+    logger.info(f"Validation: test_mse={test_mse:.4f} on {len(test_idx)} samples ({n_drugs} drugs)")
     ckpt_path = ckpt_mgr.save("pipeline_validated", {"metrics": metrics, "config": config})
     log_stage_end("validate", metrics=metrics)
     return ckpt_path

@@ -1,16 +1,28 @@
 {
-  "timestamp": "2026-05-01T16:27:34.644379",
+  "timestamp": "2026-05-02T20:13:00.541615",
   "observability": {
-    "total_traces": 0,
-    "total_spans": 0,
-    "total_duration_ms": 0,
-    "total_cost_usd": 0,
+    "total_traces": 1,
+    "total_spans": 10,
+    "total_duration_ms": 107610.08524894714,
+    "total_cost_usd": 0.0,
     "total_tokens": 0,
-    "agent_handoff_latencies_ms": {},
-    "tool_execution_latencies_ms": {}
+    "agent_handoff_latencies_ms": {
+      "data_validation -> data_prep": 0.18358230590820312,
+      "data_prep -> vae_pretrain": 0.24771690368652344,
+      "vae_pretrain -> esm2_embed": -581.977128982544,
+      "esm2_embed -> vae_finetune": 326.8618583679199,
+      "vae_finetune -> trajectory": 0.26226043701171875,
+      "trajectory -> protein_net": 0.1742839813232422,
+      "protein_net -> fusion": 0.21982192993164062,
+      "fusion -> landscape": 0.1850128173828125,
+      "landscape -> validation": 0.1773834228515625
+    },
+    "tool_execution_latencies_ms": {
+      "agent.execute": 10786.341285705566
+    }
   },
   "evaluation": {
-    "task_completion_rate": 0.0,
+    "task_completion_rate": 1.0,
     "guardrail_violation_rate": 0.0,
     "factual_accuracy_rate": 0.0,
     "clinical_appropriateness": 0.0,
@@ -31,7 +43,108 @@
     "total_tokens_saved": 0,
     "total_steps_eliminated": 0
   },
-  "agent_performance": [],
+  "agent_performance": [
+    {
+      "agent_name": "data_validation",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 0.9989738464355469,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 29.99800205230713
+    },
+    {
+      "agent_name": "landscape",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 2.930879592895508,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 29.99413824081421
+    },
+    {
+      "agent_name": "trajectory",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 3.6203861236572266,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 29.992759227752686
+    },
+    {
+      "agent_name": "fusion",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 3.9446353912353516,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 29.99211072921753
+    },
+    {
+      "agent_name": "esm2_embed",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 255.476713180542,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 29.489046573638916
+    },
+    {
+      "agent_name": "data_prep",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 266.13616943359375,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 29.467727661132812
+    },
+    {
+      "agent_name": "vae_finetune",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 293.45226287841797,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 29.413095474243164
+    },
+    {
+      "agent_name": "vae_pretrain",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 582.1123123168945,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 28.83577537536621
+    },
+    {
+      "agent_name": "protein_net",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 1924.1225719451904,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 26.15175485610962
+    },
+    {
+      "agent_name": "validation",
+      "num_operations": 1,
+      "avg_operation_duration_ms": 104530.6179523468,
+      "total_cost_usd": 0.0,
+      "success_rate": 0.0,
+      "avg_accuracy": 0.0,
+      "violations_count": 0,
+      "score": 20.0
+    }
+  ],
   "optimization_suggestions": [
     "Token efficiency below 70%: Consider summarizing inputs or using more targeted prompts",
     "Retrieval precision@1 below 50%: Improve query formulation or relevance ranking",

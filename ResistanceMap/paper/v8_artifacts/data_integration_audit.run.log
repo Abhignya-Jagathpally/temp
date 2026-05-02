@@ -1,0 +1,13 @@
+/home/aj0486@students.ad.unt.edu/pipeline3/venv/lib/python3.12/site-packages/sklearn/utils/_param_validation.py:191: RuntimeWarning: Orthogonal matching pursuit ended prematurely due to linear dependence in the dictionary. The requested precision might not have been met.
+  return func(*args, **kwargs)
+[v8 data-integration audit] starting
+  shapes: Xp=(886, 19177) Xe=(886, 42) y=(886, 11) train=622 val=132 test=132
+  A. Naive concat -> Ridge                           test_mse=2.4583 val=1.9932  (0.8s)
+  B. PCA(256/20) per-modality -> Ridge               test_mse=3.7370 val=3.0461  (0.7s)
+  C. MOFA+-like shared factors(64) -> Ridge          test_mse=2.4440 val=3.2508  (169.8s)
+  D. Late fusion (avg)                               test_mse=2.3653 val=1.9011  (0.7s)
+  ResistanceMap CrossModalFusionNet                test_mse=2.3730967044830322
+  batch-effect proxy: {'kBET_mean_chi2': 0.18579174633868475, 'iLISI_mean': 3.4211662554223237, 'silhouette_by_batch': -0.009000346064567566, 'n_batches': 4, 'note': 'kBET reported as mean chi^2 (lower=better integrated); iLISI close to n_batches=better'}
+
+[done] /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/v8_artifacts/data_integration_audit.json
+[done] /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/v8_artifacts/data_integration_audit.md

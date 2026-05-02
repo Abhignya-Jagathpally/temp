@@ -38,7 +38,7 @@
       "model": "GradientBoosting (PCA-256)",
       "test_mse": 2.3699265799411298,
       "val_mse": 2.1596757997247362,
-      "wall_seconds": 78.72,
+      "wall_seconds": 78.65,
       "notes": ""
     },
     {
@@ -52,49 +52,49 @@
       "model": "RandomForest (PCA-256)",
       "test_mse": 2.4134212816795744,
       "val_mse": 2.0231726968596404,
-      "wall_seconds": 7.64,
+      "wall_seconds": 7.51,
       "notes": ""
     },
     {
       "model": "Ridge (full proteomics+epi)",
       "test_mse": 2.4997544288635254,
       "val_mse": 2.0536413192749023,
-      "wall_seconds": 0.53,
+      "wall_seconds": 0.55,
       "notes": ""
     },
     {
       "model": "ElasticNet (PCA-256)",
       "test_mse": 2.564673662185669,
       "val_mse": 2.1188008785247803,
-      "wall_seconds": 0.03,
+      "wall_seconds": 0.04,
       "notes": ""
     },
     {
       "model": "Lasso (PCA-256)",
       "test_mse": 2.5668976306915283,
       "val_mse": 2.120676040649414,
-      "wall_seconds": 0.03,
+      "wall_seconds": 0.04,
       "notes": ""
     },
     {
       "model": "XGBoost (PCA-256)",
       "test_mse": 2.7215092182159424,
       "val_mse": 2.1428825855255127,
-      "wall_seconds": 10.42,
+      "wall_seconds": 10.29,
       "notes": ""
     },
     {
       "model": "Ridge (PCA-256)",
       "test_mse": 3.247282028198242,
       "val_mse": 2.9273157119750977,
-      "wall_seconds": 0.02,
+      "wall_seconds": 0.03,
       "notes": ""
     },
     {
       "model": "MLP-256-128 (PCA-256)",
       "test_mse": 4.384618759155273,
       "val_mse": 4.130160331726074,
-      "wall_seconds": 1.82,
+      "wall_seconds": 1.83,
       "notes": ""
     }
   ]

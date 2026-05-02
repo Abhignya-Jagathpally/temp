@@ -245,20 +245,19 @@ class PubMedConnector(MCPConnector):
         Returns:
             Query results with articles
         """
-        # Placeholder for actual MCP call
-        # In production, this would call: mcp_server.search_articles(...)
-        query_str = params.get("query", "")
-        max_results = params.get("max_results", 20)
-
-        self.logger.info(f"PubMed search: '{query_str[:50]}...' (max: {max_results})")
-
-        # Simulate response
-        return {
-            "query": query_str,
-            "total_results": 0,
-            "articles": [],
-            "status": "success",
-        }
+        # v7: stub disarmed. The previous "Simulate response" path silently
+        # returned an empty article list with status='success', which was
+        # indistinguishable from a real zero-result query and caused
+        # downstream code to skip evidence checks entirely. The live
+        # connector is intentionally not implemented in this package; use
+        # the `evidence-curator` Claude subagent (which calls
+        # mcp__claude_ai_PubMed__* live tools) instead.
+        raise NotImplementedError(
+            "PubMedConnector.query() is a stub. Use the `evidence-curator` "
+            "Claude subagent to perform PubMed searches via "
+            "mcp__claude_ai_PubMed__search_articles. "
+            f"Requested: query='{params.get('query','')[:60]}...'"
+        )
 
     def validate_response(self, response: dict) -> Tuple[bool, Optional[str]]:
         """Validate PubMed response."""
@@ -392,15 +391,15 @@ class ChEMBLConnector(MCPConnector):
         Returns:
             Query results
         """
-        # Placeholder for actual MCP call
-        # In production: mcp_server.compound_search(...) or get_bioactivity(...)
-        self.logger.info(f"ChEMBL query: {params}")
-
-        return {
-            "query": params,
-            "results": [],
-            "status": "success",
-        }
+        # v7: stub disarmed (was returning empty results indistinguishable
+        # from real zero-hit). Use `evidence-curator` subagent which routes
+        # through mcp__claude_ai_ChEMBL__compound_search / __get_bioactivity.
+        raise NotImplementedError(
+            "ChEMBLConnector.query() is a stub. Use the `evidence-curator` "
+            "Claude subagent to perform ChEMBL queries via "
+            "mcp__claude_ai_ChEMBL__compound_search / __get_bioactivity. "
+            f"Requested: {params}"
+        )
 
     def validate_response(self, response: dict) -> Tuple[bool, Optional[str]]:
         """Validate ChEMBL response."""
@@ -526,15 +525,14 @@ class ClinicalTrialsConnector(MCPConnector):
         Returns:
             Query results
         """
-        # Placeholder for actual MCP call
-        # In production: mcp_server.search_trials(...)
-        self.logger.info(f"ClinicalTrials query: {params}")
-
-        return {
-            "query": params,
-            "trials": [],
-            "status": "success",
-        }
+        # v7: stub disarmed. Use `evidence-curator` subagent which routes
+        # through mcp__claude_ai_c-trials__search_trials.
+        raise NotImplementedError(
+            "ClinicalTrialsConnector.query() is a stub. Use the "
+            "`evidence-curator` Claude subagent to perform trial searches "
+            "via mcp__claude_ai_c-trials__search_trials / __get_trial_details. "
+            f"Requested: {params}"
+        )
 
     def validate_response(self, response: dict) -> Tuple[bool, Optional[str]]:
         """Validate ClinicalTrials response."""
@@ -618,13 +616,16 @@ class HuggingFaceConnector(MCPConnector):
         Returns:
             Query results
         """
-        # Placeholder for actual HF API call
-        self.logger.info(f"HuggingFace query: {params}")
-
-        return {
-            "model": params.get("model_name", ""),
-            "status": "success",
-        }
+        # v7: stub disarmed. Use `evidence-curator` subagent which routes
+        # through mcp__claude_ai_Hugging_Face__hub_repo_search /
+        # __paper_search. For actual model downloads, use the
+        # `transformers` library directly with `facebook/esm2_t33_650M_UR50D`.
+        raise NotImplementedError(
+            "HuggingFaceConnector.query() is a stub. Use the "
+            "`evidence-curator` Claude subagent or load the model directly "
+            "via transformers.AutoModel.from_pretrained(). "
+            f"Requested: {params}"
+        )
 
     def validate_response(self, response: dict) -> Tuple[bool, Optional[str]]:
         """Validate HuggingFace response."""

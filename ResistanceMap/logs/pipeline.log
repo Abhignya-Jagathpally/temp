@@ -4885,3 +4885,496 @@ AttributeError: 'TrajectoryForecaster' object has no attribute 'latent_to_params
 2026-05-01 11:27:34 | INFO    | resistancemap.main |   Verification chain: 10 hashes
 2026-05-01 11:27:34 | INFO    | resistancemap.main | ========================================================================
 2026-05-01 11:27:34 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-02 14:00:39 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-02 14:00:39 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-02 14:00:39 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-02 14:00:39 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-02 14:00:39 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-02 14:00:39 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-02 14:00:39 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-02 14:00:39 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-02 14:00:39 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:00:39 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-02 14:00:39 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:00:39 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-02 14:00:39 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-02 14:00:39 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-02 14:00:39 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-02 14:00:39 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-02 14:00:39 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-02 14:00:39 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-02 14:00:39 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-02 14:00:39 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-02 14:00:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-02 14:00:40 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-02 14:00:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.specialized | ESM-2 embed: validated 19177 proteins for model facebook/esm2_t33_650M_UR50D
+2026-05-02 14:00:40 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-02 14:00:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=a10dd06d...)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-02 14:00:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-02 14:00:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-02 14:00:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-01T16:19:20.463581+00:00)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=ca726349...)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-02 14:00:40 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-05-02 14:00:43 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-01T16:10:17.427886+00:00)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=8dd96d02...)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-05-02 14:00:43 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=completed)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator |   fusion: COMPLETED (hash=0ef436cc...)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.base | landscape: Starting execution
+2026-05-02 14:00:43 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.base | landscape: Execution complete (status=completed)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator |   landscape: COMPLETED (hash=fc00a67d...)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.base | validation: Starting execution
+2026-05-02 14:00:43 | INFO    | resistancemap | Checkpoint loaded: checkpoints/pipeline_validated.pt (saved 2026-05-01T16:27:34.624934+00:00)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.base | validation: Execution complete (status=completed)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator |   validation: COMPLETED (hash=db77f8ed...)
+2026-05-02 14:00:43 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 3.2s. Completed: 10/10
+2026-05-02 14:00:43 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:00:43 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-02 14:00:43 | INFO    | resistancemap.main |   Total time: 3.3s
+2026-05-02 14:00:43 | INFO    | resistancemap.main |   Agents completed: 10/10
+2026-05-02 14:00:43 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-02 14:00:43 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:00:43 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-02 14:19:53 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-02 14:19:53 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-02 14:19:53 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-02 14:19:53 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-02 14:19:53 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-02 14:19:53 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-02 14:19:53 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-02 14:19:53 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-02 14:19:53 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:19:53 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-02 14:19:53 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.orchestrator | Orchestrator: trace_id=6417e184-4570-4038-923c-a851f49a09b3
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-02 14:19:53 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-02 14:19:53 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-02 14:19:53 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-02 14:19:54 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-02 14:19:54 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-02 14:19:54 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:19:54 | WARNING | resistancemap.agents.specialized | ESM-2 embed: 19177 proteins validated, but dataset.protein_sequences is empty. ProteinNetAgent will fall back to abundance/latent/stability features (no real ESM-2 forward pass). To enable, populate dataset.protein_sequences with FASTA sequences during data_prep.
+2026-05-02 14:19:54 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280 has_sequences=False embeddings_produced_here=False
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-02 14:19:54 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=19ae8665...)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-02 14:19:54 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-02 14:19:55 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-02 14:19:55 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-02 14:19:55 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-01T16:19:20.463581+00:00)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=ca726349...)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-02 14:19:55 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-05-02 14:19:56 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-01T16:10:17.427886+00:00)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=8dd96d02...)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-05-02 14:19:57 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=completed)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.orchestrator |   fusion: COMPLETED (hash=0ef436cc...)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.base | landscape: Starting execution
+2026-05-02 14:19:57 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.base | landscape: Execution complete (status=completed)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.orchestrator |   landscape: COMPLETED (hash=fc00a67d...)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-02 14:19:57 | INFO    | resistancemap.agents.base | validation: Starting execution
+2026-05-02 14:19:57 | INFO    | resistancemap | >>> STAGE START: validate
+2026-05-02 14:19:57 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:19:57 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-02 14:19:57 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-02 14:19:57 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-02 14:19:58 | INFO    | resistancemap.main | Per-drug metrics CSV: logs/per_drug_metrics.csv
+2026-05-02 14:21:40 | INFO    | resistancemap.main | Baselines: 11 models compared; best=Zero (z-scored target floor) (2.3678); ResistanceMap rank=11/11
+2026-05-02 14:21:40 | INFO    | resistancemap.main | Validation: test_mse=2.3731 on 132 samples (11 drugs)
+2026-05-02 14:21:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-02 14:21:40 | INFO    | resistancemap | <<< STAGE END: validate (1.7 min) | test_mse=2.3731 n_test_samples=132 n_drugs=11 split=test per_drug_metrics=[{'drug': 'Bortezomib', 'n_obs': 69, 'mse': 0.03249834477901459, 'mae': 0.14038798213005066, 'spearman': 0.3379247351114359, 'reliable': True}, {'drug': 'Cyclophosphamide', 'n_obs': 68, 'mse': 0.2788302004337311, 'mae': 0.3900873363018036, 'spearman': 0.357750887506203, 'reliable': True}, {'drug': 'Dinaciclib', 'n_obs': 66, 'mse': 0.1561090499162674, 'mae': 0.24797691404819489, 'spearman': 0.3726333368124414, 'reliable': True}, {'drug': 'Doxorubicin', 'n_obs': 69, 'mse': 1.6656914949417114, 'mae': 0.6344119906425476, 'spearman': 0.33858238947753017, 'reliable': True}, {'drug': 'Etoposide', 'n_obs': 67, 'mse': 0.5306088924407959, 'mae': 0.5180210471153259, 'spearman': 0.32803894963684255, 'reliable': True}, {'drug': 'Lenalidomide', 'n_obs': 69, 'mse': 0.4987683594226837, 'mae': 0.4921649396419525, 'spearman': 0.3962002192181221, 'reliable': True}, {'drug': 'Palbociclib', 'n_obs': 69, 'mse': 0.196753591299057, 'mae': 0.35552695393562317, 'spearman': 0.3052246985750822, 'reliable': True}, {'drug': 'Panobinostat', 'n_obs': 66, 'mse': 22.33546257019043, 'mae': 1.0693504810333252, 'spearman': 0.04460912222106253, 'reliable': True}, {'drug': 'Romidepsin', 'n_obs': 56, 'mse': 0.23683609068393707, 'mae': 0.2920856475830078, 'spearman': 0.2395762132604238, 'reliable': True}, {'drug': 'Venetoclax', 'n_obs': 68, 'mse': 0.010461623780429363, 'mae': 0.08557890355587006, 'spearman': 0.32809100278657854, 'reliable': True}, {'drug': 'Vorinostat', 'n_obs': 69, 'mse': 0.41310399770736694, 'mae': 0.46686574816703796, 'spearman': 0.31012056996711734, 'reliable': True}] baseline_summary={'n_models': 11, 'best_model': 'Zero (z-scored target floor)', 'best_test_mse': 2.367814540863037, 'resistancemap_rank': 11, 'comparison_path': '/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/tables/baseline_comparison.json'}
+2026-05-02 14:21:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/pipeline_validated.pt (saved 2026-05-02T19:21:40.816245+00:00)
+2026-05-02 14:21:40 | INFO    | resistancemap.agents.base | validation: Execution complete (status=completed)
+2026-05-02 14:21:40 | INFO    | resistancemap.agents.orchestrator |   validation: COMPLETED (hash=047f8b89...)
+2026-05-02 14:21:40 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 106.9s. Completed: 10/10
+2026-05-02 14:21:40 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:21:40 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-02 14:21:40 | INFO    | resistancemap.main |   Total time: 107.0s
+2026-05-02 14:21:40 | INFO    | resistancemap.main |   Agents completed: 10/10
+2026-05-02 14:21:40 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-02 14:21:40 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:21:40 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-02 14:21:40 | INFO    | resistancemap.main | Starting ResistanceMap evaluation governance run
+2026-05-02 14:21:40 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier A (3 agents)
+2026-05-02 14:21:40 | INFO    | resistancemap.agents.base | eval_data_adequacy: Starting execution
+2026-05-02 14:21:40 | INFO    | resistancemap.agents.base | eval_data_adequacy: Execution complete (status=completed)
+2026-05-02 14:21:40 | INFO    | resistancemap.agents.base | eval_measurement_integration: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | eval_measurement_integration: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | eval_bias_fairness_shift: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | eval_bias_fairness_shift: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_data_adequacy -> conditional (score=0.214, hash=f0ad72f1)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_measurement_integration -> conditional (score=0.000, hash=f6d43a75)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_bias_fairness_shift -> skipped (score=0.000, hash=864ce7e4)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier B (3 agents)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | architecture_auditor: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.tier_b.architecture_auditor | ArchitectureAuditorAgent: starting structured audit
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.tier_b.architecture_auditor | ArchitectureAuditorAgent: verdict=EvalVerdict.FAIL score=0.00 modules=4
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | architecture_auditor: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | cell_state_trajectory: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.tier_b.cell_state_specialist | CellStateTrajectoryAgent: starting biological-coherence audit
+2026-05-02 14:21:51 | WARNING | resistancemap.evaluation.tier_b.cell_state_specialist | CellStateTrajectoryAgent: SKIPPED -- Required upstream artefacts are missing from intake: ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores']. This agent does NOT fabricate latents or state assignments; rerun the VAE + trajectory stages and re-supply.
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | cell_state_trajectory: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | pathway_ppi_reasoning: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.tier_b.pathway_ppi | PathwayPPIReasoningAgent: starting pathway grounding audit (ppi_proteins=7853, ppi_confidence=0.70)
+2026-05-02 14:21:51 | WARNING | resistancemap.evaluation.tier_b.pathway_ppi | PathwayPPIReasoningAgent: SKIPPED -- Required upstream artefacts missing: ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn']. This agent does NOT fabricate PPI edges, attributions, or heldout sets; rerun the protein-net stage and re-supply.
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | pathway_ppi_reasoning: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: architecture_auditor -> fail (score=0.000, hash=5236d434)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: cell_state_trajectory -> skipped (score=0.000, hash=52343866)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: pathway_ppi_reasoning -> skipped (score=0.000, hash=aaf9a2ca)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier C (3 agents)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | forecasting_uncertainty_agent: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.tier_c.forecasting_uncertainty | ForecastingUncertaintyAgent: no prediction tensors in intake; emitting SKIP verdict.
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | forecasting_uncertainty_agent: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | baseline_adversary_agent: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | baseline_adversary_agent: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | clinical_translation_safety_agent: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | clinical_translation_safety_agent: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: forecasting_uncertainty_agent -> skipped (score=0.000, hash=caa7571c)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: baseline_adversary_agent -> skipped (score=0.000, hash=32700af2)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: clinical_translation_safety_agent -> fail (score=0.000, hash=4d1b1265)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier D (1 agents)
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | principal_integrator_agent: Starting execution
+2026-05-02 14:21:51 | INFO    | resistancemap.agents.base | principal_integrator_agent: Execution complete (status=completed)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: principal_integrator_agent -> conditional (score=0.333, hash=037e78cb)
+2026-05-02 14:21:51 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: wrote audit trail to logs/evaluation/20260502T192140Z
+2026-05-02 14:23:20 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-02 14:23:20 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-02 14:23:20 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-02 14:23:20 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-02 14:23:20 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-02 14:23:20 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-02 14:23:20 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-02 14:23:20 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-02 14:23:20 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:23:20 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-02 14:23:20 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: trace_id=b5cd8a3a-3d8d-4d7c-958c-cc0188c62dbb
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-02 14:23:20 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-02 14:23:20 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-02 14:23:20 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-02 14:23:20 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-02 14:23:20 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:23:20 | WARNING | resistancemap.agents.specialized | ESM-2 embed: 19177 proteins validated, but dataset.protein_sequences is empty. ProteinNetAgent will fall back to abundance/latent/stability features (no real ESM-2 forward pass). To enable, populate dataset.protein_sequences with FASTA sequences during data_prep.
+2026-05-02 14:23:20 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280 has_sequences=False embeddings_produced_here=False
+2026-05-02 14:23:20 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-02 14:23:21 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=19ae8665...)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-02 14:23:21 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-02 14:23:21 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-02 14:23:21 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-01T16:19:20.463581+00:00)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=ca726349...)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-02 14:23:21 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-05-02 14:23:23 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-01T16:10:17.427886+00:00)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=8dd96d02...)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-05-02 14:23:23 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=completed)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.orchestrator |   fusion: COMPLETED (hash=0ef436cc...)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.base | landscape: Starting execution
+2026-05-02 14:23:23 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.base | landscape: Execution complete (status=completed)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.orchestrator |   landscape: COMPLETED (hash=fc00a67d...)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-02 14:23:23 | INFO    | resistancemap.agents.base | validation: Starting execution
+2026-05-02 14:23:23 | INFO    | resistancemap | >>> STAGE START: validate
+2026-05-02 14:23:23 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 14:23:23 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-02 14:23:23 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-02 14:23:23 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-02 14:23:24 | INFO    | resistancemap.main | Per-drug metrics CSV: logs/per_drug_metrics.csv
+2026-05-02 14:23:24 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-02 14:25:08 | INFO    | resistancemap.main | Baselines: 11 models compared; best=Zero (z-scored target floor) (2.3678); ResistanceMap rank=4/11
+2026-05-02 14:25:08 | INFO    | resistancemap.main | Validation: test_mse=2.3731 on 132 samples (11 drugs)
+2026-05-02 14:25:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-02 14:25:08 | INFO    | resistancemap | <<< STAGE END: validate (1.8 min) | test_mse=2.3731 n_test_samples=132 n_drugs=11 split=test per_drug_metrics=[{'drug': 'Bortezomib', 'n_obs': 69, 'mse': 0.03249834477901459, 'mae': 0.14038798213005066, 'spearman': 0.3379247351114359, 'reliable': True}, {'drug': 'Cyclophosphamide', 'n_obs': 68, 'mse': 0.2788302004337311, 'mae': 0.3900873363018036, 'spearman': 0.357750887506203, 'reliable': True}, {'drug': 'Dinaciclib', 'n_obs': 66, 'mse': 0.1561090499162674, 'mae': 0.24797691404819489, 'spearman': 0.3726333368124414, 'reliable': True}, {'drug': 'Doxorubicin', 'n_obs': 69, 'mse': 1.6656914949417114, 'mae': 0.6344119906425476, 'spearman': 0.33858238947753017, 'reliable': True}, {'drug': 'Etoposide', 'n_obs': 67, 'mse': 0.5306088924407959, 'mae': 0.5180210471153259, 'spearman': 0.32803894963684255, 'reliable': True}, {'drug': 'Lenalidomide', 'n_obs': 69, 'mse': 0.4987683594226837, 'mae': 0.4921649396419525, 'spearman': 0.3962002192181221, 'reliable': True}, {'drug': 'Palbociclib', 'n_obs': 69, 'mse': 0.196753591299057, 'mae': 0.35552695393562317, 'spearman': 0.3052246985750822, 'reliable': True}, {'drug': 'Panobinostat', 'n_obs': 66, 'mse': 22.33546257019043, 'mae': 1.0693504810333252, 'spearman': 0.04460912222106253, 'reliable': True}, {'drug': 'Romidepsin', 'n_obs': 56, 'mse': 0.23683609068393707, 'mae': 0.2920856475830078, 'spearman': 0.2395762132604238, 'reliable': True}, {'drug': 'Venetoclax', 'n_obs': 68, 'mse': 0.010461623780429363, 'mae': 0.08557890355587006, 'spearman': 0.32809100278657854, 'reliable': True}, {'drug': 'Vorinostat', 'n_obs': 69, 'mse': 0.41310399770736694, 'mae': 0.46686574816703796, 'spearman': 0.31012056996711734, 'reliable': True}] baseline_summary={'n_models': 11, 'best_model': 'Zero (z-scored target floor)', 'best_test_mse': 2.367814540863037, 'resistancemap_rank': 4, 'comparison_path': '/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/tables/baseline_comparison.json'}
+2026-05-02 14:25:08 | INFO    | resistancemap | Checkpoint loaded: checkpoints/pipeline_validated.pt (saved 2026-05-02T19:25:08.393178+00:00)
+2026-05-02 14:25:08 | INFO    | resistancemap.agents.base | validation: Execution complete (status=completed)
+2026-05-02 14:25:08 | INFO    | resistancemap.agents.orchestrator |   validation: COMPLETED (hash=4dfa2a8b...)
+2026-05-02 14:25:08 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 108.2s. Completed: 10/10
+2026-05-02 14:25:08 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:25:08 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-02 14:25:08 | INFO    | resistancemap.main |   Total time: 108.3s
+2026-05-02 14:25:08 | INFO    | resistancemap.main |   Agents completed: 10/10
+2026-05-02 14:25:08 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-02 14:25:08 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 14:25:08 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-02 14:25:08 | INFO    | resistancemap.main | Starting ResistanceMap evaluation governance run
+2026-05-02 14:25:08 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier A (3 agents)
+2026-05-02 14:25:08 | INFO    | resistancemap.agents.base | eval_data_adequacy: Starting execution
+2026-05-02 14:25:08 | INFO    | resistancemap.agents.base | eval_data_adequacy: Execution complete (status=completed)
+2026-05-02 14:25:08 | INFO    | resistancemap.agents.base | eval_measurement_integration: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | eval_measurement_integration: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | eval_bias_fairness_shift: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | eval_bias_fairness_shift: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_data_adequacy -> conditional (score=0.214, hash=f0ad72f1)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_measurement_integration -> conditional (score=0.000, hash=f6d43a75)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_bias_fairness_shift -> skipped (score=0.000, hash=864ce7e4)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier B (3 agents)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | architecture_auditor: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.tier_b.architecture_auditor | ArchitectureAuditorAgent: starting structured audit
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.tier_b.architecture_auditor | ArchitectureAuditorAgent: verdict=EvalVerdict.FAIL score=0.00 modules=4
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | architecture_auditor: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | cell_state_trajectory: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.tier_b.cell_state_specialist | CellStateTrajectoryAgent: starting biological-coherence audit
+2026-05-02 14:25:19 | WARNING | resistancemap.evaluation.tier_b.cell_state_specialist | CellStateTrajectoryAgent: SKIPPED -- Required upstream artefacts are missing from intake: ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores']. This agent does NOT fabricate latents or state assignments; rerun the VAE + trajectory stages and re-supply.
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | cell_state_trajectory: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | pathway_ppi_reasoning: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.tier_b.pathway_ppi | PathwayPPIReasoningAgent: starting pathway grounding audit (ppi_proteins=7853, ppi_confidence=0.70)
+2026-05-02 14:25:19 | WARNING | resistancemap.evaluation.tier_b.pathway_ppi | PathwayPPIReasoningAgent: SKIPPED -- Required upstream artefacts missing: ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn']. This agent does NOT fabricate PPI edges, attributions, or heldout sets; rerun the protein-net stage and re-supply.
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | pathway_ppi_reasoning: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: architecture_auditor -> fail (score=0.000, hash=5236d434)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: cell_state_trajectory -> skipped (score=0.000, hash=52343866)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: pathway_ppi_reasoning -> skipped (score=0.000, hash=aaf9a2ca)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier C (3 agents)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | forecasting_uncertainty_agent: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.tier_c.forecasting_uncertainty | ForecastingUncertaintyAgent: no prediction tensors in intake; emitting SKIP verdict.
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | forecasting_uncertainty_agent: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | baseline_adversary_agent: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | baseline_adversary_agent: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | clinical_translation_safety_agent: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | clinical_translation_safety_agent: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: forecasting_uncertainty_agent -> skipped (score=0.000, hash=caa7571c)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: baseline_adversary_agent -> skipped (score=0.000, hash=32700af2)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: clinical_translation_safety_agent -> fail (score=0.000, hash=4d1b1265)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier D (1 agents)
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | principal_integrator_agent: Starting execution
+2026-05-02 14:25:19 | INFO    | resistancemap.agents.base | principal_integrator_agent: Execution complete (status=completed)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: principal_integrator_agent -> conditional (score=0.333, hash=037e78cb)
+2026-05-02 14:25:19 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: wrote audit trail to logs/evaluation/20260502T192508Z
+2026-05-02 15:11:12 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-02 15:11:12 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-02 15:11:12 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-02 15:11:12 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-02 15:11:12 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-02 15:11:12 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-02 15:11:12 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-02 15:11:12 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-02 15:11:12 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 15:11:12 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-02 15:11:12 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.orchestrator | Orchestrator: trace_id=237aec5a-3df6-433c-a613-c9ebae9a165e
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-02 15:11:12 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-02 15:11:12 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-02 15:11:12 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-02 15:11:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-02 15:11:13 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-02 15:11:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 15:11:13 | WARNING | resistancemap.agents.specialized | ESM-2 embed: 19177 proteins validated, but dataset.protein_sequences is empty. ProteinNetAgent will fall back to abundance/latent/stability features (no real ESM-2 forward pass). To enable, populate dataset.protein_sequences with FASTA sequences during data_prep.
+2026-05-02 15:11:13 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280 has_sequences=False embeddings_produced_here=False
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-02 15:11:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=19ae8665...)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-02 15:11:13 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-02 15:11:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-02 15:11:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-02 15:11:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-01T16:19:20.463581+00:00)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=ca726349...)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-02 15:11:14 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-05-02 15:11:16 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-01T16:10:17.427886+00:00)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=8dd96d02...)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-05-02 15:11:16 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=completed)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.orchestrator |   fusion: COMPLETED (hash=0ef436cc...)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.base | landscape: Starting execution
+2026-05-02 15:11:16 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.base | landscape: Execution complete (status=completed)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.orchestrator |   landscape: COMPLETED (hash=fc00a67d...)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-02 15:11:16 | INFO    | resistancemap.agents.base | validation: Starting execution
+2026-05-02 15:11:16 | INFO    | resistancemap | >>> STAGE START: validate
+2026-05-02 15:11:16 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-02 15:11:16 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-02 15:11:16 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-02 15:11:16 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-02 15:11:17 | INFO    | resistancemap.main | Per-drug metrics CSV: logs/per_drug_metrics.csv
+2026-05-02 15:11:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-02 15:13:00 | INFO    | resistancemap.main | Baselines: 11 models compared; best=Zero (z-scored target floor) (2.3678); ResistanceMap rank=4/11
+2026-05-02 15:13:00 | INFO    | resistancemap.main | Actionability: 9/11 drugs actionable for screening (8 well-calibrated). Failures: ['Panobinostat', 'Romidepsin']
+2026-05-02 15:13:00 | INFO    | resistancemap.main | Validation: test_mse=2.3731 on 132 samples (11 drugs)
+2026-05-02 15:13:00 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-02 15:13:00 | INFO    | resistancemap | <<< STAGE END: validate (1.7 min) | test_mse=2.3731 n_test_samples=132 n_drugs=11 split=test per_drug_metrics=[{'drug': 'Bortezomib', 'n_obs': 69, 'mse': 0.03249834477901459, 'mae': 0.14038798213005066, 'spearman': 0.3379247351114359, 'reliable': True, 'drug_class': 'Proteasome', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Cyclophosphamide', 'n_obs': 68, 'mse': 0.2788302004337311, 'mae': 0.3900873363018036, 'spearman': 0.357750887506203, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Dinaciclib', 'n_obs': 66, 'mse': 0.1561090499162674, 'mae': 0.24797691404819489, 'spearman': 0.3726333368124414, 'reliable': True, 'drug_class': 'CDK', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Doxorubicin', 'n_obs': 69, 'mse': 1.6656914949417114, 'mae': 0.6344119906425476, 'spearman': 0.33858238947753017, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': True, 'well_calibrated': False, 'failure_mode': False}, {'drug': 'Etoposide', 'n_obs': 67, 'mse': 0.5306088924407959, 'mae': 0.5180210471153259, 'spearman': 0.32803894963684255, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Lenalidomide', 'n_obs': 69, 'mse': 0.4987683594226837, 'mae': 0.4921649396419525, 'spearman': 0.3962002192181221, 'reliable': True, 'drug_class': 'IMiD', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Palbociclib', 'n_obs': 69, 'mse': 0.196753591299057, 'mae': 0.35552695393562317, 'spearman': 0.3052246985750822, 'reliable': True, 'drug_class': 'CDK', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Panobinostat', 'n_obs': 66, 'mse': 22.33546257019043, 'mae': 1.0693504810333252, 'spearman': 0.04460912222106253, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Romidepsin', 'n_obs': 56, 'mse': 0.23683609068393707, 'mae': 0.2920856475830078, 'spearman': 0.2395762132604238, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Venetoclax', 'n_obs': 68, 'mse': 0.010461623780429363, 'mae': 0.08557890355587006, 'spearman': 0.32809100278657854, 'reliable': True, 'drug_class': 'BCL2', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Vorinostat', 'n_obs': 69, 'mse': 0.41310399770736694, 'mae': 0.46686574816703796, 'spearman': 0.31012056996711734, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}] baseline_summary={'n_models': 11, 'best_model': 'Zero (z-scored target floor)', 'best_test_mse': 2.367814540863037, 'resistancemap_rank': 4, 'comparison_path': '/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/tables/baseline_comparison.json'} actionability_summary={'n_drugs_total': 11, 'n_actionable_for_screening': 9, 'n_well_calibrated': 8, 'n_failure_modes': 2, 'actionable_drugs': ['Bortezomib', 'Cyclophosphamide', 'Dinaciclib', 'Doxorubicin', 'Etoposide', 'Lenalidomide', 'Palbociclib', 'Venetoclax', 'Vorinostat'], 'well_calibrated_drugs': ['Bortezomib', 'Cyclophosphamide', 'Dinaciclib', 'Etoposide', 'Lenalidomide', 'Palbociclib', 'Venetoclax', 'Vorinostat'], 'failure_drugs': ['Panobinostat', 'Romidepsin'], 'by_class': {'Proteasome': {'n_drugs': 1, 'mean_mse': 0.03249834477901459, 'mean_spearman': 0.3379247351114359, 'n_actionable': 1, 'drugs': ['Bortezomib']}, 'DNA-damage': {'n_drugs': 3, 'mean_mse': 0.8250435292720795, 'mean_spearman': 0.3414574088735252, 'n_actionable': 3, 'drugs': ['Cyclophosphamide', 'Doxorubicin', 'Etoposide']}, 'CDK': {'n_drugs': 2, 'mean_mse': 0.1764313206076622, 'mean_spearman': 0.3389290176937618, 'n_actionable': 2, 'drugs': ['Dinaciclib', 'Palbociclib']}, 'IMiD': {'n_drugs': 1, 'mean_mse': 0.4987683594226837, 'mean_spearman': 0.3962002192181221, 'n_actionable': 1, 'drugs': ['Lenalidomide']}, 'HDAC': {'n_drugs': 3, 'mean_mse': 7.6618008861939115, 'mean_spearman': 0.1981019684828679, 'n_actionable': 1, 'drugs': ['Panobinostat', 'Romidepsin', 'Vorinostat']}, 'BCL2': {'n_drugs': 1, 'mean_mse': 0.010461623780429363, 'mean_spearman': 0.32809100278657854, 'n_actionable': 1, 'drugs': ['Venetoclax']}}, 'thresholds': {'actionable_min_spearman': 0.25, 'actionable_min_n_obs': 30, 'well_calibrated_max_mse': 1.0}, 'interpretation': "ResistanceMap rank-prioritizes compounds for 9/11 drugs (82%). 8/11 are also well-calibrated for absolute IC50 prediction. Known failure modes: ['Panobinostat', 'Romidepsin']."}
+2026-05-02 15:13:00 | INFO    | resistancemap | Checkpoint loaded: checkpoints/pipeline_validated.pt (saved 2026-05-02T20:13:00.519598+00:00)
+2026-05-02 15:13:00 | INFO    | resistancemap.agents.base | validation: Execution complete (status=completed)
+2026-05-02 15:13:00 | INFO    | resistancemap.agents.orchestrator |   validation: COMPLETED (hash=749c44c4...)
+2026-05-02 15:13:00 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 107.6s. Completed: 10/10
+2026-05-02 15:13:00 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 15:13:00 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-02 15:13:00 | INFO    | resistancemap.main |   Total time: 107.7s
+2026-05-02 15:13:00 | INFO    | resistancemap.main |   Agents completed: 10/10
+2026-05-02 15:13:00 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-02 15:13:00 | INFO    | resistancemap.main | ========================================================================
+2026-05-02 15:13:00 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-02 15:13:00 | INFO    | resistancemap.main | Starting ResistanceMap evaluation governance run
+2026-05-02 15:13:00 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier A (3 agents)
+2026-05-02 15:13:00 | INFO    | resistancemap.agents.base | eval_data_adequacy: Starting execution
+2026-05-02 15:13:00 | INFO    | resistancemap.agents.base | eval_data_adequacy: Execution complete (status=completed)
+2026-05-02 15:13:00 | INFO    | resistancemap.agents.base | eval_measurement_integration: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | eval_measurement_integration: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | eval_bias_fairness_shift: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | eval_bias_fairness_shift: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_data_adequacy -> conditional (score=0.214, hash=f0ad72f1)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_measurement_integration -> conditional (score=0.000, hash=f6d43a75)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: eval_bias_fairness_shift -> skipped (score=0.000, hash=864ce7e4)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier B (3 agents)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | architecture_auditor: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.tier_b.architecture_auditor | ArchitectureAuditorAgent: starting structured audit
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.tier_b.architecture_auditor | ArchitectureAuditorAgent: verdict=EvalVerdict.FAIL score=0.00 modules=4
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | architecture_auditor: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | cell_state_trajectory: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.tier_b.cell_state_specialist | CellStateTrajectoryAgent: starting biological-coherence audit
+2026-05-02 15:13:11 | WARNING | resistancemap.evaluation.tier_b.cell_state_specialist | CellStateTrajectoryAgent: SKIPPED -- Required upstream artefacts are missing from intake: ['vae_latents', 'cell_metadata', 'state_assignments', 'program_scores']. This agent does NOT fabricate latents or state assignments; rerun the VAE + trajectory stages and re-supply.
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | cell_state_trajectory: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | pathway_ppi_reasoning: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.tier_b.pathway_ppi | PathwayPPIReasoningAgent: starting pathway grounding audit (ppi_proteins=7853, ppi_confidence=0.70)
+2026-05-02 15:13:11 | WARNING | resistancemap.evaluation.tier_b.pathway_ppi | PathwayPPIReasoningAgent: SKIPPED -- Required upstream artefacts missing: ['ppi_edges', 'attribute_fn', 'baseline_attribution', 'alternative_attribution', 'heldout_pathway_ids', 'heldout_predictions', 'heldout_model_fn']. This agent does NOT fabricate PPI edges, attributions, or heldout sets; rerun the protein-net stage and re-supply.
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | pathway_ppi_reasoning: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: architecture_auditor -> fail (score=0.000, hash=5236d434)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: cell_state_trajectory -> skipped (score=0.000, hash=52343866)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: pathway_ppi_reasoning -> skipped (score=0.000, hash=aaf9a2ca)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier C (3 agents)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | forecasting_uncertainty_agent: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.tier_c.forecasting_uncertainty | ForecastingUncertaintyAgent: no prediction tensors in intake; emitting SKIP verdict.
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | forecasting_uncertainty_agent: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | baseline_adversary_agent: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | baseline_adversary_agent: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | clinical_translation_safety_agent: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | clinical_translation_safety_agent: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: forecasting_uncertainty_agent -> skipped (score=0.000, hash=caa7571c)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: baseline_adversary_agent -> skipped (score=0.000, hash=32700af2)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: clinical_translation_safety_agent -> fail (score=0.000, hash=4d1b1265)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: tier D (1 agents)
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | principal_integrator_agent: Starting execution
+2026-05-02 15:13:11 | INFO    | resistancemap.agents.base | principal_integrator_agent: Execution complete (status=completed)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: principal_integrator_agent -> conditional (score=0.333, hash=037e78cb)
+2026-05-02 15:13:11 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: wrote audit trail to logs/evaluation/20260502T201300Z

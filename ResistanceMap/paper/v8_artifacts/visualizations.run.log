@@ -1,0 +1,21 @@
+/home/aj0486@students.ad.unt.edu/pipeline3/venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+/home/aj0486@students.ad.unt.edu/pipeline3/venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/scripts/krishnaswamy_visualizations.py:191: RuntimeWarning: Mean of empty slice
+  agg = np.nanmean(ydc, axis=1)
+/home/aj0486@students.ad.unt.edu/pipeline3/venv/lib/python3.12/site-packages/umap/umap_.py:1952: UserWarning: n_jobs value 1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(
+/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/scripts/krishnaswamy_visualizations.py:253: RuntimeWarning: Mean of empty slice
+  agg = np.nanmean(y, axis=1)
+[v8 viz] starting
+[load] data_ready ...
+[load] fusion checkpoint (epi_states=VAE latents)...
+        epi=(886, 64)  stab=(886,)
+
+[done] figures + captions:
+  - /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/v8_artifacts/visualizations/fig_latent_manifold.png
+  - /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/v8_artifacts/visualizations/fig_pseudotime_per_drug.png
+  - /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/v8_artifacts/visualizations/fig_meld_density.png
+  - /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/v8_artifacts/visualizations/fig_residuals_heatmap.png
+  - /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/v8_artifacts/visualizations/fig_resistance_landscape.png

@@ -260,10 +260,14 @@ class ExternalCohortLoader:
             NotImplementedError: Always, to prevent accidental misuse
         """
         raise NotImplementedError(
-            f"External cohort '{name}' has no real data connector. "
-            "This function previously returned synthetic random data which "
-            "invalidates external validation results. Connect real data sources "
-            "before using this method. Synthetic data corrupts validation integrity."
+            f"External cohort '{name}' has no real data connector wired in.\n"
+            "  - For MMRF CoMMpass: use resistancemap.data.mmrf_loader.MMRFLoader "
+            "with the path in config.data.mmrf_commpass_dir (requires IRB).\n"
+            "  - For GMMG/IFM/PETHEMA/HOVON: no public connector exists; "
+            "request access via the respective consortium or remove the cohort "
+            "from your evaluation manifest.\n"
+            "Previous synthetic-fallback path was removed in v7 because random "
+            "data invalidates external validation."
         )
 
 
