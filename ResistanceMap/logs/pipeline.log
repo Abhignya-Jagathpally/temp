@@ -4215,3 +4215,673 @@ Check the documentation of torch.load to learn more about types accepted by defa
 2026-04-16 17:15:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
 2026-04-16 17:15:01 | INFO    | resistancemap | <<< STAGE END: validate (0.0 min) | test_mse=2.3274 n_test_samples=132 n_drugs=11 split=test
 2026-04-16 17:15:01 | INFO    | resistancemap | Sequential pipeline complete.
+2026-05-01 10:43:03 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-01 10:43:03 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-01 10:43:03 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-01 10:43:03 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-01 10:43:03 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-01 10:43:03 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-01 10:43:03 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-01 10:43:03 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-01 10:43:03 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 10:43:03 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-01 10:43:03 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-01 10:43:03 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-01 10:43:03 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-01 10:43:03 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-01 10:43:03 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-01 10:43:03 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-04-16T20:17:08.096428+00:00)
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.specialized | ESM-2 embed: validated 19177 proteins for model facebook/esm2_t33_650M_UR50D
+2026-05-01 10:43:03 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280
+2026-05-01 10:43:03 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-01 10:43:04 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-04-16T20:17:24.749314+00:00)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=a10dd06d...)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-01 10:43:04 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-04-16T20:17:53.300019+00:00)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-01 10:43:04 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-04-16T20:36:54.139420+00:00)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=f775403a...)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-01 10:43:04 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-05-01 10:43:06 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-04-16T20:54:51.982739+00:00)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=ea43681a...)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-05-01 10:43:06 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-04-16T22:14:15.644560+00:00)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=completed)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator |   fusion: COMPLETED (hash=3ec1ddb1...)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.base | landscape: Starting execution
+2026-05-01 10:43:06 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-04-16T22:14:56.857960+00:00)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.base | landscape: Execution complete (status=completed)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator |   landscape: COMPLETED (hash=df08f566...)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.base | validation: Starting execution
+2026-05-01 10:43:06 | INFO    | resistancemap | Checkpoint loaded: checkpoints/pipeline_validated.pt (saved 2026-04-16T22:15:01.040395+00:00)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.base | validation: Execution complete (status=completed)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator |   validation: COMPLETED (hash=952f66b5...)
+2026-05-01 10:43:06 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 3.3s. Completed: 10/10
+2026-05-01 10:43:06 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 10:43:06 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-01 10:43:06 | INFO    | resistancemap.main |   Total time: 3.5s
+2026-05-01 10:43:06 | INFO    | resistancemap.main |   Agents completed: 10/10
+2026-05-01 10:43:06 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-01 10:43:06 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 10:43:06 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-01 10:55:12 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-01 10:55:12 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-01 10:55:12 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-01 10:55:12 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-01 10:55:12 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-01 10:55:12 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-01 10:55:12 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-01 10:55:12 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-01 10:55:12 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 10:55:12 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-01 10:55:12 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 10:55:12 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-01 10:55:12 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-01 10:55:12 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-01 10:55:12 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-01 10:55:12 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-01 10:55:12 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-01 10:55:12 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-01 10:55:12 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-01 10:55:12 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-01 10:55:12 | INFO    | resistancemap | >>> STAGE START: data_prep
+2026-05-01 10:55:12 | INFO    | resistancemap.data.loaders | Loading CCLE proteomics from data/raw/ccle_proteomics.csv
+2026-05-01 10:55:20 | INFO    | resistancemap.data.loaders | Loaded proteomics: 1393 cell lines, 19177 proteins
+2026-05-01 10:55:20 | INFO    | resistancemap.data.loaders | After coverage filter (70%): 19177 proteins retained
+2026-05-01 10:55:20 | INFO    | resistancemap.data.loaders | Stripped '(entrez_id)' decoration from 19177/19177 protein names
+2026-05-01 10:55:20 | INFO    | resistancemap.data.loaders | Loading CCLE epigenomics from data/raw/ccle_epigenomics
+2026-05-01 10:55:20 | INFO    | resistancemap.data.loaders |   chromatin_profiling: 897 lines, 42 features
+2026-05-01 10:55:20 | INFO    | resistancemap.data.loaders | Loading STRING PPI network from data/raw/string_ppi.txt
+2026-05-01 10:56:01 | INFO    | resistancemap.data.loaders |   STRING scores on 0-1000 scale — normalizing to 0-1
+2026-05-01 10:56:01 | INFO    | resistancemap.data.loaders | PPI edges after confidence filter (>=0.7): 473860
+2026-05-01 10:56:02 | INFO    | resistancemap.data.loaders |   Loaded STRING protein info from 9606.protein.info.v12.0.txt.gz: 19699 ENSP -> gene_symbol entries
+2026-05-01 10:56:02 | INFO    | resistancemap.data.loaders | Translated STRING ENSP -> gene symbols: 473860/473860 edges retained after mapping
+2026-05-01 10:56:02 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse124310.h5ad
+2026-05-01 10:56:02 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 27796 cells, 33694 genes
+2026-05-01 10:56:02 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE124310: 27796 cells
+2026-05-01 10:56:02 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse271107.h5ad
+2026-05-01 10:56:04 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 143748 cells, 36601 genes
+2026-05-01 10:56:04 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE271107: 143748 cells
+2026-05-01 10:56:04 | INFO    | resistancemap.data.loaders | MMRF CoMMpass directory not found at data/raw/mmrf_commpass (graceful degradation)
+2026-05-01 10:56:04 | INFO    | resistancemap.data.preprocessors | Harmonizing multi-omics data
+2026-05-01 10:56:04 | INFO    | resistancemap.data.preprocessors |   Additional scRNA-seq datasets: ['GSE124310', 'GSE271107']
+2026-05-01 10:56:04 | INFO    | resistancemap.data.preprocessors |   ID mapping: 0 CCLEName → ModelID entries
+2026-05-01 10:56:04 | INFO    | resistancemap.data.preprocessors | Cell lines in common across modalities: 886
+2026-05-01 10:56:26 | INFO    | resistancemap.data.loaders | Loading drug sensitivity data
+2026-05-01 10:56:26 | INFO    | resistancemap.data.loaders |   GDSC: 575197 records
+2026-05-01 10:56:26 | INFO    | resistancemap.data.loaders |   GDSC: standardized columns
+2026-05-01 10:56:27 | WARNING | resistancemap.data.loaders |   CTRPv2: not found at data/raw/ctrpv2_drug_sensitivity.csv, skipping
+2026-05-01 10:56:27 | INFO    | resistancemap.data.loaders | Drug sensitivity matrix: 977 samples × 11 drugs
+2026-05-01 10:56:27 | INFO    | resistancemap.data.preprocessors |   Drug sensitivity ID mapping via cell_line_name: 498 matches
+2026-05-01 10:56:27 | INFO    | resistancemap.data.preprocessors | Drug-sensitivity targets z-scored: 11/11 drugs with usable variance
+2026-05-01 10:56:27 | INFO    | resistancemap.data.preprocessors |   Lineage labels: 886/886 matched
+2026-05-01 10:56:27 | INFO    | resistancemap.data.preprocessors | PPI-proteomics overlap: 15904 proteins
+2026-05-01 10:56:27 | INFO    | resistancemap.data.preprocessors | MultiOmicsDataset: 886 samples, 19177 proteins, 42 epigenomic features, 473860 PPI edges
+2026-05-01 10:56:27 | INFO    | resistancemap.data.preprocessors | Re-normalized drug targets using training statistics only
+2026-05-01 10:56:27 | INFO    | resistancemap.data.preprocessors | Splits: train=622, val=132, test=132
+2026-05-01 10:56:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/data_ready.pt
+2026-05-01 10:56:27 | INFO    | resistancemap | <<< STAGE END: data_prep (1.2 min)
+2026-05-01 10:56:28 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 10:56:28 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-01 10:56:28 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-01 10:56:28 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-01 10:56:28 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-01 10:56:28 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-01 10:56:28 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-01 10:56:28 | INFO    | resistancemap | >>> STAGE START: vae_pretrain
+2026-05-01 10:56:28 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 10:56:28 | INFO    | resistancemap.agents.specialized | ESM-2 embed: validated 19177 proteins for model facebook/esm2_t33_650M_UR50D
+2026-05-01 10:56:28 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280
+2026-05-01 10:56:28 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 10:56:28 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-01 10:56:35 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 1/200 — train_loss=1.9878 val_loss=53820.9883 recon=1.9878 kl=0.6844 kl_weight=0.0000
+2026-05-01 10:56:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:37 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 2/200 — train_loss=1.7954 val_loss=172720.2500 recon=1.7526 kl=1.0703 kl_weight=0.0400
+2026-05-01 10:56:38 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 3/200 — train_loss=1.8391 val_loss=3996.7979 recon=1.5669 kl=3.4019 kl_weight=0.0800
+2026-05-01 10:56:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:39 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 4/200 — train_loss=1.9096 val_loss=81.9042 recon=1.7802 kl=1.0784 kl_weight=0.1200
+2026-05-01 10:56:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:40 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 5/200 — train_loss=1.7518 val_loss=40.7584 recon=1.6203 kl=0.8221 kl_weight=0.1600
+2026-05-01 10:56:41 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:42 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 6/200 — train_loss=1.6388 val_loss=11.2652 recon=1.4616 kl=0.8858 kl_weight=0.2000
+2026-05-01 10:56:43 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:43 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 7/200 — train_loss=1.5712 val_loss=5.5218 recon=1.3918 kl=0.7476 kl_weight=0.2400
+2026-05-01 10:56:44 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:45 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 8/200 — train_loss=1.5167 val_loss=4.7238 recon=1.3343 kl=0.6516 kl_weight=0.2800
+2026-05-01 10:56:45 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:46 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 9/200 — train_loss=1.4954 val_loss=2.1618 recon=1.3037 kl=0.5991 kl_weight=0.3200
+2026-05-01 10:56:47 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:47 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 10/200 — train_loss=1.4401 val_loss=1.9346 recon=1.2488 kl=0.5313 kl_weight=0.3600
+2026-05-01 10:56:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:49 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 11/200 — train_loss=1.3905 val_loss=1.9864 recon=1.1918 kl=0.4967 kl_weight=0.4000
+2026-05-01 10:56:49 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 12/200 — train_loss=1.5157 val_loss=1.8020 recon=1.1583 kl=0.8124 kl_weight=0.4400
+2026-05-01 10:56:50 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:50 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 13/200 — train_loss=1.3811 val_loss=1.6770 recon=1.1617 kl=0.4571 kl_weight=0.4800
+2026-05-01 10:56:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:52 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 14/200 — train_loss=1.3430 val_loss=1.5675 recon=1.1197 kl=0.4295 kl_weight=0.5200
+2026-05-01 10:56:53 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:53 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 15/200 — train_loss=1.2899 val_loss=1.5245 recon=1.0551 kl=0.4193 kl_weight=0.5600
+2026-05-01 10:56:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:55 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 16/200 — train_loss=1.2563 val_loss=1.4525 recon=1.0138 kl=0.4042 kl_weight=0.6000
+2026-05-01 10:56:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:56 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 17/200 — train_loss=1.2285 val_loss=1.4045 recon=0.9761 kl=0.3943 kl_weight=0.6400
+2026-05-01 10:56:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:57 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 18/200 — train_loss=1.2032 val_loss=1.3598 recon=0.9410 kl=0.3856 kl_weight=0.6800
+2026-05-01 10:56:58 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:56:59 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 19/200 — train_loss=1.1653 val_loss=1.3396 recon=0.9028 kl=0.3646 kl_weight=0.7200
+2026-05-01 10:57:00 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:00 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 20/200 — train_loss=1.1516 val_loss=1.3144 recon=0.8771 kl=0.3612 kl_weight=0.7600
+2026-05-01 10:57:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:02 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 21/200 — train_loss=1.1336 val_loss=1.2942 recon=0.8538 kl=0.3498 kl_weight=0.8000
+2026-05-01 10:57:03 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:03 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 22/200 — train_loss=1.1100 val_loss=1.2610 recon=0.8251 kl=0.3392 kl_weight=0.8400
+2026-05-01 10:57:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:05 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 23/200 — train_loss=1.1165 val_loss=1.2325 recon=0.8364 kl=0.3183 kl_weight=0.8800
+2026-05-01 10:57:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:06 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 24/200 — train_loss=1.0980 val_loss=1.2248 recon=0.8096 kl=0.3135 kl_weight=0.9200
+2026-05-01 10:57:07 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:07 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 25/200 — train_loss=1.0755 val_loss=1.1948 recon=0.7887 kl=0.2987 kl_weight=0.9600
+2026-05-01 10:57:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:09 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 26/200 — train_loss=1.0593 val_loss=1.1893 recon=0.7720 kl=0.2872 kl_weight=1.0000
+2026-05-01 10:57:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:10 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 27/200 — train_loss=1.0552 val_loss=1.2042 recon=0.7810 kl=0.2741 kl_weight=1.0000
+2026-05-01 10:57:11 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 28/200 — train_loss=1.0271 val_loss=1.1835 recon=0.7558 kl=0.2713 kl_weight=1.0000
+2026-05-01 10:57:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:12 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 29/200 — train_loss=0.9769 val_loss=1.1550 recon=0.7220 kl=0.2549 kl_weight=1.0000
+2026-05-01 10:57:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:13 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 30/200 — train_loss=0.9761 val_loss=1.1369 recon=0.7361 kl=0.2400 kl_weight=1.0000
+2026-05-01 10:57:14 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:15 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 31/200 — train_loss=0.9770 val_loss=1.1443 recon=0.7408 kl=0.2363 kl_weight=1.0000
+2026-05-01 10:57:15 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 32/200 — train_loss=0.9514 val_loss=1.1309 recon=0.7179 kl=0.2335 kl_weight=1.0000
+2026-05-01 10:57:16 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:17 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 33/200 — train_loss=0.9485 val_loss=1.1300 recon=0.7166 kl=0.2319 kl_weight=1.0000
+2026-05-01 10:57:18 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:18 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 34/200 — train_loss=0.9273 val_loss=1.1270 recon=0.7109 kl=0.2164 kl_weight=1.0000
+2026-05-01 10:57:19 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:19 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 35/200 — train_loss=0.9203 val_loss=1.1344 recon=0.7019 kl=0.2183 kl_weight=1.0000
+2026-05-01 10:57:20 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 36/200 — train_loss=0.9093 val_loss=1.0961 recon=0.6982 kl=0.2111 kl_weight=1.0000
+2026-05-01 10:57:21 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:21 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 37/200 — train_loss=0.8961 val_loss=1.0583 recon=0.6934 kl=0.2028 kl_weight=1.0000
+2026-05-01 10:57:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:23 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 38/200 — train_loss=0.8750 val_loss=1.0541 recon=0.6659 kl=0.2090 kl_weight=1.0000
+2026-05-01 10:57:24 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:24 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 39/200 — train_loss=0.8759 val_loss=1.0704 recon=0.6836 kl=0.1924 kl_weight=1.0000
+2026-05-01 10:57:25 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 40/200 — train_loss=0.8705 val_loss=1.0765 recon=0.6727 kl=0.1977 kl_weight=1.0000
+2026-05-01 10:57:25 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 41/200 — train_loss=0.8690 val_loss=1.0529 recon=0.6758 kl=0.1932 kl_weight=1.0000
+2026-05-01 10:57:26 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 42/200 — train_loss=0.8711 val_loss=1.0288 recon=0.6797 kl=0.1914 kl_weight=1.0000
+2026-05-01 10:57:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 43/200 — train_loss=0.8601 val_loss=1.0219 recon=0.6632 kl=0.1969 kl_weight=1.0000
+2026-05-01 10:57:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:29 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 44/200 — train_loss=0.8521 val_loss=1.0213 recon=0.6644 kl=0.1877 kl_weight=1.0000
+2026-05-01 10:57:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-01 10:57:31 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 45/200 — train_loss=0.8576 val_loss=1.0342 recon=0.6665 kl=0.1910 kl_weight=1.0000
+2026-05-01 10:57:31 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 46/200 — train_loss=0.8376 val_loss=1.0414 recon=0.6458 kl=0.1918 kl_weight=1.0000
+2026-05-01 10:57:31 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 47/200 — train_loss=0.8295 val_loss=1.0453 recon=0.6427 kl=0.1868 kl_weight=1.0000
+2026-05-01 10:57:32 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 48/200 — train_loss=0.8393 val_loss=1.0353 recon=0.6489 kl=0.1904 kl_weight=1.0000
+2026-05-01 10:57:32 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 49/200 — train_loss=0.8238 val_loss=1.0327 recon=0.6380 kl=0.1858 kl_weight=1.0000
+2026-05-01 10:57:33 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 50/200 — train_loss=0.8258 val_loss=1.0344 recon=0.6411 kl=0.1847 kl_weight=1.0000
+2026-05-01 10:57:33 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 51/200 — train_loss=0.6254 val_loss=1.0321 recon=0.6254 kl=0.1901 kl_weight=0.0000
+2026-05-01 10:57:34 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 52/200 — train_loss=0.6248 val_loss=1.0268 recon=0.6166 kl=0.2038 kl_weight=0.0400
+2026-05-01 10:57:34 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 53/200 — train_loss=0.6116 val_loss=1.0403 recon=0.5935 kl=0.2263 kl_weight=0.0800
+2026-05-01 10:57:35 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 54/200 — train_loss=0.6114 val_loss=1.0445 recon=0.5807 kl=0.2554 kl_weight=0.1200
+2026-05-01 10:57:35 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 55/200 — train_loss=0.6046 val_loss=1.0502 recon=0.5590 kl=0.2851 kl_weight=0.1600
+2026-05-01 10:57:36 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 56/200 — train_loss=0.6069 val_loss=1.0633 recon=0.5408 kl=0.3305 kl_weight=0.2000
+2026-05-01 10:57:36 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 57/200 — train_loss=0.6155 val_loss=1.0782 recon=0.5263 kl=0.3716 kl_weight=0.2400
+2026-05-01 10:57:36 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 58/200 — train_loss=0.6368 val_loss=1.0892 recon=0.5143 kl=0.4375 kl_weight=0.2800
+2026-05-01 10:57:37 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 59/200 — train_loss=0.6389 val_loss=1.0952 recon=0.4980 kl=0.4404 kl_weight=0.3200
+2026-05-01 10:57:37 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 60/200 — train_loss=0.6513 val_loss=1.1016 recon=0.4777 kl=0.4824 kl_weight=0.3600
+2026-05-01 10:57:38 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 61/200 — train_loss=0.6769 val_loss=1.1102 recon=0.4739 kl=0.5077 kl_weight=0.4000
+2026-05-01 10:57:38 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 62/200 — train_loss=0.6750 val_loss=1.1115 recon=0.4729 kl=0.4592 kl_weight=0.4400
+2026-05-01 10:57:39 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 63/200 — train_loss=0.6878 val_loss=1.1081 recon=0.4725 kl=0.4486 kl_weight=0.4800
+2026-05-01 10:57:39 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 64/200 — train_loss=0.6944 val_loss=1.1020 recon=0.4732 kl=0.4253 kl_weight=0.5200
+2026-05-01 10:57:39 | INFO    | resistancemap.models.vae | Early stopping at epoch 64
+2026-05-01 10:57:39 | INFO    | resistancemap | <<< STAGE END: vae_pretrain (1.2 min) | best_val_loss=1.0213 final_epoch=64 total_steps=64
+2026-05-01 10:57:39 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-01 10:57:40 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-01 10:57:40 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-01 10:57:40 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=a10dd06d...)
+2026-05-01 10:57:40 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-01 10:57:40 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-01 10:57:40 | INFO    | resistancemap | >>> STAGE START: vae_finetune
+2026-05-01 10:57:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 10:57:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-01 10:57:45 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 1/100 — train_loss=0.9163 val_loss=1.1615 recon=0.9163 kl=0.2520 kl_weight=0.0000
+2026-05-01 10:57:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_finetuned.pt
+2026-05-01 10:57:48 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 2/100 — train_loss=0.8994 val_loss=1.1601 recon=0.8774 kl=0.2648 kl_weight=0.0833
+2026-05-01 10:57:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_finetuned.pt
+2026-05-01 10:57:50 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 3/100 — train_loss=0.7948 val_loss=1.1638 recon=0.7491 kl=0.2742 kl_weight=0.1667
+2026-05-01 10:57:50 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 4/100 — train_loss=0.8092 val_loss=1.1764 recon=0.7383 kl=0.2837 kl_weight=0.2500
+2026-05-01 10:57:51 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 5/100 — train_loss=0.7830 val_loss=1.1972 recon=0.6827 kl=0.3010 kl_weight=0.3333
+2026-05-01 10:57:51 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 6/100 — train_loss=0.7865 val_loss=1.2171 recon=0.6562 kl=0.3128 kl_weight=0.4167
+2026-05-01 10:57:51 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 7/100 — train_loss=0.7980 val_loss=1.2398 recon=0.6306 kl=0.3347 kl_weight=0.5000
+2026-05-01 10:57:52 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 8/100 — train_loss=0.8054 val_loss=1.2607 recon=0.6108 kl=0.3335 kl_weight=0.5833
+2026-05-01 10:57:52 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 9/100 — train_loss=0.8332 val_loss=1.2807 recon=0.6044 kl=0.3431 kl_weight=0.6667
+2026-05-01 10:57:53 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 10/100 — train_loss=0.8675 val_loss=1.2920 recon=0.6063 kl=0.3482 kl_weight=0.7500
+2026-05-01 10:57:53 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 11/100 — train_loss=0.8694 val_loss=1.2995 recon=0.5760 kl=0.3520 kl_weight=0.8333
+2026-05-01 10:57:54 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 12/100 — train_loss=0.8896 val_loss=1.3069 recon=0.5725 kl=0.3459 kl_weight=0.9167
+2026-05-01 10:57:54 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 13/100 — train_loss=0.8976 val_loss=1.3050 recon=0.5667 kl=0.3309 kl_weight=1.0000
+2026-05-01 10:57:55 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 14/100 — train_loss=0.8775 val_loss=1.3054 recon=0.5516 kl=0.3259 kl_weight=1.0000
+2026-05-01 10:57:55 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 15/100 — train_loss=0.8775 val_loss=1.3039 recon=0.5624 kl=0.3151 kl_weight=1.0000
+2026-05-01 10:57:56 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 16/100 — train_loss=0.8703 val_loss=1.3063 recon=0.5750 kl=0.2952 kl_weight=1.0000
+2026-05-01 10:57:56 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 17/100 — train_loss=0.8583 val_loss=1.2976 recon=0.5576 kl=0.3006 kl_weight=1.0000
+2026-05-01 10:57:57 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 18/100 — train_loss=0.8383 val_loss=1.2895 recon=0.5583 kl=0.2800 kl_weight=1.0000
+2026-05-01 10:57:57 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 19/100 — train_loss=0.8339 val_loss=1.2780 recon=0.5632 kl=0.2706 kl_weight=1.0000
+2026-05-01 10:57:58 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 20/100 — train_loss=0.7985 val_loss=1.2666 recon=0.5410 kl=0.2575 kl_weight=1.0000
+2026-05-01 10:57:58 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 21/100 — train_loss=0.8092 val_loss=1.2597 recon=0.5540 kl=0.2552 kl_weight=1.0000
+2026-05-01 10:57:59 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 22/100 — train_loss=0.8110 val_loss=1.2484 recon=0.5699 kl=0.2411 kl_weight=1.0000
+2026-05-01 10:57:59 | INFO    | resistancemap.models.vae | Early stopping at epoch 22
+2026-05-01 10:57:59 | INFO    | resistancemap | <<< STAGE END: vae_finetune (0.3 min) | best_val_loss=1.1601 final_epoch=22 total_steps=22
+2026-05-01 10:57:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 10:57:59 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-01 10:57:59 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-01 10:57:59 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-01 10:57:59 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-01 10:57:59 | INFO    | resistancemap | >>> STAGE START: trajectory_calibrate
+2026-05-01 10:57:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 10:57:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 10:58:00 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:07 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:14 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:16 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:16 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:18 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:19 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:21 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:26 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:26 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:28 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 50/500 loss=0.3060 basin_center=1.4789 basin_scale=1.5128
+2026-05-01 10:58:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:31 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:31 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:35 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:35 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:37 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:41 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:44 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:50 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:55 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 100/500 loss=0.0102 basin_center=1.4509 basin_scale=1.5057
+2026-05-01 10:58:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:58:58 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:06 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:18 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:23 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 150/500 loss=0.0032 basin_center=1.4477 basin_scale=1.5086
+2026-05-01 10:59:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:31 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:38 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 10:59:51 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 200/500 loss=0.0009 basin_center=1.4468 basin_scale=1.5101
+2026-05-01 10:59:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 11:00:19 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 250/500 loss=0.0030 basin_center=1.4463 basin_scale=1.5114
+2026-05-01 11:00:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 11:00:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 11:00:45 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-01 11:00:47 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 300/500 loss=0.0007 basin_center=1.4458 basin_scale=1.5126
+2026-05-01 11:01:15 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 350/500 loss=0.0094 basin_center=1.4456 basin_scale=1.5136
+2026-05-01 11:01:43 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 400/500 loss=0.0022 basin_center=1.4453 basin_scale=1.5144
+2026-05-01 11:02:10 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 450/500 loss=0.0001 basin_center=1.4452 basin_scale=1.5150
+2026-05-01 11:02:38 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 500/500 loss=0.0112 basin_center=1.4451 basin_scale=1.5155
+2026-05-01 11:02:38 | INFO    | resistancemap | <<< STAGE END: trajectory_calibrate (4.7 min) | best_calibration_loss=0.0001 n_valid_samples=498
+2026-05-01 11:02:38 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-01 11:02:38 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-05-01 11:02:38 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=f775403a...)
+2026-05-01 11:02:38 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-01 11:02:38 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-05-01 11:02:40 | INFO    | resistancemap | >>> STAGE START: protein_net_train
+2026-05-01 11:02:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:02:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 11:02:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-01 11:02:41 | INFO    | resistancemap.main | Pre-computing VAE latent states and stability scores...
+2026-05-01 11:08:21 | INFO    | resistancemap.main | Pre-computed: latents torch.Size([886, 64]), stability torch.Size([886])
+2026-05-01 11:08:21 | INFO    | resistancemap.main | No protein sequences available; using abundance-only node features
+2026-05-01 11:08:21 | INFO    | resistancemap.main | PPI graph: 19177 nodes, 929520 edges
+2026-05-01 11:08:44 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-05-01 11:10:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-05-01 11:12:13 | INFO    | resistancemap.main | [protein_net] Epoch 10/100 train=0.8319 val=1.8462
+2026-05-01 11:16:04 | INFO    | resistancemap.main | [protein_net] Epoch 20/100 train=0.8174 val=1.8381
+2026-05-01 11:16:04 | INFO    | resistancemap.main | [protein_net] Early stopping at epoch 20
+2026-05-01 11:16:04 | INFO    | resistancemap | <<< STAGE END: protein_net_train (13.4 min) | protein_net_val_loss=1.8245
+2026-05-01 11:16:05 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-01T16:10:17.427886+00:00)
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=8dd96d02...)
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-05-01 11:16:05 | INFO    | resistancemap | >>> STAGE START: fusion_train
+2026-05-01 11:16:05 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:16:05 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 11:16:05 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-01 11:16:05 | ERROR   | resistancemap.agents.specialized | FusionAgent failed
+Traceback (most recent call last):
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/resistancemap/agents/specialized.py", line 363, in execute
+    result_path = await asyncio.to_thread(train_fusion, config, ckpt_mgr)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/resistancemap/main.py", line 910, in train_fusion
+    forecaster_ckpt = ckpt_mgr.load("trajectory_forecaster_trained")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/resistancemap/utils/checkpoint.py", line 119, in load
+    raise FileNotFoundError(
+FileNotFoundError: No checkpoint found for stage 'trajectory_forecaster_trained' at checkpoints/trajectory_forecaster_trained.pt. Run the 'trajectory_forecaster_trained' stage first.
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=failed)
+2026-05-01 11:16:05 | ERROR   | resistancemap.agents.orchestrator |   fusion: FAILED (Fusion training failed: No checkpoint found for stage 'trajectory_forecaster_trained' at checkpoints/trajectory_forecaster_trained.pt. Run the 'trajectory_forecaster_trained' stage first.)
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-01 11:16:05 | ERROR   | resistancemap.agents.orchestrator |   landscape: FAILED (Dependency fusion failed: Fusion training failed: No checkpoint found for stage 'trajectory_forecaster_trained' at checkpoints/trajectory_forecaster_trained.pt. Run the 'trajectory_forecaster_trained' stage first.)
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-01 11:16:05 | ERROR   | resistancemap.agents.orchestrator |   validation: FAILED (Dependency landscape failed: Dependency fusion failed: Fusion training failed: No checkpoint found for stage 'trajectory_forecaster_trained' at checkpoints/trajectory_forecaster_trained.pt. Run the 'trajectory_forecaster_trained' stage first.)
+2026-05-01 11:16:05 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 1252.9s. Completed: 7/10
+2026-05-01 11:16:05 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:16:05 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-01 11:16:05 | INFO    | resistancemap.main |   Total time: 1253.1s
+2026-05-01 11:16:05 | INFO    | resistancemap.main |   Agents completed: 7/10
+2026-05-01 11:16:05 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-01 11:16:05 | WARNING | resistancemap.main |   Failed agents: ['fusion', 'landscape', 'validation']
+2026-05-01 11:16:05 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:16:05 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-01 11:18:09 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-01 11:18:09 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-01 11:18:09 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-01 11:18:09 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-01 11:18:09 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-01 11:18:09 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-01 11:18:09 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-01 11:18:09 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-01 11:18:09 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:18:09 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-01 11:18:09 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-01 11:18:09 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-01 11:18:09 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-01 11:18:09 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-01 11:18:09 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-01 11:18:09 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-01 11:18:10 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.specialized | ESM-2 embed: validated 19177 proteins for model facebook/esm2_t33_650M_UR50D
+2026-05-01 11:18:10 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-01 11:18:10 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=a10dd06d...)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-01 11:18:10 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-01 11:18:10 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-01 11:18:10 | INFO    | resistancemap | >>> STAGE START: trajectory_forecast
+2026-05-01 11:18:10 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:18:11 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 11:18:11 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-01 11:18:12 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-05-01 11:18:12 | INFO    | resistancemap.main | Transferred calibrated ODE weights from MemoryStabilityScorer to TrajectoryForecaster
+2026-05-01 11:18:12 | INFO    | resistancemap.main | Pre-computing VAE latents and reader/writer levels for trajectory training...
+2026-05-01 11:18:13 | INFO    | resistancemap.main | Pre-computed: latents torch.Size([886, 64]), rw_levels torch.Size([886, 20])
+2026-05-01 11:18:13 | ERROR   | resistancemap.agents.specialized | TrajectoryAgent failed
+Traceback (most recent call last):
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/resistancemap/agents/specialized.py", line 279, in execute
+    forecaster_path = await asyncio.to_thread(train_trajectory_forecaster, config, ckpt_mgr)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/resistancemap/main.py", line 507, in train_trajectory_forecaster
+    {"params": forecaster.latent_to_params.parameters(), "lr": 1e-3},
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aj0486@students.ad.unt.edu/pipeline3/venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1931, in __getattr__
+    raise AttributeError(
+AttributeError: 'TrajectoryForecaster' object has no attribute 'latent_to_params'. Did you mean: '_latent_to_ode_params'?
+2026-05-01 11:18:13 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=failed)
+2026-05-01 11:18:14 | ERROR   | resistancemap.agents.orchestrator |   trajectory: FAILED (Trajectory calibration/forecaster failed: 'TrajectoryForecaster' object has no attribute 'latent_to_params')
+2026-05-01 11:18:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-01 11:18:14 | ERROR   | resistancemap.agents.orchestrator |   protein_net: FAILED (Dependency trajectory failed: Trajectory calibration/forecaster failed: 'TrajectoryForecaster' object has no attribute 'latent_to_params')
+2026-05-01 11:18:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-01 11:18:14 | ERROR   | resistancemap.agents.orchestrator |   fusion: FAILED (Dependency trajectory failed: Trajectory calibration/forecaster failed: 'TrajectoryForecaster' object has no attribute 'latent_to_params')
+2026-05-01 11:18:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-01 11:18:14 | ERROR   | resistancemap.agents.orchestrator |   landscape: FAILED (Dependency fusion failed: Dependency trajectory failed: Trajectory calibration/forecaster failed: 'TrajectoryForecaster' object has no attribute 'latent_to_params')
+2026-05-01 11:18:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-01 11:18:14 | ERROR   | resistancemap.agents.orchestrator |   validation: FAILED (Dependency landscape failed: Dependency fusion failed: Dependency trajectory failed: Trajectory calibration/forecaster failed: 'TrajectoryForecaster' object has no attribute 'latent_to_params')
+2026-05-01 11:18:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 4.4s. Completed: 5/10
+2026-05-01 11:18:14 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:18:14 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-01 11:18:14 | INFO    | resistancemap.main |   Total time: 4.6s
+2026-05-01 11:18:14 | INFO    | resistancemap.main |   Agents completed: 5/10
+2026-05-01 11:18:14 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-01 11:18:14 | WARNING | resistancemap.main |   Failed agents: ['trajectory', 'protein_net', 'fusion', 'landscape', 'validation']
+2026-05-01 11:18:14 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:18:14 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json
+2026-05-01 11:19:13 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-01 11:19:13 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-01 11:19:13 | INFO    | resistancemap.main | Agentic pipeline: 10 agents in 9 parallel layers
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 0: ['data_validation']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 1: ['data_prep']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 2: ['vae_pretrain', 'esm2_embed']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 3: ['vae_finetune']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 4: ['trajectory']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 5: ['protein_net']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 6: ['fusion']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 7: ['landscape']
+2026-05-01 11:19:13 | INFO    | resistancemap.main |   Layer 8: ['validation']
+2026-05-01 11:19:13 | INFO    | resistancemap.main | AgentOps initialized: Tracer + Evaluator + Optimizer
+2026-05-01 11:19:13 | INFO    | resistancemap.main | Zero-trust verification active: 8 guardrails loaded
+2026-05-01 11:19:13 | INFO    | resistancemap.main | Data quality profiler ready (SOTA benchmarks loaded)
+2026-05-01 11:19:13 | INFO    | resistancemap.main | Latent compute scheduler: GPU budget=24GB, max_concurrent=2
+2026-05-01 11:19:13 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:19:13 | INFO    | resistancemap.main | EXECUTING AGENTIC PIPELINE
+2026-05-01 11:19:13 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Starting execution of 10 agents in 9 layers
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 0 (1 agents)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.base | data_validation: Starting execution
+2026-05-01 11:19:13 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-01 11:19:13 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.base | data_validation: Execution complete (status=completed)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.orchestrator |   data_validation: COMPLETED (hash=c756ad01...)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 1 (1 agents)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.base | data_prep: Starting execution
+2026-05-01 11:19:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.base | data_prep: Execution complete (status=completed)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.orchestrator |   data_prep: COMPLETED (hash=6729f7bf...)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 2 (2 agents)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.base | vae_pretrain: Starting execution
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.base | esm2_embed: Starting execution
+2026-05-01 11:19:13 | INFO    | resistancemap | >>> STAGE START: esm2_embed
+2026-05-01 11:19:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.specialized | ESM-2 embed: validated 19177 proteins for model facebook/esm2_t33_650M_UR50D
+2026-05-01 11:19:13 | INFO    | resistancemap | <<< STAGE END: esm2_embed (0.0 min) | n_proteins=19177 esm2_model=facebook/esm2_t33_650M_UR50D embedding_dim=1280
+2026-05-01 11:19:13 | INFO    | resistancemap.agents.base | esm2_embed: Execution complete (status=completed)
+2026-05-01 11:19:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-01T15:57:29.642870+00:00)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.base | vae_pretrain: Execution complete (status=completed)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.orchestrator |   vae_pretrain: COMPLETED (hash=96937bb0...)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.orchestrator |   esm2_embed: COMPLETED (hash=a10dd06d...)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 3 (1 agents)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.base | vae_finetune: Starting execution
+2026-05-01 11:19:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.base | vae_finetune: Execution complete (status=completed)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.orchestrator |   vae_finetune: COMPLETED (hash=717b5097...)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 4 (1 agents)
+2026-05-01 11:19:14 | INFO    | resistancemap.agents.base | trajectory: Starting execution
+2026-05-01 11:19:14 | INFO    | resistancemap | >>> STAGE START: trajectory_forecast
+2026-05-01 11:19:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:19:15 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 11:19:15 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-01 11:19:15 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-05-01 11:19:15 | INFO    | resistancemap.main | Transferred calibrated ODE weights from MemoryStabilityScorer to TrajectoryForecaster
+2026-05-01 11:19:15 | INFO    | resistancemap.main | Pre-computing VAE latents and reader/writer levels for trajectory training...
+2026-05-01 11:19:17 | INFO    | resistancemap.main | Pre-computed: latents torch.Size([886, 64]), rw_levels torch.Size([886, 20])
+2026-05-01 11:19:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/trajectory_forecaster_trained.pt
+2026-05-01 11:19:57 | INFO    | resistancemap.main | [trajectory_forecast] Early stopping at epoch 21
+2026-05-01 11:19:57 | INFO    | resistancemap | <<< STAGE END: trajectory_forecast (0.7 min) | trajectory_forecast_val_loss=0.0122
+2026-05-01 11:19:57 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-01 11:19:57 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-01T16:19:20.463581+00:00)
+2026-05-01 11:19:57 | INFO    | resistancemap.agents.base | trajectory: Execution complete (status=completed)
+2026-05-01 11:19:57 | INFO    | resistancemap.agents.orchestrator |   trajectory: COMPLETED (hash=ca726349...)
+2026-05-01 11:19:57 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 5 (1 agents)
+2026-05-01 11:19:57 | INFO    | resistancemap.agents.base | protein_net: Starting execution
+2026-05-01 11:19:58 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-01T16:10:17.427886+00:00)
+2026-05-01 11:19:58 | INFO    | resistancemap.agents.base | protein_net: Execution complete (status=completed)
+2026-05-01 11:19:58 | INFO    | resistancemap.agents.orchestrator |   protein_net: COMPLETED (hash=8dd96d02...)
+2026-05-01 11:19:58 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 6 (1 agents)
+2026-05-01 11:19:58 | INFO    | resistancemap.agents.base | fusion: Starting execution
+2026-05-01 11:19:58 | INFO    | resistancemap | >>> STAGE START: fusion_train
+2026-05-01 11:19:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:19:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-01T15:57:48.590959+00:00)
+2026-05-01 11:19:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-01T16:00:45.006057+00:00)
+2026-05-01 11:19:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-01T16:19:20.463581+00:00)
+2026-05-01 11:19:59 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-01T16:10:17.427886+00:00)
+2026-05-01 11:19:59 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-05-01 11:19:59 | INFO    | resistancemap.main | Pre-computing modality embeddings for fusion training...
+2026-05-01 11:27:28 | INFO    | resistancemap.main | Embeddings: epi=torch.Size([886, 64]), traj_raw=torch.Size([886, 10]), pnet=torch.Size([886, 256]), stab=torch.Size([886, 1])
+2026-05-01 11:27:28 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-01 11:27:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/fusion_trained.pt
+2026-05-01 11:27:30 | INFO    | resistancemap.main | [fusion] Early stopping at epoch 16
+2026-05-01 11:27:30 | INFO    | resistancemap | <<< STAGE END: fusion_train (7.5 min) | fusion_val_loss=1.2420
+2026-05-01 11:27:30 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-01 11:27:30 | INFO    | resistancemap.agents.base | fusion: Execution complete (status=completed)
+2026-05-01 11:27:30 | INFO    | resistancemap.agents.orchestrator |   fusion: COMPLETED (hash=0ef436cc...)
+2026-05-01 11:27:30 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 7 (1 agents)
+2026-05-01 11:27:30 | INFO    | resistancemap.agents.base | landscape: Starting execution
+2026-05-01 11:27:30 | INFO    | resistancemap | >>> STAGE START: landscape_train
+2026-05-01 11:27:30 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:27:30 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-01 11:27:30 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-01 11:27:30 | INFO    | resistancemap.main | Computing fused representations for landscape training...
+2026-05-01 11:27:32 | INFO    | resistancemap.main | Fused representations: torch.Size([886, 128])
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:33 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:33 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:33 | INFO    | resistancemap.main | [landscape] Epoch 20/100 train=0.8928 val=1.2481
+2026-05-01 11:27:33 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:33 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:33 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-01 11:27:33 | INFO    | resistancemap.main | [landscape] Epoch 40/100 train=0.8470 val=1.2570
+2026-05-01 11:27:34 | INFO    | resistancemap.main | [landscape] Early stopping at epoch 44
+2026-05-01 11:27:34 | INFO    | resistancemap | <<< STAGE END: landscape_train (0.1 min) | landscape_val_loss=1.2434
+2026-05-01 11:27:34 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-01 11:27:34 | INFO    | resistancemap.agents.base | landscape: Execution complete (status=completed)
+2026-05-01 11:27:34 | INFO    | resistancemap.agents.orchestrator |   landscape: COMPLETED (hash=fc00a67d...)
+2026-05-01 11:27:34 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Layer 8 (1 agents)
+2026-05-01 11:27:34 | INFO    | resistancemap.agents.base | validation: Starting execution
+2026-05-01 11:27:34 | INFO    | resistancemap | >>> STAGE START: validate
+2026-05-01 11:27:34 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-01T15:56:27.149004+00:00)
+2026-05-01 11:27:34 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-01T16:27:28.843438+00:00)
+2026-05-01 11:27:34 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-01T16:27:33.558718+00:00)
+2026-05-01 11:27:34 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-01 11:27:34 | INFO    | resistancemap.main | Validation: test_mse=2.3731 on 132 samples
+2026-05-01 11:27:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-01 11:27:34 | INFO    | resistancemap | <<< STAGE END: validate (0.0 min) | test_mse=2.3731 n_test_samples=132 n_drugs=11 split=test
+2026-05-01 11:27:34 | INFO    | resistancemap | Checkpoint loaded: checkpoints/pipeline_validated.pt (saved 2026-05-01T16:27:34.624934+00:00)
+2026-05-01 11:27:34 | INFO    | resistancemap.agents.base | validation: Execution complete (status=completed)
+2026-05-01 11:27:34 | INFO    | resistancemap.agents.orchestrator |   validation: COMPLETED (hash=db77f8ed...)
+2026-05-01 11:27:34 | INFO    | resistancemap.agents.orchestrator | Orchestrator: Execution complete in 501.3s. Completed: 10/10
+2026-05-01 11:27:34 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:27:34 | INFO    | resistancemap.main | PIPELINE COMPLETE
+2026-05-01 11:27:34 | INFO    | resistancemap.main |   Total time: 501.4s
+2026-05-01 11:27:34 | INFO    | resistancemap.main |   Agents completed: 10/10
+2026-05-01 11:27:34 | INFO    | resistancemap.main |   Verification chain: 10 hashes
+2026-05-01 11:27:34 | INFO    | resistancemap.main | ========================================================================
+2026-05-01 11:27:34 | INFO    | resistancemap.main | AgentOps dashboard exported: logs/agentops_dashboard.json

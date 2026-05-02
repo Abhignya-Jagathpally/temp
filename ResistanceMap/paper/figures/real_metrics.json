@@ -1,0 +1,22 @@
+{
+  "test_mse": 2.3730967044830322,
+  "n_test_samples": 132,
+  "n_drugs": 11,
+  "split": "test",
+  "vae_pretrained_val_loss": 1.021289587020874,
+  "fusion_val_loss": 1.242,
+  "landscape_val_loss": 1.2434,
+  "target_drugs": [
+    "Bortezomib",
+    "Lenalidomide",
+    "Panobinostat",
+    "Vorinostat",
+    "Romidepsin",
+    "Venetoclax",
+    "Dinaciclib",
+    "Palbociclib",
+    "Doxorubicin",
+    "Etoposide",
+    "Cyclophosphamide"
+  ]
+}

@@ -11,3 +11,11 @@ A multi-modal deep learning system combining:
 __version__ = "0.1.0"
 __author__ = "Anthropic"
 __license__ = "MIT"
+
+# Phase 3 subpackages
+from resistancemap import interpretability
+from resistancemap import training
+from resistancemap import theory
+from resistancemap import baselines as rm_baselines
+from resistancemap import experiments
+from resistancemap import data as rm_data

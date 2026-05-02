@@ -54,6 +54,9 @@ dependencies = [
     "seaborn>=0.13.0,<0.14",
     "plotly>=5.17.0,<5.25",
     "torchdiffeq>=0.2.3,<0.3",
+    "xgboost>=2.0.0",
+    "gseapy>=1.0.0",
+    "adjustText>=0.8",
 ]
 
 [project.optional-dependencies]
@@ -85,6 +88,11 @@ agentic = [
     "aiohttp>=3.9.0",
     "tenacity>=8.2.0",
 ]
+
+baselines = ["mofapy2>=0.7.0", "cellrank>=2.0.0", "scvi-tools>=1.0.0"]
+interpretability = ["gseapy>=1.0.0"]
+tracking = ["wandb>=0.15.0", "tensorboard>=2.14.0"]
+all = ["mofapy2>=0.7.0", "cellrank>=2.0.0", "scvi-tools>=1.0.0", "gseapy>=1.0.0", "wandb>=0.15.0", "tensorboard>=2.14.0", "xgboost>=2.0.0"]
 
 [project.urls]
 Homepage = "https://github.com/resistancemap/resistancemap"

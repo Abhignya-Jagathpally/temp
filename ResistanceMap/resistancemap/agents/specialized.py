@@ -272,24 +272,28 @@ class TrajectoryAgent(BaseAgent):
 
     async def execute(self, inputs: dict[str, Any], config: ResistanceMapConfig) -> AgentResult:
         try:
-            from resistancemap.main import calibrate_trajectory
+            from resistancemap.main import calibrate_trajectory, train_trajectory_forecaster
             ckpt_mgr = _get_ckpt_mgr(config)
 
-            result_path = await asyncio.to_thread(calibrate_trajectory, config, ckpt_mgr)
+            calib_path = await asyncio.to_thread(calibrate_trajectory, config, ckpt_mgr)
+            forecaster_path = await asyncio.to_thread(train_trajectory_forecaster, config, ckpt_mgr)
 
-            ckpt = ckpt_mgr.load("stability_calibrated")
-            metrics = ckpt.get("metrics", {})
+            calib_ckpt = ckpt_mgr.load("stability_calibrated")
+            forecaster_ckpt = ckpt_mgr.load("trajectory_forecaster_trained")
+            metrics = {**calib_ckpt.get("metrics", {}), **forecaster_ckpt.get("metrics", {})}
             output = {
-                "checkpoint_path": str(result_path),
-                "model_type": "MemoryStabilityScorer",
+                "checkpoint_path": str(calib_path),
+                "forecaster_checkpoint_path": str(forecaster_path),
+                "model_type": "MemoryStabilityScorer+TrajectoryForecaster",
                 "calibrated": True,
+                "trained": True,
                 "metrics": metrics,
             }
             return self._make_result(AgentState.COMPLETED, output, metadata=metrics)
 
         except Exception as e:
             logger.exception("TrajectoryAgent failed")
-            return self._make_result(AgentState.FAILED, error=f"Trajectory calibration failed: {e}")
+            return self._make_result(AgentState.FAILED, error=f"Trajectory calibration/forecaster failed: {e}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

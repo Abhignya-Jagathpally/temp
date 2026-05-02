@@ -1,0 +1,101 @@
+{
+  "n_train": 622,
+  "n_val": 132,
+  "n_test": 132,
+  "n_features": 19219,
+  "n_drugs": 11,
+  "n_train_observed_cells": 3635,
+  "n_test_observed_cells": 736,
+  "drugs": [
+    "Bortezomib",
+    "Cyclophosphamide",
+    "Dinaciclib",
+    "Doxorubicin",
+    "Etoposide",
+    "Lenalidomide",
+    "Palbociclib",
+    "Panobinostat",
+    "Romidepsin",
+    "Venetoclax",
+    "Vorinostat"
+  ],
+  "results": [
+    {
+      "model": "Zero (z-scored target floor)",
+      "test_mse": 2.367814540863037,
+      "val_mse": 1.8841407299041748,
+      "wall_seconds": 0.0,
+      "notes": "predicts 0 everywhere"
+    },
+    {
+      "model": "PerDrugTrainMean",
+      "test_mse": 2.367814540863037,
+      "val_mse": 1.8841407299041748,
+      "wall_seconds": 0.0,
+      "notes": "predicts per-drug train mean"
+    },
+    {
+      "model": "GradientBoosting (PCA-256)",
+      "test_mse": 2.3699265799411298,
+      "val_mse": 2.1596757997247362,
+      "wall_seconds": 78.72,
+      "notes": ""
+    },
+    {
+      "model": "ResistanceMap (10-agent DAG)",
+      "test_mse": 2.3730967044830322,
+      "val_mse": null,
+      "wall_seconds": null,
+      "notes": "from checkpoints/pipeline_validated.pt"
+    },
+    {
+      "model": "RandomForest (PCA-256)",
+      "test_mse": 2.4134212816795744,
+      "val_mse": 2.0231726968596404,
+      "wall_seconds": 7.64,
+      "notes": ""
+    },
+    {
+      "model": "Ridge (full proteomics+epi)",
+      "test_mse": 2.4997544288635254,
+      "val_mse": 2.0536413192749023,
+      "wall_seconds": 0.53,
+      "notes": ""
+    },
+    {
+      "model": "ElasticNet (PCA-256)",
+      "test_mse": 2.564673662185669,
+      "val_mse": 2.1188008785247803,
+      "wall_seconds": 0.03,
+      "notes": ""
+    },
+    {
+      "model": "Lasso (PCA-256)",
+      "test_mse": 2.5668976306915283,
+      "val_mse": 2.120676040649414,
+      "wall_seconds": 0.03,
+      "notes": ""
+    },
+    {
+      "model": "XGBoost (PCA-256)",
+      "test_mse": 2.7215092182159424,
+      "val_mse": 2.1428825855255127,
+      "wall_seconds": 10.42,
+      "notes": ""
+    },
+    {
+      "model": "Ridge (PCA-256)",
+      "test_mse": 3.247282028198242,
+      "val_mse": 2.9273157119750977,
+      "wall_seconds": 0.02,
+      "notes": ""
+    },
+    {
+      "model": "MLP-256-128 (PCA-256)",
+      "test_mse": 4.384618759155273,
+      "val_mse": 4.130160331726074,
+      "wall_seconds": 1.82,
+      "notes": ""
+    }
+  ]
+}

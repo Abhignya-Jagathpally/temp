@@ -167,7 +167,18 @@ class JacobianEigenvalueAnalyzer(nn.Module):
         )
 
         for b in range(batch_size):
-            evals, evecs = torch.linalg.eigh(jacobians[b])
+            # FIX #1: Use torch.linalg.eig instead of torch.linalg.eigh.
+            #
+            # REASON: Jacobians of nonlinear ODE systems are generally NOT symmetric.
+            # torch.linalg.eigh assumes symmetric (Hermitian) input and only reads
+            # the lower triangle, silently returning WRONG eigenvalues for non-symmetric
+            # matrices. torch.linalg.eig handles the general (non-symmetric) case and
+            # correctly returns complex eigenvalues.
+            #
+            # For stability analysis of dynamical systems, the key criterion is:
+            #   Re(lambda_i) < 0 for ALL eigenvalues => stable fixed point
+            # This requires computing the full (possibly complex) eigenvalue spectrum.
+            evals, evecs = torch.linalg.eig(jacobians[b])
             eigenvalues[b] = evals
             eigenvectors[b] = evecs
 
@@ -181,6 +192,10 @@ class JacobianEigenvalueAnalyzer(nn.Module):
         Basin depth quantifies how stable the current state is. Larger values
         indicate deeper basins, making the state harder to perturb.
 
+        For stability, we use the real parts of eigenvalues:
+        - If max(Re(lambda)) < 0, the fixed point is stable
+        - Basin depth = -max(Re(lambda)): more negative => deeper basin
+
         Args:
             x: (B, D) state vector.
             t: (B,) time vector or scalar (optional).
@@ -191,9 +206,19 @@ class JacobianEigenvalueAnalyzer(nn.Module):
         """
         eigenvalues, _ = self.compute_eigenvalues(x, t, method)
 
-        # |λ_max| = largest absolute eigenvalue
-        abs_evals = torch.abs(eigenvalues)
-        basin_depths = torch.max(abs_evals, dim=1).values
+        # FIX #1 (continued): Use REAL PARTS of eigenvalues for stability assessment.
+        #
+        # The original code used torch.abs(eigenvalues) which conflates the real
+        # and imaginary parts. For stability analysis:
+        #   - Re(lambda) < 0 means stable in that direction
+        #   - Re(lambda) > 0 means unstable
+        #   - Im(lambda) != 0 means oscillatory dynamics (spiral node)
+        #
+        # Basin depth should be based on how negative the most positive real part is.
+        # If max(Re(lambda)) < 0, depth = |max(Re(lambda))| = -max(Re(lambda)).
+        # If max(Re(lambda)) > 0, the point is unstable (depth = 0).
+        max_real_parts = eigenvalues.real.max(dim=1).values  # (B,)
+        basin_depths = torch.clamp(-max_real_parts, min=0.0)  # Depth >= 0
 
         return basin_depths
 
@@ -370,12 +395,12 @@ class DualHeadGNN(nn.Module):
 
 
 class ReversibilityClassifier(nn.Module):
-    """Maps (reversibility_score, mutation_status) → 4-class classification.
+    """Maps (reversibility_score, mutation_status) -> 4-class classification.
 
     Classes:
-        0: reversible_fast (S ≥ 0.75, no driver mutations)
-        1: reversible_slow (0.5 ≤ S < 0.75)
-        2: partially_reversible (0.25 ≤ S < 0.5)
+        0: reversible_fast (S >= 0.75, no driver mutations)
+        1: reversible_slow (0.5 <= S < 0.75)
+        2: partially_reversible (0.25 <= S < 0.5)
         3: irreversible (S < 0.25 or has TP53 loss)
 
     Args:
@@ -485,7 +510,7 @@ class BistabilityIntegratedLoss(nn.Module):
         Args:
             ic50_pred: (B,) predicted IC50 values.
             ic50_true: (B,) ground-truth IC50 values.
-            reversibility_pred: (B,) predicted reversibility scores S ∈ [0,1].
+            reversibility_pred: (B,) predicted reversibility scores S in [0,1].
             reversibility_true: (B,) ground-truth reversibility labels {0, 1}.
 
         Returns:
@@ -530,7 +555,7 @@ class BistabilityIntegratedLoss(nn.Module):
 
 
 class StabilityAwareODEDynamics(nn.Module):
-    """Stability-modulated ODE: dθ/dt = f(θ) - α(S)·(θ - θ_ref).
+    """Stability-modulated ODE: dtheta/dt = f(theta) - alpha(S)*(theta - theta_ref).
 
     Adds a stability-dependent damping term to the baseline ODE. When S is high
     (reversible state), the damping term is weak, allowing free dynamics.
@@ -541,15 +566,15 @@ class StabilityAwareODEDynamics(nn.Module):
     irreversible states are "locked in."
 
     Dynamics:
-        dθ/dt = f(θ) - α(S) * (θ - θ_ref)
+        dtheta/dt = f(theta) - alpha(S) * (theta - theta_ref)
 
     where:
-        f(θ): baseline ODE dynamics
-        α(S): stability coefficient as function of reversibility score
-        θ_ref: reference state (e.g., initial state)
+        f(theta): baseline ODE dynamics
+        alpha(S): stability coefficient as function of reversibility score
+        theta_ref: reference state (e.g., initial state)
 
     Attributes:
-        base_ode: Callable for baseline ODE f(t, θ).
+        base_ode: Callable for baseline ODE f(t, theta).
         latent_dim: Dimension of state vector.
         alpha_max: Maximum damping coefficient.
     """
@@ -560,7 +585,7 @@ class StabilityAwareODEDynamics(nn.Module):
         """Initialize StabilityAwareODEDynamics.
 
         Args:
-            base_ode: Baseline ODE function f(t, θ).
+            base_ode: Baseline ODE function f(t, theta).
             latent_dim: Dimension of state (default 64).
             alpha_max: Maximum damping coefficient (default 0.5).
         """
@@ -569,28 +594,28 @@ class StabilityAwareODEDynamics(nn.Module):
         self.latent_dim = latent_dim
         self.alpha_max = alpha_max
 
-        # Neural network to map reversibility score S → damping coefficient α(S)
+        # Neural network to map reversibility score S -> damping coefficient alpha(S)
         self.alpha_network = nn.Sequential(
             nn.Linear(1, 32),
             nn.GELU(),
             nn.Linear(32, 16),
             nn.GELU(),
             nn.Linear(16, 1),
-            nn.Softplus(),  # α ≥ 0
+            nn.Softplus(),  # alpha >= 0
         )
 
     def set_base_ode(self, base_ode: callable) -> None:
         """Set baseline ODE after initialization.
 
         Args:
-            base_ode: Callable f(t, θ) -> dθ/dt.
+            base_ode: Callable f(t, theta) -> dtheta/dt.
         """
         self.base_ode = base_ode
 
     def compute_alpha(self, reversibility_score: torch.Tensor) -> torch.Tensor:
-        """Compute damping coefficient α(S) from reversibility score.
+        """Compute damping coefficient alpha(S) from reversibility score.
 
-        α(S) ranges from 0 (S=1, reversible) to α_max (S=0, irreversible).
+        alpha(S) ranges from 0 (S=1, reversible) to alpha_max (S=0, irreversible).
 
         Args:
             reversibility_score: (B,) scores in [0, 1].
@@ -598,7 +623,7 @@ class StabilityAwareODEDynamics(nn.Module):
         Returns:
             (B,) damping coefficients.
         """
-        # α(S) = α_max * (1 - S) = α_max for irreversible, 0 for reversible
+        # alpha(S) = alpha_max * (1 - S) = alpha_max for irreversible, 0 for reversible
         alpha = self.alpha_max * (1.0 - reversibility_score.unsqueeze(-1))
         alpha = self.alpha_network(alpha).squeeze(-1)
         return alpha
@@ -610,16 +635,16 @@ class StabilityAwareODEDynamics(nn.Module):
         reversibility_score: torch.Tensor,
         theta_ref: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        """Compute dθ/dt with stability modulation.
+        """Compute dtheta/dt with stability modulation.
 
         Args:
             t: (B,) or scalar, current time.
             theta: (B, D) current state.
-            reversibility_score: (B,) reversibility scores S ∈ [0,1].
+            reversibility_score: (B,) reversibility scores S in [0,1].
             theta_ref: (B, D) reference state (default: use theta as reference).
 
         Returns:
-            (B, D) derivatives dθ/dt.
+            (B, D) derivatives dtheta/dt.
         """
         if self.base_ode is None:
             raise ValueError("Base ODE not set. Call set_base_ode() first.")

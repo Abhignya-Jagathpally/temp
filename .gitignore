@@ -6,3 +6,11 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local Claude Code agent state
+.claude/
+
+# Large binary release artifacts — uploaded as GitHub Release assets;
+# manifest (README.md, SHA256SUMS) is still tracked.
+artifacts/*.tar.zst
+artifacts/*.tar.zst.part-*

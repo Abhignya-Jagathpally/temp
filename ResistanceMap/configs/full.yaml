@@ -1,0 +1,287 @@
+# =============================================================================
+# ResistanceMap v6 — Full Experiment Configuration
+# =============================================================================
+# Usage: python scripts/run_experiments.py --config configs/full.yaml
+# =============================================================================
+
+# ── Reproducibility ──────────────────────────────────────────────────────────
+reproducibility:
+  seed: 42
+  deterministic: true          # torch.use_deterministic_algorithms(True)
+  cudnn_benchmark: false       # disable cuDNN autotuner for reproducibility
+  num_workers: 4               # dataloader workers
+
+# ── Data ─────────────────────────────────────────────────────────────────────
+data:
+  base_dir: "data/mmrf_compass"
+  cache_dir: "data/cached"
+  # Multi-omics sources
+  rnaseq_path: "data/mmrf_compass/rnaseq_tpm.h5ad"
+  mutations_path: "data/mmrf_compass/mutations.tsv"
+  clinical_path: "data/mmrf_compass/clinical.csv"
+  proteomics_path: "data/mmrf_compass/proteomics.csv"
+  ppi_path: "data/mmrf_compass/ppi_string_v12.edgelist"
+  # Preprocessing
+  gene_filter_min_cells: 50
+  gene_filter_min_counts: 200
+  highly_variable_n_top: 3000
+  normalize_target_sum: 10000
+  log_transform: true
+  scale_max_value: 10.0
+  # Train/val/test split
+  train_frac: 0.7
+  val_frac: 0.15
+  test_frac: 0.15
+  stratify_by: "is_responder"
+  # Drug list (MMRF CoMMpass standard regimens)
+  drugs:
+    - Bortezomib
+    - Lenalidomide
+    - Dexamethasone
+    - Carfilzomib
+    - Pomalidomide
+    - Daratumumab
+    - Ixazomib
+    - Panobinostat
+    - Elotuzumab
+    - Melphalan
+    - Cyclophosphamide
+
+# ── Model Architecture ───────────────────────────────────────────────────────
+model:
+  name: "ResistanceMap"
+  # Latent space
+  latent_dim: 64
+  num_programs: 8              # number of disentangled biological programs
+  # Identifiable Neural ODE
+  ode:
+    hidden_dim: 128
+    num_layers: 3
+    solver: "dopri5"
+    rtol: 1.0e-5
+    atol: 1.0e-6
+    adjoint: true              # use adjoint method for memory efficiency
+    interaction_matrix_dim: 64 # A matrix for gene interactions
+  # Causal Fusion
+  causal_fusion:
+    num_heads: 4
+    head_dim: 32
+    dropout: 0.1
+    dag_enforce: true          # enforce DAG structure via acyclicity penalty
+  # beta-TCVAE
+  vae:
+    encoder_dims: [512, 256, 128]
+    decoder_dims: [128, 256, 512]
+    activation: "gelu"
+    beta: 4.0                  # TC weight
+    anneal_epochs: 50          # epochs for beta annealing
+  # GAT (PPI network)
+  gat:
+    hidden_dim: 128
+    num_heads: 4
+    num_layers: 3
+    dropout: 0.2
+    residual: true
+    jumping_knowledge: "cat"   # concatenate all layer outputs
+  # Cross-attention
+  cross_attention:
+    num_heads: 8
+    embed_dim: 256
+    dropout: 0.1
+    num_layers: 2
+  # Prediction heads
+  drug_response_head:
+    hidden_dims: [128, 64]
+    dropout: 0.3
+  trajectory_head:
+    hidden_dims: [128, 64]
+    forecast_horizons: [3, 6, 12]  # months
+
+# ── Training ─────────────────────────────────────────────────────────────────
+training:
+  epochs: 200
+  batch_size: 64
+  # Optimizer
+  optimizer:
+    name: "AdamW"
+    lr: 1.0e-3
+    weight_decay: 1.0e-4
+    betas: [0.9, 0.999]
+  # Scheduler
+  scheduler:
+    name: "cosine_annealing_warm_restarts"
+    T_0: 50                    # first restart period
+    T_mult: 2                  # double period after each restart
+    eta_min: 1.0e-6
+  # Loss weights (initial — overridden by automatic weighting)
+  loss_weights:
+    drug_response: 1.0
+    trajectory_mse: 0.5
+    reconstruction: 0.3
+    lyapunov_stability: 0.1
+    tc_penalty: 0.05
+    sparsity_l1: 0.01
+    pathway_anchor: 0.1
+    causal_consistency: 0.05
+    diagonal_dominance: 0.01
+    orthogonality: 0.01
+  # Automatic loss weighting (Kendall et al. 2018)
+  auto_loss_weighting: true
+  # Gradient clipping
+  gradient_clip_max_norm: 1.0
+  # Mixed precision
+  mixed_precision: true        # torch.cuda.amp
+  # EMA
+  ema:
+    enabled: true
+    decay: 0.999
+  # Checkpointing
+  checkpoint:
+    save_every_epoch: true
+    keep_last_n: 5
+    save_best: true
+    monitor_metric: "val/auprc"
+    monitor_mode: "max"
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 20
+    min_delta: 1.0e-4
+    monitor_metric: "val/auprc"
+    monitor_mode: "max"
+
+# ── Evaluation ───────────────────────────────────────────────────────────────
+evaluation:
+  metrics:
+    - auroc
+    - auprc
+    - f1
+    - mcc
+    - balanced_accuracy
+    - brier_score
+    - ece
+    - trajectory_mse
+    - trajectory_r2
+    - c_index
+  confidence_level: 0.95
+  bootstrap_resamples: 1000
+  statistical_test: "wilcoxon"  # paired Wilcoxon signed-rank test
+  correction: "bonferroni"      # multiple comparison correction
+
+# ── Baselines ────────────────────────────────────────────────────────────────
+baselines:
+  models:
+    - name: "PERCEPTION"
+      module: "resistancemap.baselines.perception"
+      class: "PERCEPTIONBaseline"
+      params:
+        hidden_dim: 256
+        num_layers: 3
+    - name: "CPA"
+      module: "resistancemap.baselines.cpa"
+      class: "CPABaseline"
+      params:
+        latent_dim: 64
+        num_covariates: 10
+    - name: "MOFA+"
+      module: "resistancemap.baselines.mofa"
+      class: "MOFAPlusBaseline"
+      params:
+        n_factors: 15
+    - name: "CellRank"
+      module: "resistancemap.baselines.cellrank"
+      class: "CellRankBaseline"
+      params: {}
+    - name: "Ridge"
+      module: "resistancemap.baselines.classical"
+      class: "RidgeBaseline"
+      params:
+        alpha: 1.0
+    - name: "RandomForest"
+      module: "resistancemap.baselines.classical"
+      class: "RandomForestBaseline"
+      params:
+        n_estimators: 500
+        max_depth: 8
+    - name: "XGBoost"
+      module: "resistancemap.baselines.classical"
+      class: "XGBoostBaseline"
+      params:
+        n_estimators: 500
+        max_depth: 6
+        learning_rate: 0.05
+    - name: "ElasticNet"
+      module: "resistancemap.baselines.classical"
+      class: "ElasticNetBaseline"
+      params:
+        alpha: 0.1
+        l1_ratio: 0.5
+  parallel_jobs: 4             # number of parallel baseline training jobs
+
+# ── Ablation Study ───────────────────────────────────────────────────────────
+ablation:
+  seeds: [42, 123, 456, 789, 2024]
+  conditions:
+    - "no_identifiable_ode"
+    - "no_causal_fusion"
+    - "no_beta_tcvae"
+    - "no_lyapunov"
+    - "no_sparsity"
+    - "no_pathway_anchoring"
+    - "no_transcriptomics"
+    - "no_proteomics"
+    - "no_epigenomics"
+    - "no_ppi"
+    - "data_10pct"
+    - "data_25pct"
+    - "data_50pct"
+  parallel_jobs: 4
+
+# ── Experiment Tracking ──────────────────────────────────────────────────────
+tracking:
+  backend: "wandb"             # "wandb" or "tensorboard"
+  wandb:
+    project: "resistancemap-v6-icml"
+    entity: null               # set to your wandb entity
+    tags: ["icml", "v6", "full-pipeline"]
+    group: "submission"
+  tensorboard:
+    log_dir: "runs/resistancemap_v6"
+
+# ── Figure Generation ────────────────────────────────────────────────────────
+figures:
+  output_dir: "paper/figures"
+  format: "pdf"
+  dpi: 300
+  # Nature-style dimensions (inches)
+  single_column_width: 3.5
+  double_column_width: 7.0
+  max_height: 9.0
+  font_size: 7
+  font_family: "Arial"
+  # Color palette (colorblind-friendly)
+  colors:
+    primary: "#2171B5"         # blue
+    secondary: "#E6550D"       # orange
+    tertiary: "#31A354"        # green
+    quaternary: "#756BB1"      # purple
+    highlight: "#E7298A"       # magenta
+    neutral: "#636363"         # gray
+    palette_8:
+      - "#2171B5"
+      - "#E6550D"
+      - "#31A354"
+      - "#756BB1"
+      - "#E7298A"
+      - "#D6604D"
+      - "#4393C3"
+      - "#636363"
+
+# ── Output Paths ─────────────────────────────────────────────────────────────
+output:
+  base_dir: "results/icml_submission"
+  checkpoints_dir: "results/icml_submission/checkpoints"
+  metrics_dir: "results/icml_submission/metrics"
+  tables_dir: "paper/tables"
+  figures_dir: "paper/figures"
+  logs_dir: "results/icml_submission/logs"

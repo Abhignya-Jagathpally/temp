@@ -12,7 +12,7 @@ scales of plasticity:
    - Reversible by resetting GRN state
 
 2. Scale 2 (slow, bistable): Epigenetic state via double-well potential
-   - Driven by chromatin modifier abundances
+   - Driven by chromatin modifier (writer/eraser) abundances
    - Timescale: days to weeks
    - Can flip between attractor basins (semi-reversible)
 
@@ -35,7 +35,7 @@ References:
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import torch
 import torch.nn as nn
@@ -586,6 +586,99 @@ class WaddingtonLandscape(nn.Module):
         return distance
 
 
+# =============================================================================
+# FIX #2: ResistanceSignatureBank — replaces random noise target
+# =============================================================================
+
+class ResistanceSignatureBank(nn.Module):
+    """Bank of drug-class-specific resistance expression signatures.
+
+    Stores learnable resistance phenotype targets for each drug class.
+    These signatures represent the characteristic gene expression pattern
+    of a resistant cell state for a given drug mechanism of action.
+
+    Biologically, resistance signatures capture:
+    - EMT marker upregulation (e.g., VIM, SNAI1/2, ZEB1)
+    - ABC transporter overexpression (ABCB1/MDR1, ABCG2)
+    - Anti-apoptotic gene activation (BCL2, MCL1)
+    - Drug target pathway rewiring
+
+    Each signature is a learnable vector in gene expression space that is
+    refined during training to match observed resistant phenotypes.
+
+    Args:
+        state_dim: Dimension of gene expression space (must match
+            TranscriptomicNoiseModel.state_dim).
+        n_drug_classes: Number of distinct drug classes/mechanisms to model.
+            Default 8 covers major categories: alkylating agents, antimetabolites,
+            topoisomerase inhibitors, mitotic inhibitors, targeted therapy (kinase),
+            targeted therapy (other), immunotherapy, hormonal therapy.
+    """
+
+    def __init__(self, state_dim: int = 32, n_drug_classes: int = 8) -> None:
+        super().__init__()
+        self.state_dim = state_dim
+        self.n_drug_classes = n_drug_classes
+
+        # Learnable resistance signatures per drug class
+        # Initialized with small positive values to represent mild upregulation
+        # of resistance genes as a biologically reasonable prior.
+        self.signatures = nn.Parameter(
+            torch.randn(n_drug_classes, state_dim) * 0.1 + 0.5
+        )
+
+        # Default (drug-agnostic) resistance signature — a weighted average
+        # learned from data when no drug class is specified.
+        self.default_signature = nn.Parameter(
+            torch.randn(state_dim) * 0.1 + 0.5
+        )
+
+        # Network to refine signature based on current cell state context.
+        # This allows the resistance target to be context-dependent: the
+        # exact resistant phenotype depends on where the cell currently is
+        # in expression space.
+        self.context_refinement = nn.Sequential(
+            nn.Linear(state_dim * 2, state_dim),
+            nn.GELU(),
+            nn.Linear(state_dim, state_dim),
+        )
+
+    def get_signature(
+        self,
+        expression_state: torch.Tensor,
+        drug_class_idx: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """Get the resistance expression signature for the given context.
+
+        Args:
+            expression_state: (B, state_dim) current gene expression state.
+                Used for context-dependent refinement of the signature.
+            drug_class_idx: (B,) optional integer indices into drug class bank.
+                If None, uses the default (drug-agnostic) learned signature.
+
+        Returns:
+            (B, state_dim) resistance target expression signatures.
+        """
+        batch_size = expression_state.shape[0]
+
+        if drug_class_idx is not None:
+            # Look up drug-specific signatures
+            base_signature = self.signatures[drug_class_idx]  # (B, state_dim)
+        else:
+            # Use default signature, expanded to batch
+            base_signature = self.default_signature.unsqueeze(0).expand(
+                batch_size, -1
+            )
+
+        # Context-dependent refinement: the resistant phenotype depends on
+        # the current cell state (e.g., lineage, differentiation stage)
+        context_input = torch.cat([expression_state, base_signature], dim=-1)
+        refinement = self.context_refinement(context_input)
+
+        # Residual connection: base signature + small refinement
+        return base_signature + 0.1 * refinement
+
+
 class MultiScaleResistancePredictor(nn.Module):
     """Integrates three-scale plasticity into unified resistance predictor.
 
@@ -601,6 +694,7 @@ class MultiScaleResistancePredictor(nn.Module):
         state_dim: Gene expression dimension (default 32).
         n_drivers: Number of driver mutations (default 5).
         hidden_dim: Hidden layer size (default 16).
+        n_drug_classes: Number of drug classes for resistance bank (default 8).
     """
 
     def __init__(
@@ -608,6 +702,7 @@ class MultiScaleResistancePredictor(nn.Module):
         state_dim: int = 32,
         n_drivers: int = 5,
         hidden_dim: int = 16,
+        n_drug_classes: int = 8,
     ) -> None:
         super().__init__()
         self.transcriptomic_model = TranscriptomicNoiseModel(
@@ -619,6 +714,25 @@ class MultiScaleResistancePredictor(nn.Module):
         self.genetic_model = GeneticMutationAccumulator(n_drivers=n_drivers, hidden_dim=hidden_dim)
         self.landscape = WaddingtonLandscape(gene_dim=state_dim, hidden_dim=hidden_dim)
 
+        # FIX #2: Replace random target with a learnable ResistanceSignatureBank.
+        #
+        # BEFORE (BUGGY):
+        #   expression_target = torch.randn_like(expression_state)
+        #
+        # This used random Gaussian noise as the "resistant phenotype" target,
+        # meaning the model was training toward RANDOM targets on every forward
+        # pass — the transition probability P_transcriptomic was meaningless
+        # noise, and gradient signal was non-stationary.
+        #
+        # AFTER (FIXED):
+        #   The ResistanceSignatureBank stores drug-class-specific learned
+        #   resistance signatures that are refined during training. This gives
+        #   a biologically meaningful, deterministic target that represents
+        #   the characteristic gene expression profile of resistant cells.
+        self.resistance_bank = ResistanceSignatureBank(
+            state_dim=state_dim, n_drug_classes=n_drug_classes
+        )
+
         # Learnable softmax weights for combining scales
         self.scale_weights = nn.Parameter(torch.ones(3) / 3.0)
 
@@ -629,6 +743,8 @@ class MultiScaleResistancePredictor(nn.Module):
         mutation_counts: torch.Tensor,
         chromatin_modifiers: torch.Tensor,
         time_horizon: float = 100.0,
+        resistance_signature: Optional[torch.Tensor] = None,
+        drug_class_idx: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Predict multi-scale resistance probability.
 
@@ -638,12 +754,30 @@ class MultiScaleResistancePredictor(nn.Module):
             mutation_counts: (B, n_drivers) cumulative mutations.
             chromatin_modifiers: (B, 4) chromatin modifier abundances.
             time_horizon: Duration over which to assess resistance.
+            resistance_signature: (B, state_dim) optional externally provided
+                resistance expression target. If provided, overrides the
+                learned signature bank. Useful when differential expression
+                signatures are available from experiments.
+            drug_class_idx: (B,) optional drug class indices for looking up
+                drug-specific resistance signatures from the bank.
 
         Returns:
             (B,) resistance probabilities in [0, 1].
         """
-        # Scale 1: Transcriptomic noise (can fluctuate back?)
-        expression_target = torch.randn_like(expression_state)
+        # FIX #2: Use biologically meaningful resistance signature as target.
+        #
+        # Priority order:
+        # 1. Externally provided resistance_signature (from experiments)
+        # 2. Drug-class-specific signature from the bank
+        # 3. Default learned signature from the bank
+        if resistance_signature is not None:
+            expression_target = resistance_signature
+        else:
+            expression_target = self.resistance_bank.get_signature(
+                expression_state, drug_class_idx=drug_class_idx
+            )
+
+        # Scale 1: Transcriptomic noise (can fluctuate to resistant state?)
         p_transcriptomic = self.transcriptomic_model.compute_transition_probability(
             expression_state, expression_target, horizon=50
         )

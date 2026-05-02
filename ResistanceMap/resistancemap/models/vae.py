@@ -35,6 +35,20 @@ from resistancemap.utils.checkpoint import CheckpointManager
 logger = logging.getLogger(__name__)
 
 
+def _iter_parents(root: nn.Module, child_name: str):
+    """Yield ancestor modules for a named child in a module hierarchy.
+
+    Given a dotted name like 'decoder.mean_head', yields the modules
+    corresponding to 'decoder' — i.e., all intermediate parents between
+    *root* and the leaf.
+    """
+    parts = child_name.split(".")
+    current = root
+    for part in parts[:-1]:
+        current = getattr(current, part)
+        yield current
+
+
 class _GradientReversalFunction(torch.autograd.Function):
     """Autograd function implementing gradient reversal.
 
@@ -283,11 +297,6 @@ class StochasticDecoder(nn.Module):
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 
-        # Initialize logvar_head to small values to avoid dead neurons
-        with torch.no_grad():
-            self.logvar_head.weight.data.mul_(0.01)
-            self.logvar_head.bias.data.fill_(-1.0)
-
     def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Decode latent vector to distribution parameters.
 
@@ -349,10 +358,6 @@ class ProteomeToEpigenomeVAE(nn.Module):
                 encoder_layers.append(FiLMLayer(self.conditioning_dim, hidden_dim))
 
             prev_dim = hidden_dim
-        # TODO #61: FiLM layers in Sequential can cause issues due to conditioning requirements.
-        # The current implementation works because forward() uses _encode_with_conditioning
-        # which manually iterates and handles FiLM layers. Consider refactoring to a custom
-        # ModuleList-based encoder if issues arise with Sequential handling.
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Latent projections
@@ -392,12 +397,26 @@ class ProteomeToEpigenomeVAE(nn.Module):
         self._init_weights()
 
     def _init_weights(self) -> None:
-        """Xavier uniform initialization for all linear layers."""
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
+        """Xavier uniform initialization for all linear layers.
+
+        Skip StochasticDecoder modules — they handle their own
+        logvar_head initialization which must be preserved.
+        """
+        for name, module in self.named_modules():
+            # Skip StochasticDecoder and its children; it initializes itself
+            if isinstance(module, StochasticDecoder):
+                continue
+            if isinstance(module, nn.Linear):
+                # Check this Linear is not inside a StochasticDecoder
+                is_stochastic_child = any(
+                    isinstance(parent, StochasticDecoder)
+                    for parent in _iter_parents(self, name)
+                )
+                if is_stochastic_child:
+                    continue
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
 
 
     def reparameterize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
@@ -521,9 +540,11 @@ class ProteomeToEpigenomeVAE(nn.Module):
             (B, hidden_dim) encoded representation.
         """
         h = x
+        film_idx = 0
         for layer in self.encoder:
             if isinstance(layer, FiLMLayer):
                 h = layer(h, conditioning)
+                film_idx += 1
             else:
                 h = layer(h)
         return h
@@ -608,8 +629,7 @@ def _kl_divergence(mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
     Returns:
         Scalar KL loss (mean over batch).
     """
-    log_var = torch.clamp(log_var, min=-10.0, max=10.0)
-    return -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp(), dim=1).mean()
+    return -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
 
 
 def _stochastic_reconstruction_loss(
@@ -632,8 +652,9 @@ def _stochastic_reconstruction_loss(
     Returns:
         Scalar NLL loss (mean over batch and features).
     """
-    log_var = torch.clamp(log_var, min=-7.0, max=7.0)
     var = torch.exp(log_var)
+    # Clip variance to avoid numerical issues
+    var = torch.clamp(var, min=1e-8)
     nll = 0.5 * (log_var + (target - mean) ** 2 / var)
     return torch.mean(nll)
 
@@ -666,9 +687,7 @@ def _cyclical_kl_weight(
     Returns:
         KL weight (β) for the current step, in range [0, max_weight].
     """
-    if n_cycles <= 0 or total_steps <= 0:
-        return max_weight
-    cycle_length = max(1, total_steps // n_cycles)
+    cycle_length = total_steps // n_cycles
     position_in_cycle = step % cycle_length
     ramp_length = int(cycle_length * ratio)
 
@@ -790,27 +809,13 @@ def train_vae(
         pin_memory=True,
     )
 
-    # Split parameters into decay and no_decay groups for weight decay on weights only
-    decay_params = []
-    no_decay_params = []
-    for name, p in model.named_parameters():
-        if not p.requires_grad:
-            continue
-        if p.ndim <= 1 or name.endswith(".bias") or "norm" in name.lower():
-            no_decay_params.append(p)
-        else:
-            decay_params.append(p)
     optimizer = torch.optim.AdamW(
-        [{"params": decay_params, "weight_decay": config.weight_decay},
-         {"params": no_decay_params, "weight_decay": 0.0}],
-        lr=lr,
+        model.parameters(), lr=lr, weight_decay=config.weight_decay
     )
-    # Use number of training steps/batches for scheduler, not epochs
-    T_max = epochs * max(len(train_loader), 1)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max)
-    scaler = torch.cuda.amp.GradScaler()
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
+    scaler = GradScaler("cuda")
 
-    total_steps = T_max
+    total_steps = epochs * max(len(train_loader), 1)
     best_val_loss = float("inf")
     patience_counter = 0
     global_step = 0
@@ -836,10 +841,7 @@ def train_vae(
             optimizer.zero_grad(set_to_none=True)
 
             with autocast("cuda", dtype=torch.bfloat16):
-                conditioning = batch.get("conditioning", None)
-                if conditioning is not None:
-                    conditioning = conditioning.to(device, non_blocking=True)
-                model_output = model(proteomics, conditioning=conditioning)
+                model_output = model(proteomics)
 
                 # Handle both deterministic and stochastic decoder outputs
                 if len(model_output) == 4:
@@ -864,7 +866,7 @@ def train_vae(
                 loss = recon_loss + kl_weight * kl_loss
 
                 # Domain-adversarial loss (if enabled and domain labels available)
-                domain_loss: torch.Tensor | float = 0.0
+                domain_loss = 0.0
                 if has_domain_discriminator and "domain_labels" in batch:
                     domain_labels = batch["domain_labels"].to(device, non_blocking=True)
                     domain_logits = model.domain_classify(mu)
@@ -880,8 +882,8 @@ def train_vae(
             epoch_loss += loss.item()
             epoch_recon += recon_loss.item()
             epoch_kl += kl_loss.item()
-            if isinstance(domain_loss, torch.Tensor):
-                epoch_adv += domain_loss.item()
+            if domain_loss != 0.0:
+                epoch_adv += domain_loss.item() if isinstance(domain_loss, torch.Tensor) else domain_loss
             global_step += 1
 
         scheduler.step()
@@ -910,7 +912,7 @@ def train_vae(
                         recon_loss = F.mse_loss(recon, epigenomics)
 
                     kl_loss = _kl_divergence(mu, log_var)
-                    val_loss += (recon_loss + kl_weight * kl_loss).item()
+                    val_loss += (recon_loss + kl_loss).item()
 
         avg_train = epoch_loss / max(len(train_loader), 1)
         avg_val = val_loss / max(len(val_loader), 1)
