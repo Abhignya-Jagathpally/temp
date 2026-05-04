@@ -1,0 +1,71 @@
+{
+  "n_rng_seeds_per_case": 5,
+  "n_perm_per_run": 500,
+  "per_case": {
+    "Panobinostat_single": {
+      "seeds": [
+        "HDAC1"
+      ],
+      "perm_p_runs": [
+        0.768,
+        0.822,
+        0.764,
+        0.776,
+        0.792
+      ],
+      "mean_p": 0.7844,
+      "std_p": 0.021105449533236648
+    },
+    "Panobinostat_pooled": {
+      "seeds": [
+        "HDAC1",
+        "HDAC2",
+        "HDAC3",
+        "HDAC6"
+      ],
+      "perm_p_runs": [
+        0.752,
+        0.83,
+        0.74,
+        0.888,
+        0.764
+      ],
+      "mean_p": 0.7948000000000001,
+      "std_p": 0.05605140497793074
+    },
+    "Vorinostat_single": {
+      "seeds": [
+        "HDAC1"
+      ],
+      "perm_p_runs": [
+        0.778,
+        0.768,
+        0.78,
+        0.786,
+        0.774
+      ],
+      "mean_p": 0.7772,
+      "std_p": 0.006013318551349169
+    },
+    "Vorinostat_pooled": {
+      "seeds": [
+        "HDAC1",
+        "HDAC2",
+        "HDAC3"
+      ],
+      "perm_p_runs": [
+        0.842,
+        0.99,
+        0.874,
+        0.996,
+        0.992
+      ],
+      "mean_p": 0.9388,
+      "std_p": 0.06677244940841995
+    }
+  },
+  "Panobinostat_pooled_better_or_equal": true,
+  "Vorinostat_pooled_better_or_equal": false,
+  "f7_pass_both": false,
+  "spec_threshold": "pooled mean_p \u2264 single mean_p (within 1\u03c3) for both pan-HDAC drugs"
+}

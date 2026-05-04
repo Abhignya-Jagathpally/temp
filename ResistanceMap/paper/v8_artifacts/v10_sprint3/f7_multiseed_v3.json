@@ -1,0 +1,182 @@
+{
+  "results": {
+    "Panobinostat": {
+      "rationale": "pan-HDAC: all four paralogs IC50 <10 nM (Bradner 2010)",
+      "panels": {
+        "haem64": {
+          "single": {
+            "seeds": [
+              "HDAC1"
+            ],
+            "n_top50_present_in_chronos": 47,
+            "drv_mean_chronos": -0.11587734564580905,
+            "bg_mean_chronos": -0.14837644523429697,
+            "mw_p_one_sided_less": 0.32146055816502195,
+            "permutation_p": 0.693
+          },
+          "pooled": {
+            "seeds": [
+              "HDAC1",
+              "HDAC2",
+              "HDAC3",
+              "HDAC6"
+            ],
+            "n_top50_present_in_chronos": 45,
+            "drv_mean_chronos": -0.10895363197018397,
+            "bg_mean_chronos": -0.14838985300570676,
+            "mw_p_one_sided_less": 0.12820959599322324,
+            "permutation_p": 0.746
+          },
+          "delta_perm_p": 0.05300000000000005,
+          "pooled_dominates": false
+        },
+        "mm19": {
+          "single": {
+            "seeds": [
+              "HDAC1"
+            ],
+            "n_top50_present_in_chronos": 47,
+            "drv_mean_chronos": -0.11343222803621361,
+            "bg_mean_chronos": -0.1495696756258417,
+            "mw_p_one_sided_less": 0.4519057558511395,
+            "permutation_p": 0.713
+          },
+          "pooled": {
+            "seeds": [
+              "HDAC1",
+              "HDAC2",
+              "HDAC3",
+              "HDAC6"
+            ],
+            "n_top50_present_in_chronos": 45,
+            "drv_mean_chronos": -0.10377998881534671,
+            "bg_mean_chronos": -0.14958936436264214,
+            "mw_p_one_sided_less": 0.21559364538110282,
+            "permutation_p": 0.77
+          },
+          "delta_perm_p": 0.05700000000000005,
+          "pooled_dominates": false
+        }
+      },
+      "strict_pass_both_panels": false
+    },
+    "Vorinostat": {
+      "rationale": "class-I selective: HDAC6 IC50 ~1.5 \u00b5M (Bradner 2010); excluded",
+      "panels": {
+        "haem64": {
+          "single": {
+            "seeds": [
+              "HDAC1"
+            ],
+            "n_top50_present_in_chronos": 47,
+            "drv_mean_chronos": -0.1123085166577698,
+            "bg_mean_chronos": -0.14838556721398144,
+            "mw_p_one_sided_less": 0.35475817759704015,
+            "permutation_p": 0.694
+          },
+          "pooled": {
+            "seeds": [
+              "HDAC1",
+              "HDAC2",
+              "HDAC3"
+            ],
+            "n_top50_present_in_chronos": 45,
+            "drv_mean_chronos": -0.08901188694763584,
+            "bg_mean_chronos": -0.14843865009793158,
+            "mw_p_one_sided_less": 0.46309173898430334,
+            "permutation_p": 0.827
+          },
+          "delta_perm_p": 0.133,
+          "pooled_dominates": false
+        },
+        "mm19": {
+          "single": {
+            "seeds": [
+              "HDAC1"
+            ],
+            "n_top50_present_in_chronos": 47,
+            "drv_mean_chronos": -0.11066034706963147,
+            "bg_mean_chronos": -0.14957676059459468,
+            "mw_p_one_sided_less": 0.4956043012189999,
+            "permutation_p": 0.722
+          },
+          "pooled": {
+            "seeds": [
+              "HDAC1",
+              "HDAC2",
+              "HDAC3"
+            ],
+            "n_top50_present_in_chronos": 45,
+            "drv_mean_chronos": -0.08558675431690317,
+            "bg_mean_chronos": -0.1496338828809907,
+            "mw_p_one_sided_less": 0.5090115360557089,
+            "permutation_p": 0.835
+          },
+          "delta_perm_p": 0.11299999999999999,
+          "pooled_dominates": false
+        }
+      },
+      "strict_pass_both_panels": false
+    },
+    "Bortezomib": {
+      "rationale": "20S proteasome \u03b2-subunits (Bortezomib binds chymotrypsin-like \u03b25; \u03b21+\u03b22 are co-essential with \u03b25 in proteasome assembly)",
+      "panels": {
+        "haem64": {
+          "single": {
+            "seeds": [
+              "PSMB5"
+            ],
+            "n_top50_present_in_chronos": 50,
+            "drv_mean_chronos": -0.45792652663558464,
+            "bg_mean_chronos": -0.1474515085059465,
+            "mw_p_one_sided_less": 2.4790022811759688e-05,
+            "permutation_p": 0.0
+          },
+          "pooled": {
+            "seeds": [
+              "PSMB5",
+              "PSMB1",
+              "PSMB2"
+            ],
+            "n_top50_present_in_chronos": 50,
+            "drv_mean_chronos": -0.4665485614014336,
+            "bg_mean_chronos": -0.14742805994797573,
+            "mw_p_one_sided_less": 3.5901718818213036e-07,
+            "permutation_p": 0.0
+          },
+          "delta_perm_p": 0.0,
+          "pooled_dominates": true
+        },
+        "mm19": {
+          "single": {
+            "seeds": [
+              "PSMB5"
+            ],
+            "n_top50_present_in_chronos": 50,
+            "drv_mean_chronos": -0.4939152969212931,
+            "bg_mean_chronos": -0.14854080746693582,
+            "mw_p_one_sided_less": 7.046674695264927e-06,
+            "permutation_p": 0.0
+          },
+          "pooled": {
+            "seeds": [
+              "PSMB5",
+              "PSMB1",
+              "PSMB2"
+            ],
+            "n_top50_present_in_chronos": 50,
+            "drv_mean_chronos": -0.5067483425359213,
+            "bg_mean_chronos": -0.14850590660858765,
+            "mw_p_one_sided_less": 6.99168405873062e-08,
+            "permutation_p": 0.0
+          },
+          "delta_perm_p": 0.0,
+          "pooled_dominates": true
+        }
+      },
+      "strict_pass_both_panels": true
+    }
+  },
+  "overall_strict_pass": false,
+  "test_design": "single-vs-pooled top-50 NPI rank \u2192 Chronos perm rank-sum (haem64 + mm19)"
+}

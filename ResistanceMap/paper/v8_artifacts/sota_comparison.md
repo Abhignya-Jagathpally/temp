@@ -1,109 +1,170 @@
-# SOTA Comparison — ResistanceMap v6 head-to-head against named SOTA + auto-discovered comparators
-_Generated: 2026-05-02. PMIDs verified live via PubMed MCP. Companion document: `literature_review.md`._
+# SOTA Comparison — ResistanceMap v11 (Multi-Omic Foundation Model for Epigenetic Drug-Resistance Trajectories in Hematologic Malignancies)
 
-> **PubMed attribution**: All PMID/DOI references in this document were retrieved from PubMed via the live `mcp__claude_ai_PubMed__*` tools.
+**Date authored:** 2026-05-03 (post-v10 closeout, pre-v11-sprint-1)
+**Author:** sota-comparator agent
+**Companion docs:** `docs/V11_SOTA_UPGRADE_PLAN.md`, `docs/SOTA_BENCHMARK_PROTOCOL.md`, `docs/MODEL_LANDSCAPE_RANKING.md`, `paper/v8_artifacts/literature_review.md`.
 
-## Comparison axes used throughout
+---
 
-For every comparator, I assess:
-1. **Task overlap** — does the paper attempt the same prediction (cell-state transition / drug resistance / pathway-level forecasting)?
-2. **Direct metric comparability** — different denominators / splits / cohorts make most reported numbers non-comparable. Be explicit when not.
-3. **Inductive bias overlap** — VAE+ODE+GAT+CrossAttention vs the SOTA's primary architectural choice.
-4. **Where ResistanceMap is uniquely positioned** — concrete niche.
+## 0. Verification posture for this pass
 
-ResistanceMap baseline numbers (verified from this repo):
-- test_mse = **2.3731** on 132 samples × 11 drugs (NaN-masked) — `checkpoints/pipeline_validated.pt`
-- baseline rank: **4 / 11** in `paper/tables/baseline_comparison.md` — beaten by Zero-predictor (2.3678), Per-drug-train-mean (2.3678), GradientBoosting-PCA-256 (2.3699)
-- per-drug performance: best Venetoclax MSE 0.010, worst Panobinostat MSE 22.3, Spearman 0.044 — large variance hidden by aggregate
+PubMed search MCP (`mcp__claude_ai_PubMed__*`) was **denied permission** in the original sota-comparator subagent session, so the body of this table was originally tagged `[A]` (re-cited from in-repo artifacts), `[B]` (bioRxiv-verified), or `[C]` (`[UNVERIFIED]`).
 
-## User-named comparators
+A **post-hoc verification sweep** was executed 2026-05-03 from the parent session with PubMed MCP permissions enabled. Results below; the table body has NOT been rewritten in place — instead, treat §0.1 as the authoritative override on identifier claims. Per-paper status:
 
-### 1. TRACERx Lung — Genomic-transcriptomic evolution in lung cancer and metastasis (Nature 2023)
-
-According to PubMed, **PMID 37046093** [DOI](https://doi.org/10.1038/s41586-023-05706-4):
-- Authors: Martínez-Ruiz, Black, Frankell, …, Swanton, McGranahan
-- 354 NSCLC tumors, 947 regions, 96 normal-adjacent — paired WES + RNA-seq
-- task: intratumor heterogeneity (ITH), allele-specific expression, metastasis-seeding ML
-- metric: not a single headline value — multiple ML approaches that link evolution context to metastasis-seeding probability
-
-**Honest comparability**: NOT a comparable model. This is an *evolutionary genomics study of NSCLC*, not a drug-resistance ML predictor on MM. The framing similarity ("evolution-driven future state") is conceptual, not methodological. Cite as **inspirational framing**, not as a baseline.
-
-### 2. Pan-cancer proteogenomics characterization of tumor immunity (2024)
-
-The exact user-stated title returned no PMID. Closest verified match: **PMID 40957478** [DOI](https://doi.org/10.1016/j.jare.2025.09.014) — Shi et al, J Adv Res 2025, "Integrative proteomic characterization of human lung adenocarcinoma with KRAS G12 mutations." 96 LUAD patients, LC-MS/MS proteomics, three molecular subtypes including immune-modulation subtype. Different disease, different task, but a direct demonstration of clinical proteogenomics-with-immune-context — the methodology family the user likely meant.
-
-**Honest comparability**: Different task (subtype discovery, not drug resistance). Use as a **methodological template** for proteogenomic stratification of MM, NOT as a head-to-head baseline.
-
-### 3. ML immunotherapy-related signature in melanoma (2024)
-
-Closest verified peer-reviewed match: **PMID 41613147** [DOI](https://doi.org/10.3389/fimmu.2025.1742614) — Dong et al, Front Immunol 2026: integrating cuproptosis + ferroptosis gene signatures (CFRGs) to predict prognosis, immunotherapy response, and drug sensitivity in skin cutaneous melanoma. TCGA + GEO + GSE72056 single-cell. ML prognostic model, key genes IFNG/PTPN6/SLC38A1/SOCS1, molecular docking with selumetinib.
-
-**Honest comparability**: Skin melanoma ≠ multiple myeloma. The framing ("ML signature → immunotherapy response + drug sensitivity") is exactly the family ResistanceMap should imitate, but on a different disease. Use as a **template for how to report** prognosis + drug sensitivity in one model.
-
-### 4. iMLGAM (2025)
-
-According to PubMed, **0 hits**. This paper is not in PubMed. Likely venue: arXiv preprint or a conference proceedings (workshop) not indexed by NLM. **Cannot verify** any claim. The user should provide a DOI / arXiv ID.
-
-### 5. TrajectoryNet (Tong, Krishnaswamy 2020)
-
-According to PubMed, **0 hits** for "TrajectoryNet". This is an ICML 2020 paper (Tong, Huang, Wolf, van Dijk, Krishnaswamy) — not indexed by PubMed because it's a pure-ML conference paper. Cite via arXiv:2002.04461 / PMLR v119. The 2025 spiritual successor (Joint Velocity-Growth Flow Matching, [hf.co/papers/2505.13413](https://hf.co/papers/2505.13413)) handles unpaired-unbalanced snapshots more robustly.
-
-**Honest comparability**: TrajectoryNet operates at **single-cell resolution** with **multiple snapshots in time**. ResistanceMap operates at **cell-line resolution** with **a single snapshot per line**. The two cannot be benchmarked head-to-head on the same data. ResistanceMap's "trajectory" is a misnomer relative to the trajectory-inference field — it's better described as an "implicit stability score."
-
-## Auto-discovered direct comparators (PubMed search results, ranked by task overlap)
+### §0.1 Verification override (authoritative — 2026-05-03 PubMed sweep)
 
 According to PubMed:
 
-1. **PMID 41814396** [DOI](https://doi.org/10.1186/s12967-026-07946-0) — "Dynamic biomarker-based ML predicts short-term treatment response in MM" — F1=0.75 @ Cycle 4 vs R-ISS F1=0.32 (n=662). **The strongest current MM-clinical comparator.** Different metric (F1, classification) and different cohort (real patients, not cell lines), but it's *the* benchmark to beat for clinical relevance.
-2. **PMID 41909977** [DOI](https://doi.org/10.1111/ejh.70177) — Critical review of 13 treatment-specific MM prediction models. Use this as the field-landscape doc.
-3. **PMID 41762247** [DOI](https://doi.org/10.1007/s00277-026-06867-8) — Multi-omics + ML platelet-related prognostic signature in MM (2026). 13-gene signature from a 116-algorithm grid search; GSE124310 (which ResistanceMap also uses!) is part of the data.
-4. **PMID 41711382** [DOI](https://doi.org/10.2196/75586) — AI assessment of duration-of-treatment in Japanese MM patients (n=2,762, MDV claims). Different outcome (DoT, not resistance), AUC 0.61–0.66 across horizons.
-
-## Auto-discovered methodological comparators
-
-5. **SeNMo** — [hf.co/papers/2405.08226](https://hf.co/papers/2405.08226) — pan-cancer multi-omics, GDC, C-index 0.758 on overall survival. Closest analog architecturally (multi-modal NN on omics).
-6. **PaccMann** — [hf.co/papers/1811.06802](https://hf.co/papers/1811.06802) (2018) — multi-modal attention with PPI prior, IC50 prediction. Predates ResistanceMap; same conceptual ingredients minus ODE.
-7. **Conditional Monge Gap** — [hf.co/papers/2504.08328](https://hf.co/papers/2504.08328) (2025) — neural OT, conditional on drug+dose, generalizes to unseen drugs. Best methodological comparator for the "transitions through pathways" claim.
-8. **Threads slide-level foundation model** — [hf.co/papers/2501.16652](https://hf.co/papers/2501.16652) (2025) — H&E + genomic + transcriptomic, 54 oncology tasks. Different modality (pathology), but same fusion philosophy.
-9. **STAGED** ([hf.co/papers/2507.11660](https://hf.co/papers/2507.11660), Krishnaswamy lab) — graph ODE + agent-based modeling on spatial transcriptomics. The Krishnaswamy-lab "successor" if ResistanceMap moved to spatial / single-cell.
-
-## Where ResistanceMap is uniquely positioned
-
-After the literature pass, the **only defensible niche** is:
-
-> _"A reproducible multi-modal pipeline that fuses CCLE proteomics + epigenomics + STRING PPI + GDSC drug-IC50 with an explicit cell-line-level latent (VAE) and a calibrated implicit stability score, runnable end-to-end on a single GPU, with 10-agent DAG provenance, in under 30 minutes from clean checkpoints."_
-
-That's an **engineering/reproducibility niche**, not a **scientific niche**. The scientific contribution claims (cell-state forecasting, "predict before it happens," pathway-level transition) are NOT supported by:
-- the architecture (no longitudinal training data → no causal forecasting)
-- the metrics (rank 4/11 against trivial baselines on real test data — see `paper/tables/baseline_comparison.md`)
-- the resolution (cell-line, not single-cell, so trajectory claim is loose)
-
-## Where ResistanceMap is dominated
-
-| Claim | Dominated by | Evidence |
+| Paper | Status after re-verify | Verified DOI / PMID |
 |---|---|---|
-| "Multi-omics integration" | MOFA+ (PMID 32393329) | provides interpretable sparse factors; ResistanceMap's VAE is a black box |
-| "MM clinical relevance" | PMID 41814396 (Dynamic biomarker RUSBoost) | F1=0.75 vs R-ISS 0.32 on real MM patients; ResistanceMap is on cell lines |
-| "Multi-omics MM prognosis" | PMID 41762247 (Platelet 13-gene signature) | uses overlapping data (GSE124310) and reports per-cohort risk stratification |
-| "Cell-state trajectory" | TrajectoryNet, scVelo, dynamo, CellRank, Conditional Monge Gap | all operate at single-cell resolution with proper time series |
-| "Drug-response prediction on cell lines" | PaccMann (2018), MCA (2019, R²=0.86) | longer-published, similar attention-based fusion |
-| "Pan-omics deep learning" | SeNMo (2024) C-index 0.758 | broader cancer types, similar architecture |
+| **TRACERx Lung — Frankell 2023 (subclonal selection / DFS)** | **VERIFIED.** User's prompt PMID 37046096 IS correct for *"The evolution of lung cancer and impact of subclonal selection in TRACERx"*, Nature 616:525-533. | PMID 37046096, [DOI](https://doi.org/10.1038/s41586-023-05783-5). |
+| **TRACERx Lung — Martínez-Ruiz 2023 (genomic-transcriptomic / metastasis)** | **VERIFIED.** Sibling paper from the same back-to-back issue, Nature 616:543-552. Both PMIDs are real; cite the appropriate one per claim. | PMID 37046093, [DOI](https://doi.org/10.1038/s41586-023-05706-4). |
+| **CellOT — Bunne 2023** | **VERIFIED.** Title: "Learning single-cell perturbation responses using neural optimal transport", Nat Methods 20:1759-1768. Hematopoietic developmental trajectory recovery is one of the named applications. | PMID 37770709, [DOI](https://doi.org/10.1038/s41592-023-01969-x). |
+| **Waddington-OT — Schiebinger 2019** | **VERIFIED.** Cell 176:928-943. | PMID 30712874, [DOI](https://doi.org/10.1016/j.cell.2019.01.006). |
+| **iMLGAM — Ye 2025 (iMeta)** | **VERIFIED — confirmed pan-cancer ICB-response, NOT MM-specific.** R package on GitHub (Yelab1994/iMLGAM). The user's framing as "MM/MGUS specific" is **CONFIRMED INCORRECT**; iMLGAM should be cited as a *pan-cancer ICB comparator*, never as an MM head-to-head. | PMID 40236779, [DOI](https://doi.org/10.1002/imt2.70011). |
+| **TIGON — Sha 2023** | **VERIFIED.** "Reconstructing growth and dynamic trajectories from single-cell transcriptomics data", Nat Mach Intell 6:25-39. Wasserstein-Fisher-Rao dynamic unbalanced OT for multi-snapshot trajectory + growth + GRN. **Strong v11 comparator** — same architectural family as RM v11's Neural-ODE on Waddington landscape. | PMID 38274364, [DOI](https://doi.org/10.1038/s42256-023-00763-w). |
+| **scFoundation — Hao 2024** | **VERIFIED.** "Large-scale foundation model on single-cell transcriptomics" (also "xTrimoscFoundation"), Nat Methods 21:1481-1491. 100M parameters, 50M single-cell profiles, ~20K genes. Stated capabilities: gene expression enhancement, **tissue drug response prediction**, single-cell drug response classification, perturbation prediction. Direct match for v11 component #1. | PMID 38844628, [DOI](https://doi.org/10.1038/s41592-024-02305-7). |
+| **CellRank 2 — Weiler/Lange/Klein/Pe'er/Theis 2024** | **VERIFIED.** Nat Methods 21:1196-1205. Multiview fate mapping; named applications include human hematopoiesis, endodermal development. | PMID 38871986, [DOI](https://doi.org/10.1038/s41592-024-02303-9). |
 
-## Recommendation for benchmarking (which 3 to re-implement)
+### §0.2 NEW comparator surfaced by the verification sweep — **mmSYGNAL** (Murie/Baliga 2025)
 
-If you want a fair head-to-head:
-1. **MOFA+ on the same train/val/test split** (same `data_ready.pt`) — the integration baseline. Already approximated via MiniBatchDictionaryLearning in `scripts/data_integration_audit.py`; replace with `mofapy2` for the real version.
-2. **Dynamic-biomarker RUSBoost reformulated for cell-line IC50 prediction** (PMID 41814396 method, applied to GDSC). This forces apples-to-apples ML-on-MM-clinical-features.
-3. **Conditional Monge Gap on the cell-line latents** ([hf.co/papers/2504.08328](https://hf.co/papers/2504.08328)) — this is the methodologically closest "predict resistance under unseen drug/dose" model.
+According to PubMed, **PMID 40169765, [DOI](https://doi.org/10.1038/s41416-025-02987-6)** — Murie/Turkarslan/Patel/Coffey/Becker/Baliga, *"Individualized dynamic risk assessment and treatment selection for multiple myeloma"*, British Journal of Cancer 132(10):922-936 (April 2025).
 
-## Overall verdict (sota-comparator perspective)
+Why this matters: this is the **directly relevant MM-specific multi-omic ML comparator that v11 must position against** — and it was missing from the original table because the sota-comparator subagent had no PubMed access. Key facts:
 
-**Conditional pass** on the methodological niche (engineering/reproducibility), **fail** on the scientific-novelty claim. The "predict which resistance state, when, through which pathway, before it happens" framing requires longitudinal multi-snapshot data ResistanceMap does not have, and per-drug-mean already beats it on the available test set.
+- Built from SYGNAL multi-omics analysis of 881 MM patients → mmSYGNAL transcriptional-program network.
+- ML on activity profiles → cytogenetic-subtype-specific risk + treatment-response models.
+- **Tested on 1,367 MM patients across 5 independent cohorts.**
+- Reportedly outperforms cytogenetics, ISS, and multi-gene biomarker panels at predicting **PFS at primary diagnosis, pre-/post-transplant, and after multiple relapses**.
+- Treatment-response predictions concordant with efficacy of **67 drugs** in killing myeloma cells from 8 relapsed-refractory patients.
 
-ResistanceMap's clearest path to genuine novelty is to commit to one of these three reframings:
-- (a) become an MM-specific MOFA+ extension with sparse factors → interpretability gap closed
-- (b) ingest single-cell scRNA-seq from GSE124310/GSE271107 (already in `data/`) and become a cell-state trajectory model in the Krishnaswamy lineage
-- (c) drop the "before it happens" claim and reposition as a **reproducibility-first pan-omics MM cell-line resistance benchmark**, which is itself valuable to the field
+Implication for v11: mmSYGNAL is a stronger MM-specific head-to-head than anything in the original §1 table. v11 must (a) re-implement or obtain mmSYGNAL outputs on overlapping MMRF CoMMpass IA22 patients, (b) report C-index for PFS on the same split, (c) report treatment-response concordance on the same drug panel where overlap exists. **Use of iMLGAM (pan-cancer ICB) as the "MM ML comparator" is now formally rejected** — replace with mmSYGNAL.
+
+The transitive grounding chain (in-repo file → its dated live fetch) is an order weaker than a fresh fetch. Treat any flag in this document as a hard block on quoting that specific number in a manuscript without a fresh fetch.
+
+ResistanceMap baseline numbers used for comparison are from this repo, NOT from external claims:
+
+- **`paper/tables/baseline_comparison.json`** — RM (10-agent DAG) test_mse = 2.836, beaten by Zero-predictor (2.811) and PerDrugTrainMean (2.811) on the pooled 132-sample test set.
+- **`paper/v8_artifacts/baselines/mofa_results.json`** — MOFA+Ridge pooled test_mse = 2.8155 (fit_seconds = 19.7), per-drug verdict 4 beat / 3 tie / 4 lose vs RM.
+- **`paper/v8_artifacts/v10_sprint7/f8_energy_distance.json`** — F8 strict_pass = false at N_paired=29; best (η, σ) gives ED_prior=9.055 vs ED_const=9.074 (Δ=0.019, p_vs_const=0.432). Stone-bound regime confirmed.
+
+These three artifacts are the only numbers a v11 manuscript may quote as ResistanceMap's own; everything else is comparator-only.
 
 ---
-_End of SOTA comparison._
+
+## 1. Mandatory comparator table (one row per user-named paper)
+
+| # | Paper | Year | PMID / DOI / arXiv | Public benchmark | Reported metric (value) | Can RM run on the same data + metric? | Overlap / differentiation vs RM |
+|---|-------|------|--------------------|-------------------|--------------------------|---------------------------------------|----------------------------------|
+| 1 | **TrajectoryNet** — Tong, Huang, Wolf, van Dijk, Krishnaswamy. *Dynamic OT-based trajectory inference using continuous normalising flows.* ICML 2020. | 2020 | arXiv **2002.04461**; PMLR 119 (no PMID — ML conference). [B/A] | EB (Moon 2019), 5 timepoints / 27 days; AML (drug-perturbed scRNA, original paper Fig. 4). | EB **EMD = 0.784** (Base + density reg., LOO over t=1,2,3); previous-timepoint baseline EMD = 1.309. Source: arXiv:2002.04461 PDF Table 3 (verified 2026-05-03 in `SOTA_BENCHMARK_PROTOCOL.md` §3). | **Yes for v11** if/when RM moves to GSE271107 LOPO single-cell; **No for v10/v8 cell-line task** — TrajectoryNet requires multi-snapshot single-cell point clouds, RM's current data is one CCLE snapshot per cell line. | **Direct trajectory comparator.** Same family (CNF + dynamic OT). Differentiation: RM v11 plans Neural-ODE on a *learned scalar potential* U_θ with explicit Helmholtz projection (curl→0 by construction), not a free vector field. TrajectoryNet's drift is unconstrained; RM enforces gradient-flow. |
+| 2 | **CellOT** — Bunne, Stark, Gut, del Castillo, Levesque, Lehmann, Pelkmans, Krause, Rätsch. *Learning single-cell perturbation responses using neural optimal transport.* Nat Methods 2023. | 2023 | DOI **10.1038/s41592-023-01969-x** (PMID **37770709** as cited by user; this PMID is taken on user's word — `PubMed` MCP was denied in session). [C for PMID-as-stated, A for DOI which matches Nat Methods volume] | sci-Plex chromatin perturbation panel (Srivatsan 2020); 4i protein-perturbation panel (Bunne lab in-house). | Cell-pair-prediction Wasserstein distance + held-out-perturbation generalization. **Specific numerical W₂ value `[UNVERIFIED — do not cite]`** — Nat Methods reports figure-only headline, table is in supplementary. | **Partial.** RM does not have paired control/treated single-cell pairs. CellOT requires source-distribution → target-distribution per perturbation; RM has IC50 scalar per (cell-line, drug). | **Methodological cousin, different task.** CellOT = perturbation-response distribution learning. RM v11 = scalar trajectory on a Waddington landscape under epigenomic prior. v11 could absorb CellOT-style ICNN as the U_θ parameterisation; this is an open design question. |
+| 3 | **Waddington-OT (WOT)** — Schiebinger, Shu, Tabaka, Cleary, Subramanian, Solomon, Gould, Liu, Lin, Berube, Lee, Chen, Brumbaugh, Rigollet, Hochedlinger, Jaenisch, Regev, Lander. *Optimal-transport analysis of single-cell gene expression identifies developmental trajectories in reprogramming.* Cell 2019. | 2019 | DOI **10.1016/j.cell.2019.01.006**; PMID **30712874** (user-supplied). [C for PMID-as-stated, A for DOI which matches Cell paper] | MEF reprogramming time course (Schiebinger 2019, day 0–18, ~315k cells). | Pearson r / AUROC on fate prediction; specific values reported in PRESCIENT (PMC8163769) re-analysis: **r = 0.150, AUROC = 0.599** on Weinreb hematopoiesis fate task (verified in `SOTA_BENCHMARK_PROTOCOL.md` §3). | **Partial — population-level only.** RM v10 already operates at the population level (cohort-summary U_θ); WOT-style time-coupling could be applied to GSE271107 if RM v11 adds per-patient temporal cells. | **Conceptual ancestor.** WOT pioneered "Waddington landscape from scRNA via OT". RM v10/v11 reuses the *Waddington* metaphor but learns U_θ via DSM rather than OT-coupling between time-points; the two are complementary, not competing. WOT does NOT enforce Helmholtz / gradient-flow on its drift — RM v11 does. |
+| 4 | **CellRank 2** — Weiler, Lange, Klein, Pe'er, Theis. *CellRank 2: unified fate mapping in multi-view single-cell data.* Nat Methods 2024. | 2024 | DOI **10.1038/s41592-024-02303-9**; PMID **38871986** (verified in `SOTA_BENCHMARK_PROTOCOL.md` §5). [A] | hematopoiesis (NeurIPS 2021 multimodal benchmark); endodermal development (Pijuan-Sala 2019); mouse-embryo atlas. | Terminal-state recovery accuracy + macrostate identification. **Specific scalar `[UNVERIFIED — do not cite]`** — Nat Methods reports figure-only (per `SOTA_BENCHMARK_PROTOCOL.md` §3 verification). | **Yes for v11 GSE271107**: CellRank 2 supports any kernel (RNA velocity, pseudotime, similarity); RM v11's Neural-ODE drift could be used as a CellRank 2 kernel and then absorption probabilities computed within CellRank 2. | **Direct fate-mapping comparator.** Differentiation: CellRank 2 is *fate-mapping post velocity*; RM v11 is *velocity from a learned potential with PPI prior*. The clean win for RM is *interpretability of the drift* (it's −∇U_θ, where U_θ is anchored to STRING propagation). |
+| 5 | **TRACERx Lung** — Frankell, Dietzen, Al Bakir, Lim, Hill et al. (TRACERx consortium). *The evolution of lung cancer and impact of subclonal selection in TRACERx.* Nature 2023. **NB:** the user typed "Genomic-transcriptomic evolution in lung cancer and metastasis"; the canonical paper with that framing is Martínez-Ruiz / Frankell et al. *Nature* 2023 **PMID 37046093, DOI 10.1038/s41586-023-05706-4**. The user's PMID 37046096 (cited in the prompt) belongs to a sibling TRACERx paper from the same back-to-back issue. | 2023 | PMID **37046093** (`SOTA_BENCHMARK_PROTOCOL.md` §5, verified) / user-cited **37046096** (sibling paper, accepted as-stated). DOI **10.1038/s41586-023-05706-4**. [A] | TRACERx 421 NSCLC tumours (paired WES + RNA-seq + clinical); LUNG-resect cohort. | Allele-specific expression + clonal-evolution association with metastasis seeding. **No single headline ML scalar** — multiple ML approaches reported, not a benchmark dataset by ML conventions. | **No.** TRACERx is a bulk-WES/RNA evolution study on NSCLC; not single-cell, not trajectory inference, not MM. RM cannot be benchmarked against it. | **Inspirational framing only**, not a comparator. RM should cite TRACERx for the *concept* of subclonal-evolution-as-prognosis, not as a head-to-head metric peer. |
+| 6 | **Pan-cancer Proteogenomics — tumor immunity** (CPTAC consortium-style 2024) | 2024 | User cited the topic without an exact title. Closest verified candidate (per `SOTA_BENCHMARK_PROTOCOL.md` §5): **Petralia, Ma, Yaron et al., Cell 2024**, PMID **38359819**, DOI **10.1016/j.cell.2024.01.027** — *"Pan-cancer proteogenomic landscape of …"* family. [C for paper-identity, A for verification of the candidate PMID] | CPTAC pan-cancer cohort (~10 tumour types, paired proteome + phosphoproteome + RNA + WES). | Subtype identification, immune-deconvolution clusters, prognostic signatures. **No single ML headline metric**; reports figure-driven subtype tables. | **No** for the same reason as TRACERx — bulk multi-omics on solid tumours, not trajectory, not MM. | **Methodological substrate, not a comparator.** Cite as evidence that pan-cancer proteogenomic + immunity stratification is feasible; do not claim RM beats any number from this paper. |
+| 7 | **ML-melanoma immunotherapy signature** (2024) | 2024 | User did not supply the exact title. `SOTA_BENCHMARK_PROTOCOL.md` §5 verified that ≥ 27 PMIDs match the description and **no single canonical paper resolves**. Closest peer-reviewed match identified in `literature_review.md` Tier 4: PMID **41613147**, DOI **10.3389/fimmu.2025.1742614** (Dong et al., Front Immunol 2026, cuproptosis-ferroptosis CFRG signature on TCGA-SKCM). [A for the candidate; **C for the paper-identity match — `[UNVERIFIED — do not cite as the user's intended paper]`**] | TCGA-SKCM + GEO cohorts (incl. GSE72056 single-cell). | ML prognostic + immunotherapy-response signature. ROC reported per cohort. **Specific AUC `[UNVERIFIED — do not cite without supplying the exact target paper]`**. | **No.** Skin melanoma ≠ MM/AML; bulk-prognostic, not trajectory. | **Template, not a comparator.** Family RM v11 should imitate (multi-omics + ML signature + immunotherapy/treatment-response endpoint), but on hematologic malignancy with longitudinal samples. |
+| 8 | **iMLGAM** (2025) — integrative ML genomic-attention method | 2025 | `literature_review.md` Tier 4: **0 hits** in PubMed for the literal "iMLGAM" string in the prior live PubMed pass. `SOTA_BENCHMARK_PROTOCOL.md` §5 then identified Ye, Fan, Xue et al., *iMeta* 2025 as a candidate, PMID **40236779**, DOI **10.1002/imt2.70011**, predicting ICB-response from bulk multi-omics, validating via CRISPR (CEP55). [C for paper-identity match to user's "iMLGAM"; A for the candidate PMID being grounded] | Pan-cancer ICB cohort (bulk RNA + clinical); CRISPR functional validation. | ICB-response classification + driver-gene CRISPR validation. Not single-cell, not MM-specific in the verified abstract. | **No direct overlap** — RM is not an ICB-response classifier and does not run a CRISPR validation arm at v10. | **MM/MGUS specificity claim**: I could **not** verify that iMLGAM has an MM or MGUS cohort. The user's prompt asserted "iMLGAM (2025) — MM/MGUS specific" — this assertion is **`[UNVERIFIED — do not cite as MM-specific without re-fetching the iMeta paper PDF]`**. The candidate PMID 40236779 abstract framed it as pan-cancer ICB. |
+| 9 | **dynamo** — Qiu, Hu, Liu, Zhang, Liu, Hu, Pliner, Garry, Wolf, Theis, Trapnell, Ma, Weissman. *Mapping transcriptomic vector fields of single cells.* Cell 2022. | 2022 | DOI **10.1016/j.cell.2021.12.045**; PMID — not previously verified in repo (`literature_review.md` Tier 3 marks "scVelo dynamo CellRank" search returned no joint hit). [C — to be re-fetched] | Hematopoiesis (Weinreb 2020); pancreatic endocrinogenesis. | Vector-field reconstruction from RNA velocity; analytic Jacobian, divergence, acceleration. **Specific scalar metric `[UNVERIFIED — do not cite without re-fetch]`** — Cell paper reports figure-driven analyses, not a leaderboard scalar. | **Yes for v11**: dynamo's Jacobian / curl decomposition is *exactly* the diagnostic RM v11's F4 Helmholtz gate computes; running dynamo on GSE271107 single-cell would give a published-method curl baseline. | **Direct methodological comparator on the Helmholtz / vector-field axis.** Differentiation: dynamo *reconstructs* the field from velocity; RM v11 *learns* U_θ via DSM and *projects* the field onto curl=0. RM's prior is structural (PPI Tikhonov + DSM); dynamo's is data-driven from spliced/unspliced counts. Different niches. |
+| 10 | **scVelo** — Bergen, Lange, Peidli, Wolf, Theis. *Generalizing RNA velocity to transient cell states through dynamical modeling.* Nat Biotechnol 2020. | 2020 | DOI **10.1038/s41587-020-0591-3**; PMID — not previously verified in repo. [C — to be re-fetched] | Pancreatic endocrinogenesis; mouse dentate gyrus. | RNA-velocity-based pseudotime + transient-state recovery. No single benchmark scalar in the original paper; subsequent benchmarks (e.g. Gayoso 2022 *VeloVI*) report MMD / W₁. | **Yes for v11** on GSE271107. RM cannot use scVelo for the cell-line task (no spliced/unspliced counts in CCLE). | **Trajectory-side comparator.** RM v11's drift = −∇U_θ is a *learned-potential* alternative to scVelo's *dynamical-likelihood* drift. The two encode different prior assumptions: scVelo trusts the splicing kinetics; RM trusts the PPI graph. |
+| 11 | **PHATE / MELD** — Moon, van Dijk, Wang, Gigante, Burkhardt, Chen, Yim, van den Elzen, Hirn, Coifman, Ivanova, Wolf, Krishnaswamy. *Visualizing structure and transitions in high-dimensional biological data.* Nat Biotechnol 2019 (PHATE) / Burkhardt et al. *Nat Biotechnol* 2021 (MELD). | 2019 / 2021 | PHATE DOI **10.1038/s41587-019-0336-3**; MELD DOI **10.1038/s41587-020-00803-5**. PMIDs not verified in repo. [C — to be re-fetched] | EB; pancreatic islet (PHATE). T-cell activation panel (MELD). | PHATE: visualisation quality, embedding faithfulness. MELD: per-cell sample-likelihood for perturbation effect. **No single ML benchmark scalar `[UNVERIFIED]`**. | **PHATE** as an embedding step is composable with RM v11 (drop-in replacement for PCA-64 on GSE271107). **MELD** as a perturbation-density estimator is partially substitutable for RM v11's "resistance-likelihood field". | **Embedding / density-side cousin.** Krishnaswamy lab lineage, complementary to TrajectoryNet/MIOFlow on the *static* axis. RM v11 is dynamic (Neural-ODE); PHATE/MELD are static. |
+
+---
+
+## 2. Auto-discovered comparators directly relevant to "Neural ODE on Waddington landscape" or "single-snapshot diffusion-posterior identifiability"
+
+These were surfaced in `literature_review.md` Tier 3 and `SOTA_BENCHMARK_PROTOCOL.md` §3, both grounded by 2026-05-03 fetches. PubMed re-verification was denied this session.
+
+| # | Paper / handle | Year | Identifier | Why relevant to v11 |
+|---|----------------|------|------------|----------------------|
+| A1 | **MIOFlow** — Huguet, Magruder, Tong, Stanley, Kuchroo, Krishnaswamy. NeurIPS 2022. | 2022 | arXiv **2206.14928**; PMC **10312391** (verified in `SOTA_BENCHMARK_PROTOCOL.md` §3). | Direct architectural cousin of RM v11: GAE encoder + Neural-ODE on a manifold + dynamic OT loss. EB t=2 W₁ = **25.744** (GAE α-decay), MMD(G) = **0.061** (verified). RM v11 must report W₁/MMD on the same EB protocol (re-implementation; absolute-number transfer to MM is illegitimate). |
+| A2 | **PRESCIENT** — Yeo, Saksena, Gifford. Nat Commun 2021. | 2021 | DOI **10.1038/s41467-021-23518-w**; PMID **34050150**; PMC **8163769** (verified). | Generative drift-diffusion on hematopoiesis; reports Pearson **r = 0.347 ± 0.029**, AUROC **0.692 ± 0.012** with proliferation rates on Weinreb 2020 (verified). The conceptual analogue of RM v11's stochastic forward operator. |
+| A3 | **MOSCOT** — Klein, Palla, Lange, Klein, Theis. Nature 2025. | 2025 | DOI **10.1038/s41586-024-08453-2**; PMID **39843746** (verified). | Multi-modal multi-time-point neural OT; 1.7M-cell mouse-embryo atlas. Strongest current OT baseline if RM v11 ingests longitudinal scRNA. Specific scalar `[UNVERIFIED]`. |
+| A4 | **VGFM (Joint Velocity-Growth Flow Matching)** | 2025 | arXiv via HF **2505.13413** (verified in `literature_review.md` Tier 3). | Direct successor to TrajectoryNet for unpaired-unbalanced snapshots. Closest 2025-vintage architecture if RM v11 only has a *single* snapshot per patient (which is exactly the GSE271107 subset minus 2 patients). |
+| A5 | **Conditional Monge Gap** — Bunne et al. 2024. | 2024 | arXiv via HF **2504.08328** (verified). | Closest "perturbation under unseen drug + dose" comparator. RM v10/v11 currently does not handle unseen drugs; this is a clean vector for a v12 extension, not a v11 head-to-head baseline. |
+| A6 | **Action Matching** — Neklyudov et al. 2022. | 2022 | arXiv via HF **2210.06662** (verified). | Conceptual precedent for "learn dynamics from independent snapshots, no OT solver back-prop". Exactly RM's single-snapshot setting; relevant for the F8 single-snapshot identifiability gate. |
+| A7 | **STAGED** — Krishnaswamy lab 2025. | 2025 | arXiv via HF **2507.11660** (verified). | Graph-ODE + agent-based modelling on spatial transcriptomics. The Krishnaswamy-lineage "successor" to TrajectoryNet/MIOFlow that is geometrically closest to RM v11's GAT+ODE design. |
+| A8 | **LOT (Linearised OT for patient point clouds)** — Krishnaswamy lab 2025. | 2025 | arXiv via HF **2510.22033** (verified). | Patient-as-point-cloud framing; closer to RM v11's per-patient cell-state distribution prediction than scVelo / dynamo. Use as a baseline for the GSE271107 LOPO task. |
+| A9 | **Tan et al. 2025** — pseudotime on 35,944 malignant plasma cells, 18 MM patients. | 2025 | PMID **41050668**, DOI **10.3389/fimmu.2025.1658028** (verified in `SOTA_BENCHMARK_PROTOCOL.md` §1). | The closest *MM-specific* trajectory paper. Defines MalPlasma1–5 cell-state vocabulary (MalPlasma3 = 93.1 % poor-survival) but does NOT publish a held-out-timepoint W₁/W₂/MMD score. RM v11 is *defining* this benchmark; no number to beat. |
+| A10 | **Dynamic biomarker MM model** — RUSBoost on 662 newly-diagnosed MM patients. | 2026 | PMID **41814396**, DOI **10.1186/s12967-026-07946-0** (verified in `literature_review.md` Tier 1). | **F1 = 0.75 @ Cycle 4 vs R-ISS F1 = 0.32.** The strongest MM-clinical comparator. Different metric (F1 classification, not W₁ trajectory) → not apples-to-apples; should be cited as the clinical-relevance bar, not the methodological one. |
+| A11 | **MM platelet-related multi-omics 13-gene signature** | 2026 | PMID **41762247**, DOI **10.1007/s00277-026-06867-8** (verified). | Uses GSE124310 (overlap with RM auxiliary cohort). 116-algorithm grid search → 13-gene Cox+Ridge signature. Comparable on overall risk-stratification, NOT on single-cell trajectory. |
+
+---
+
+## 3. Honest comparability assessment — per comparator
+
+For each, I record (a) same task? (b) same dataset? (c) same metric? (d) verdict.
+
+| Comparator | Same task as RM v11? | Same dataset feasible? | Same metric directly comparable? | Net verdict |
+|------------|----------------------|------------------------|-----------------------------------|-------------|
+| TrajectoryNet | **Partial.** RM v11 = Neural-ODE on Waddington; TrajectoryNet = Neural-ODE on a free vector field. Both are dynamic, both are Neural-ODE-flavoured. | **Yes for v11 if EB / GSE271107 LOPO is run.** Not on RM v8 cell-line task (single snapshot per cell line). | **Yes (W₁, EMD, MMD on EB).** | Closest-family comparator; must be re-implemented locally on GSE271107 for an honest head-to-head — published EB-EMD = 0.784 cannot be transferred to MM. |
+| CellOT | **No.** Perturbation response, not trajectory. | Not on RM's data without per-perturbation paired control/treatment cells. | No (CellOT's W₂ between source and target distributions ≠ RM's potential-induced drift). | Cite as "neural-OT methodological cousin"; **not** a head-to-head. |
+| Waddington-OT | **Partial.** Same Waddington metaphor; different objective (couple time-points by entropy-regularised OT vs learn potential by DSM). | Yes on GSE271107 LOPO. | **Yes (Pearson r, AUROC for fate-bias on Weinreb).** | Conceptual ancestor; should be a baseline on the fate-bias secondary task in RM v11 §4 of `SOTA_BENCHMARK_PROTOCOL.md`. |
+| CellRank 2 | **Partial.** Fate mapping ≠ trajectory simulation, but composable. | Yes on GSE271107. | **Yes (terminal-state recovery, fate probabilities)** — but published scalar is `[UNVERIFIED]`, must re-implement. | Use as the fate-mapping post-processor of RM v11's drift; not a competing model on the same metric. |
+| TRACERx Lung | **No.** Bulk-WES/RNA NSCLC evolution. Not single-cell, not MM, not trajectory. | No. | No. | **Citation framing only**, never as a metric peer. |
+| Pan-cancer proteogenomics | **No.** Bulk-multi-omics subtype discovery. | No. | No. | **Substrate**, never as a metric peer. |
+| ML-melanoma signature | **No.** Bulk-prognostic ML on TCGA-SKCM. | No. | No (and the user's intended paper is `[UNVERIFIED]`). | **Template framing only**. |
+| iMLGAM | **No** (per the verified candidate PMID 40236779; ICB-response classification). | No. | No. | **`[UNVERIFIED]` for MM-specificity**; do not cite as MM/MGUS comparator without supplying the iMeta PDF. |
+| dynamo | **Direct on the Helmholtz axis.** | Yes on GSE271107. | **Yes — Jacobian / divergence / curl** are exactly RM v11's F4 outputs. | **Run dynamo as a baseline for F4** — this is the closest published vector-field-from-data method to RM's potential-derived field. |
+| scVelo | **Partial — trajectory.** | Yes on GSE271107 (requires spliced/unspliced; RM must check that the GSE271107 BAMs were preserved). | **Yes — pseudotime + transient-state recovery.** | Standard baseline; RM v11 must report parity. |
+| PHATE / MELD | **Embedding / density.** | Yes. | **Yes for embedding faithfulness; no single ML scalar for MELD perturbation density.** | Use PHATE as a drop-in for PCA-64; MELD as a static density baseline. |
+
+---
+
+## 4. Where ResistanceMap v11 is genuinely differentiated (the niche)
+
+After the v10 closeout (7 strict-pass + 1 partial + 4 expected-fails) and this comparator pass, the **defensible niche** is:
+
+> **A single-snapshot, identifiability-bounded, multi-omic Waddington-landscape estimator with explicit Helmholtz-projected gradient flow, falsification-pre-registered at the level of individual gates (F1–F10, F_S5, F8-DPS), and PPI-anchored via STRING v12 full-channel propagation — distinguished from TrajectoryNet/MIOFlow/dynamo/scVelo/CellRank2/MOSCOT by NOT claiming to manufacture identifiability beyond the Stone minimax bound at N_paired ≪ Stone(d=64).**
+
+Concretely, RM v11 is genuinely differentiated on three axes none of the comparators above own simultaneously:
+
+1. **Gradient-flow guarantee by construction.** TrajectoryNet, MIOFlow, dynamo, scVelo, MOSCOT all parameterise *free* vector fields and *measure* curl post-hoc (or ignore it). RM v11 plans to add a Helmholtz-projection layer that enforces ∇×F=0 by construction (`V11_SOTA_UPGRADE_PLAN.md` §2 row 2). That makes F4 (curl=0) a *theorem*, not an *observation*. This is the genuine SOTA-grade differentiator on the dynamic-system side.
+2. **Pre-registered identifiability bound.** The v10 F8-DPS strict-fail at N_paired = 29 (file `paper/v8_artifacts/v10_sprint7/f8_energy_distance.json`: `F8_strict_pass = false`, ED_prior=9.055 vs ED_const=9.074, p_vs_const=0.432) is published *as* the bound on what single-snapshot diffusion-posterior identifies at d=64. No comparator (TrajectoryNet, MOSCOT, dynamo, CellRank2, PRESCIENT, MIOFlow) publishes its own minimax-bound regime; they all report headline numbers without specifying when their estimator becomes ill-posed. RM v11's framing ("we do NOT pretend to forecast at N_paired < Stone(d)") is itself a contribution.
+3. **PPI-prior-anchored U_θ + GAT propagation kernel.** Combining DSM-trained scalar potential with a GAT-2 layer initialised from RWR row-stochastic kernel on STRING v12 full-channel (`V11_SOTA_UPGRADE_PLAN.md` §2 row 4) is a combination *no* trajectory comparator owns. dynamo encodes structural priors via the spliced/unspliced kinetics; scVelo via the same; CellRank2 via a velocity kernel; none use STRING-anchored attention as the drift's structural prior.
+
+That is the v11 niche — and it is narrow.
+
+---
+
+## 5. Where ResistanceMap concedes SOTA (be honest)
+
+Per the project memory and `paper/v8_artifacts/baselines/mofa_results.json` + `paper/tables/baseline_comparison.json`, RM is **dominated** on the following axes; the v11 plan does NOT close all of them:
+
+| Axis | Dominator | Evidence in repo |
+|------|-----------|------------------|
+| Pooled MSE on the cell-line drug-IC50 task | **Zero-predictor (test_mse 2.811)** and **PerDrugTrainMean (2.811)** | `paper/tables/baseline_comparison.json` (RM 10-agent DAG = 2.836). Predict-mean beats deep architecture. |
+| Multi-omics integration on the same train/val/test split | **MOFA+Ridge (2.8155 in 19.7 s)** | `paper/v8_artifacts/baselines/mofa_results.json`. RM ties (4 beat / 3 tie / 4 lose) on per-drug MSE. |
+| Single-snapshot diffusion-posterior identifiability at N_paired = 29, d = 64 | **None — task is ill-posed by Stone bound.** | `paper/v8_artifacts/v10_sprint7/f8_energy_distance.json`. F8 STRICT FAIL was *expected*. |
+| Trajectory inference at single-cell resolution on EB | **TrajectoryNet (EMD 0.784) / MIOFlow (W₁ 25.744 on EB t=2)** | `SOTA_BENCHMARK_PROTOCOL.md` §3, transitively verified. RM v8 doesn't have a single-cell pipeline; v11 plans one but no number yet. |
+| Fate prediction on Weinreb hematopoiesis | **PRESCIENT (Pearson r = 0.347, AUROC = 0.692)** | `SOTA_BENCHMARK_PROTOCOL.md` §3. RM has not run on Weinreb; this is a clean head-to-head if v11 ingests the dataset. |
+| MM-clinical short-term response | **PMID 41814396 (RUSBoost, F1=0.75)** | `literature_review.md` Tier 1. Different metric (F1 classification). RM does not yet operate on patient flow-cytometry features. |
+| Pan-cancer multi-omics survival | **SeNMo (C-index 0.758 across 33 cancers)** | `literature_review.md` Tier 2 via HF arXiv 2405.08226. RM is hematology-specific by design; no head-to-head. |
+| Cross-disease F3 (proteasome-driven resistance) on AML | **Refuted by RM itself in Sprint 6.** | `project_v10_sprint6_outcome.md`: 0/5 AML-native F3 panels — RM is honest that proteasome/MM-specific signal does not transfer. |
+
+The clean concession: **RM does not, and at v11 will not, beat the trivial baseline (predict-mean) on the pooled cell-line MSE.** The v11 paper must not frame itself as a drug-IC50 SOTA. It must reframe as a *trajectory-on-Waddington* paper on GSE271107 LOPO + MM/AML cohorts, with the MSE-on-cell-lines result moved to a "negative result" supplement.
+
+---
+
+## 6. Recommendation for v11 benchmarking — which 3 baselines to re-implement
+
+In priority order, all three runnable on GSE271107 LOPO under the governance-locked split (`SOTA_BENCHMARK_PROTOCOL.md` §4):
+
+1. **TrajectoryNet** (`KrishnaswamyLab/TrajectoryNet`, MIT — verified GitHub HTTP 200 on 2026-05-03 in `SOTA_BENCHMARK_PROTOCOL.md`). Re-implement on the same split; report **W₁ and EMD on held-out latest timepoint per patient**. This is the head-to-head most likely to be cited.
+2. **MIOFlow** (`KrishnaswamyLab/MIOFlow`, verified). The architecturally closest cousin to RM v11 (GAE + Neural-ODE + dynamic OT). Report **W₁ and MMD(G) on the same split**. If RM v11 cannot match MIOFlow's MMD(G), the Helmholtz-projection differentiation is theoretical-only.
+3. **CellRank 2** as a fate-mapping post-processor (`theislab/cellrank`). Use it to convert RM v11's drift into terminal-state probabilities, AND run CellRank 2 standalone with its default kernel as a baseline. This decouples the *drift* contribution from the *fate-aggregation* step, so that any RM-vs-CellRank2 win can be attributed to the drift specifically.
+
+Stretch (S+1) baselines, only if time permits in v11:
+
+- **dynamo** for the Helmholtz / curl baseline on GSE271107.
+- **PRESCIENT** on Weinreb 2020 hematopoiesis (out-of-domain for MM but the *only* dataset with a published Pearson r / AUROC reference number for fate prediction).
+- **MOSCOT** as the heaviest neural-OT baseline if RM v11 ever gains a multi-time-point patient cohort beyond GSE271107's 7 patients.
+
+---
+
+## 7. v11 niche paragraph (the bottom line)
+
+ResistanceMap v11's defensible niche is a **single-snapshot, falsification-pre-registered, Helmholtz-projected Neural-ODE on a learned scalar Waddington potential, with PPI-anchored GAT propagation as the structural prior, scoped to hematologic malignancies (MM primary, AML cross-disease control), explicitly bounded by the Stone minimax identifiability limit at N_paired = 29 / d = 64.** It will *not* beat predict-mean on the cell-line drug-IC50 task — and the v11 plan does not pretend it will; that result is reframed as an honest negative finding. It will *not* outperform TrajectoryNet, MIOFlow, MOSCOT, PRESCIENT, dynamo, scVelo, or CellRank 2 on any of *their* native benchmarks (EB, Weinreb, mouse-embryo atlas, pancreas) — those are not RM's home turf. What v11 *can* defensibly claim, conditional on F1/F3/F4/F6/F_S5 strict-pass replicating after the architectural upgrade, is: **(i)** a Helmholtz-by-construction gradient flow (a guarantee no comparator currently offers); **(ii)** an explicit identifiability-regime annotation (a meta-contribution none of the trajectory comparators publish); and **(iii)** a STRING-v12-anchored learnable diffusion kernel (a structural prior absent from every named SOTA above). Whether that triple is enough to clear a *Nature Methods*-class bar against MOSCOT and CellRank 2 is an empirical question the v11 sprints must answer; this comparator pass cannot pre-judge it.
+
+---
+*End of v11 SOTA comparison. Numbers flagged `[UNVERIFIED]` must be re-fetched before any manuscript claim is filed.*

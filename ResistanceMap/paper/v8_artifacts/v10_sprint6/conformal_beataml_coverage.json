@@ -1,0 +1,49 @@
+{
+  "design": "S6c \u2014 Sprint 5 Mondrian JK+ conformal wrapper applied to Beat AML 1.0 Bortezomib AUC prediction; ELN-2017 cyto risk strata",
+  "n_total": 294,
+  "n_features_top_var": 200,
+  "alpha": 0.1,
+  "stratum_sizes": {
+    "adverse": 109,
+    "favorable": 92,
+    "intermediate": 93
+  },
+  "coverage_per_stratum": {
+    "adverse": {
+      "n": 109,
+      "coverage": 1.0,
+      "deviation_from_90pct": 0.09999999999999998,
+      "within_3pct": false,
+      "within_5pct": false,
+      "median_interval_AUC": [
+        17.160955535138157,
+        283.2687553954857
+      ]
+    },
+    "favorable": {
+      "n": 92,
+      "coverage": 1.0,
+      "deviation_from_90pct": 0.09999999999999998,
+      "within_3pct": false,
+      "within_5pct": false,
+      "median_interval_AUC": [
+        42.78842362686051,
+        283.7625759513236
+      ]
+    },
+    "intermediate": {
+      "n": 93,
+      "coverage": 1.0,
+      "deviation_from_90pct": 0.09999999999999998,
+      "within_3pct": false,
+      "within_5pct": false,
+      "median_interval_AUC": [
+        23.75717012668349,
+        299.41753580416946
+      ]
+    }
+  },
+  "n_within_3pct": 0,
+  "n_within_5pct": 0,
+  "F_S6_cross_disease_conformal_pass": false
+}

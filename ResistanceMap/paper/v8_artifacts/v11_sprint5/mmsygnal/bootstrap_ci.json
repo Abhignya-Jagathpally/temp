@@ -1,0 +1,67 @@
+{
+  "marginal": {
+    "c_index": 0.693784687151827,
+    "ci95": [
+      0.6575915974025138,
+      0.7294330399965698
+    ],
+    "n": 787,
+    "n_events": 224
+  },
+  "per_stratum": {
+    "S1_del17p": {
+      "n": 105,
+      "n_events": 40,
+      "c_index": 0.7045060658578857,
+      "ci95": [
+        0.6159697077910452,
+        0.7930235019716503
+      ]
+    },
+    "S2_t_4_14": {
+      "n": 97,
+      "n_events": 32,
+      "c_index": 0.7218670076726342,
+      "ci95": [
+        0.6288012453065597,
+        0.8163789746917586
+      ]
+    },
+    "S3_1q21": {
+      "n": 165,
+      "n_events": 55,
+      "c_index": 0.6637390213299874,
+      "ci95": [
+        0.5868238076767028,
+        0.7465754273407738
+      ]
+    },
+    "S4_t_11_14": {
+      "n": 95,
+      "n_events": 19,
+      "c_index": 0.6925638179800222,
+      "ci95": [
+        0.5617293263376549,
+        0.8160004843331673
+      ]
+    },
+    "S5_other": {
+      "n": 325,
+      "n_events": 78,
+      "c_index": 0.682398316970547,
+      "ci95": [
+        0.6147121383920658,
+        0.7450172806198132
+      ]
+    }
+  },
+  "v11_cox_marginal": {
+    "Cox_v10": 0.6526,
+    "Cox_v11features": 0.6512,
+    "Cox_v11_richer": 0.6538
+  },
+  "delta_vs_best_v11": 0.0399846871518269,
+  "note": "Bootstrap CIs are unpaired (mmSYGNAL alone). A paired \u0394 vs v11-Cox requires per-patient v11-Cox log-hazards; cox_discrimination.json only stored aggregates.",
+  "n_bootstraps": 1000,
+  "method": "sklearn.utils.resample over real patient indices, no synthetic data"
+}

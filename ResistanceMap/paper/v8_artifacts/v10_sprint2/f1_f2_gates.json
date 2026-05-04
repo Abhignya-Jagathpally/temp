@@ -1,0 +1,67 @@
+{
+  "F1_per_stratum": {
+    "del17p": {
+      "n_held": 23,
+      "n_train": 693,
+      "elbo_init": 247270.515625,
+      "elbo_final": 155715.640625,
+      "coverage_overall": 0.95923912525177,
+      "coverage_per_patient_mean": 0.95923912525177,
+      "passes": true
+    },
+    "chr1q21_gain": {
+      "n_held": 46,
+      "n_train": 670,
+      "elbo_init": 235810.75,
+      "elbo_final": 150214.703125,
+      "coverage_overall": 0.9459918737411499,
+      "coverage_per_patient_mean": 0.9459918737411499,
+      "passes": true
+    },
+    "del13q": {
+      "n_held": 97,
+      "n_train": 619,
+      "elbo_init": 219186.796875,
+      "elbo_final": 138894.4375,
+      "coverage_overall": 0.9515141844749451,
+      "coverage_per_patient_mean": 0.9515141844749451,
+      "passes": true
+    },
+    "t_4_14": {
+      "n_held": 103,
+      "n_train": 613,
+      "elbo_init": 214657.203125,
+      "elbo_final": 137365.1875,
+      "coverage_overall": 0.9446298480033875,
+      "coverage_per_patient_mean": 0.9446298480033875,
+      "passes": true
+    },
+    "t_11_14": {
+      "n_held": 65,
+      "n_train": 651,
+      "elbo_init": 232969.6875,
+      "elbo_final": 146629.5625,
+      "coverage_overall": 0.9502403736114502,
+      "coverage_per_patient_mean": 0.9502403736114502,
+      "passes": true
+    }
+  },
+  "F2": {
+    "design": "proper paired LOO on both arms (no train-on-test leak)",
+    "n_test_paired": 27,
+    "n_skipped_due_to_underfit": 0,
+    "ll_full_cohort_loo_mean": -1475.6831973224282,
+    "ll_paired_only_loo_mean": -1499.8707537916068,
+    "delta_mean": 24.18755646917841,
+    "delta_std": 184.93975711198075,
+    "delta_min": -394.70407657711985,
+    "delta_max": 738.9778511281474,
+    "delta_bootstrap_95_ci": [
+      -43.105776725174465,
+      99.54572195894792
+    ],
+    "ci_contains_zero": true,
+    "passes_F2": false,
+    "interpretation": "\u0394 > 0 with CI not containing 0 \u27f9 partial pooling over baselines adds information beyond paired-only fit (F2 PASSES). \u0394 \u2248 0 \u27f9 baselines are uninformative for paired-patient prediction (F2 REFUTED)."
+  }
+}

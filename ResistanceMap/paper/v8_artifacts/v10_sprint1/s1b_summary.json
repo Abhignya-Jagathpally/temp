@@ -1,0 +1,10 @@
+{
+  "n_genes": 12651,
+  "n_edges_canonical": 141241,
+  "combined_threshold": 700,
+  "nonobs_threshold": 400,
+  "full_channels_available": true,
+  "laplacian_nnz": 295133,
+  "mean_degree": 19.908710479736328,
+  "median_degree": 8.831999778747559
+}

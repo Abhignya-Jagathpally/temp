@@ -1,0 +1,262 @@
+{
+  "verdict": "MOFA+Ridge TIES ResistanceMap overall: MOFA+Ridge pooled test_mse=2.8155 vs ResistanceMap test_mse=2.8364 (delta=-0.0209). Per-drug breakdown: MOFA beats RM on 4/11 drugs, ties on 3, loses on 4. ResistanceMap's reported test_mse (2.84) is dominated by a single Panobinostat outlier (mse=22.6) and is essentially the zero-prediction floor; MOFA's 20 probabilistic factors offer a smoothed, NaN-tolerant integrated representation that should expose whether any signal beyond the floor exists. If the per-drug verdicts are mostly 'tie' and the pooled MSE is similar, multi-omics integration is not the bottleneck on this 886-cell-line / 11-drug task -- sample size and label sparsity are.",
+  "config": {
+    "n_factors": 20,
+    "topk_proteomics": 2000,
+    "topk_crispr": 2000,
+    "ridge_alpha": 1.0,
+    "seed": 42,
+    "views": [
+      "proteomics",
+      "epigenomics",
+      "crispr_effect"
+    ],
+    "fit_seconds": 19.7
+  },
+  "data_ready_path": "checkpoints/data_ready.pt",
+  "splits": {
+    "train": 622,
+    "val": 132,
+    "test": 132
+  },
+  "view_dims_after_filter": {
+    "proteomics": 2000,
+    "epigenomics": 42,
+    "crispr_effect": 2000
+  },
+  "per_drug": [
+    {
+      "drug": "Bortezomib",
+      "n_train": 478,
+      "n_val": 107,
+      "n_test": 102,
+      "test_mse": 0.8490328192710876,
+      "val_mse": 0.7926923632621765,
+      "test_spearman": 0.2538238404080271
+    },
+    {
+      "drug": "Cyclophosphamide",
+      "n_train": 372,
+      "n_val": 84,
+      "n_test": 76,
+      "test_mse": 0.3474189341068268,
+      "val_mse": 0.2430610954761505,
+      "test_spearman": 0.2784688995215311
+    },
+    {
+      "drug": "Dinaciclib",
+      "n_train": 458,
+      "n_val": 104,
+      "n_test": 100,
+      "test_mse": 0.2146996259689331,
+      "val_mse": 0.10124804079532623,
+      "test_spearman": 0.04512451245124512
+    },
+    {
+      "drug": "Doxorubicin",
+      "n_train": 472,
+      "n_val": 105,
+      "n_test": 100,
+      "test_mse": 1.6482882499694824,
+      "val_mse": 0.5501216053962708,
+      "test_spearman": 0.37580558055805574
+    },
+    {
+      "drug": "Etoposide",
+      "n_train": 434,
+      "n_val": 93,
+      "n_test": 93,
+      "test_mse": 0.3382038474082947,
+      "val_mse": 0.6336899995803833,
+      "test_spearman": 0.27167198830234845
+    },
+    {
+      "drug": "Lenalidomide",
+      "n_train": 441,
+      "n_val": 101,
+      "n_test": 95,
+      "test_mse": 0.6922128796577454,
+      "val_mse": 0.9539884924888611,
+      "test_spearman": 0.2555851063829787
+    },
+    {
+      "drug": "Palbociclib",
+      "n_train": 401,
+      "n_val": 90,
+      "n_test": 81,
+      "test_mse": 0.21230924129486084,
+      "val_mse": 0.25583797693252563,
+      "test_spearman": 0.30121951219512194
+    },
+    {
+      "drug": "Panobinostat",
+      "n_train": 462,
+      "n_val": 102,
+      "n_test": 101,
+      "test_mse": 22.739160537719727,
+      "val_mse": 16.657621383666992,
+      "test_spearman": 0.011193942923704132
+    },
+    {
+      "drug": "Romidepsin",
+      "n_train": 424,
+      "n_val": 94,
+      "n_test": 93,
+      "test_mse": 1.3002070188522339,
+      "val_mse": 0.8664406538009644,
+      "test_spearman": 0.08288323237146011
+    },
+    {
+      "drug": "Venetoclax",
+      "n_train": 368,
+      "n_val": 84,
+      "n_test": 74,
+      "test_mse": 0.09860357642173767,
+      "val_mse": 0.09461285173892975,
+      "test_spearman": 0.39349870418363564
+    },
+    {
+      "drug": "Vorinostat",
+      "n_train": 473,
+      "n_val": 106,
+      "n_test": 100,
+      "test_mse": 0.19182145595550537,
+      "val_mse": 0.17886075377464294,
+      "test_spearman": 0.38216621662166217
+    }
+  ],
+  "overall_pooled_test_mse": 2.815534830093384,
+  "overall_pooled_val_mse": 2.0180084705352783,
+  "comparison_to_resistancemap": {
+    "rm_overall_test_mse": 2.8364,
+    "rm_run_log": "logs/20260503T094942Z/stdout.log",
+    "summary": {
+      "n_beat": 4,
+      "n_tie": 3,
+      "n_lose": 4
+    },
+    "per_drug": [
+      {
+        "drug": "Bortezomib",
+        "drug_class": "Proteasome",
+        "mofa_test_mse": 0.8490328192710876,
+        "rm_test_mse": 0.8821372985839844,
+        "ratio_mofa_over_rm": 0.9624724185611057,
+        "mofa_test_spearman": 0.2538238404080271,
+        "rm_test_spearman": 0.346953084800199,
+        "n_test": 102,
+        "verdict": "tie"
+      },
+      {
+        "drug": "Cyclophosphamide",
+        "drug_class": "DNA-damage",
+        "mofa_test_mse": 0.3474189341068268,
+        "rm_test_mse": 0.3054813742637634,
+        "ratio_mofa_over_rm": 1.1372835248765543,
+        "mofa_test_spearman": 0.2784688995215311,
+        "rm_test_spearman": 0.19064935064935065,
+        "n_test": 76,
+        "verdict": "lose"
+      },
+      {
+        "drug": "Dinaciclib",
+        "drug_class": "CDK",
+        "mofa_test_mse": 0.2146996259689331,
+        "rm_test_mse": 0.1354023963212967,
+        "ratio_mofa_over_rm": 1.5856412574816756,
+        "mofa_test_spearman": 0.04512451245124512,
+        "rm_test_spearman": 0.3158355835583558,
+        "n_test": 100,
+        "verdict": "lose"
+      },
+      {
+        "drug": "Doxorubicin",
+        "drug_class": "DNA-damage",
+        "mofa_test_mse": 1.6482882499694824,
+        "rm_test_mse": 1.9848915338516235,
+        "ratio_mofa_over_rm": 0.8304172907478867,
+        "mofa_test_spearman": 0.37580558055805574,
+        "rm_test_spearman": 0.11335133513351334,
+        "n_test": 100,
+        "verdict": "beat"
+      },
+      {
+        "drug": "Etoposide",
+        "drug_class": "DNA-damage",
+        "mofa_test_mse": 0.3382038474082947,
+        "rm_test_mse": 0.358908087015152,
+        "ratio_mofa_over_rm": 0.9423132541285334,
+        "mofa_test_spearman": 0.27167198830234845,
+        "rm_test_spearman": 0.16275252902032167,
+        "n_test": 93,
+        "verdict": "beat"
+      },
+      {
+        "drug": "Lenalidomide",
+        "drug_class": "IMiD",
+        "mofa_test_mse": 0.6922128796577454,
+        "rm_test_mse": 0.813334584236145,
+        "ratio_mofa_over_rm": 0.8510801004581001,
+        "mofa_test_spearman": 0.2555851063829787,
+        "rm_test_spearman": -0.07162653975363942,
+        "n_test": 95,
+        "verdict": "beat"
+      },
+      {
+        "drug": "Palbociclib",
+        "drug_class": "CDK",
+        "mofa_test_mse": 0.21230924129486084,
+        "rm_test_mse": 0.19919045269489288,
+        "ratio_mofa_over_rm": 1.0658605290689434,
+        "mofa_test_spearman": 0.30121951219512194,
+        "rm_test_spearman": 0.024570912375790423,
+        "n_test": 81,
+        "verdict": "lose"
+      },
+      {
+        "drug": "Panobinostat",
+        "drug_class": "HDAC",
+        "mofa_test_mse": 22.739160537719727,
+        "rm_test_mse": 22.62211799621582,
+        "ratio_mofa_over_rm": 1.005173810052776,
+        "mofa_test_spearman": 0.011193942923704132,
+        "rm_test_spearman": 0.06008153756552125,
+        "n_test": 101,
+        "verdict": "tie"
+      },
+      {
+        "drug": "Romidepsin",
+        "drug_class": "HDAC",
+        "mofa_test_mse": 1.3002070188522339,
+        "rm_test_mse": 1.2600728273391724,
+        "ratio_mofa_over_rm": 1.0318506919935817,
+        "mofa_test_spearman": 0.08288323237146011,
+        "rm_test_spearman": 0.2365044313807406,
+        "n_test": 93,
+        "verdict": "tie"
+      },
+      {
+        "drug": "Venetoclax",
+        "drug_class": "BCL2",
+        "mofa_test_mse": 0.09860357642173767,
+        "rm_test_mse": 0.01999061368405819,
+        "ratio_mofa_over_rm": 4.932493718307935,
+        "mofa_test_spearman": 0.39349870418363564,
+        "rm_test_spearman": 0.26844872269529796,
+        "n_test": 74,
+        "verdict": "lose"
+      },
+      {
+        "drug": "Vorinostat",
+        "drug_class": "HDAC",
+        "mofa_test_mse": 0.19182145595550537,
+        "rm_test_mse": 0.23433221876621246,
+        "ratio_mofa_over_rm": 0.8185876315492108,
+        "mofa_test_spearman": 0.38216621662166217,
+        "rm_test_spearman": 0.02125412541254125,
+        "n_test": 100,
+        "verdict": "beat"
+      }
+    ]
+  }
+}

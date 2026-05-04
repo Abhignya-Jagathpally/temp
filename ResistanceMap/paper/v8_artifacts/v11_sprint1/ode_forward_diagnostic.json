@@ -1,0 +1,107 @@
+{
+  "reference_solver": {
+    "method": "dopri5",
+    "rtol": 1e-05,
+    "atol": 1e-07
+  },
+  "n_paired": 29,
+  "latent_dim": 64,
+  "D1_lyapunov": [
+    {
+      "T": 0.5,
+      "U0_mean": 34.695220947265625,
+      "UT_mean": 29.244035720825195,
+      "delta_mean": -5.451186656951904,
+      "delta_max": -3.5343475341796875,
+      "delta_min": -13.381004333496094,
+      "n_lyapunov_violations": 0,
+      "lyapunov_ok": true
+    },
+    {
+      "T": 1.0,
+      "U0_mean": 34.695220947265625,
+      "UT_mean": 24.83975601196289,
+      "delta_mean": -9.855464935302734,
+      "delta_max": -5.917097091674805,
+      "delta_min": -26.28252410888672,
+      "n_lyapunov_violations": 0,
+      "lyapunov_ok": true
+    },
+    {
+      "T": 2.0,
+      "U0_mean": 34.695220947265625,
+      "UT_mean": 17.596803665161133,
+      "delta_mean": -17.098413467407227,
+      "delta_max": -9.570901870727539,
+      "delta_min": -50.25371551513672,
+      "n_lyapunov_violations": 0,
+      "lyapunov_ok": true
+    },
+    {
+      "T": 4.0,
+      "U0_mean": 34.695220947265625,
+      "UT_mean": 6.021442413330078,
+      "delta_mean": -28.67377471923828,
+      "delta_max": -15.387283325195312,
+      "delta_min": -77.26599884033203,
+      "n_lyapunov_violations": 0,
+      "lyapunov_ok": true
+    }
+  ],
+  "D2_truncation_error": [
+    {
+      "T": 0.5,
+      "reference_method": "dopri5",
+      "euler_1step_l2": 0.27478066086769104,
+      "euler_chain_1step_l2": 0.27478066086769104,
+      "euler_chain_2step_l2": 0.09770051389932632,
+      "euler_chain_4step_l2": 0.04486454650759697,
+      "euler_chain_8step_l2": 0.021608078852295876,
+      "euler_chain_16step_l2": 0.010614163242280483,
+      "euler_chain_32step_l2": 0.005260489881038666
+    },
+    {
+      "T": 1.0,
+      "reference_method": "dopri5",
+      "euler_1step_l2": 0.9043524861335754,
+      "euler_chain_1step_l2": 0.9043524861335754,
+      "euler_chain_2step_l2": 0.24343539774417877,
+      "euler_chain_4step_l2": 0.11154787242412567,
+      "euler_chain_8step_l2": 0.053896959871053696,
+      "euler_chain_16step_l2": 0.026509711518883705,
+      "euler_chain_32step_l2": 0.013148646801710129
+    },
+    {
+      "T": 2.0,
+      "reference_method": "dopri5",
+      "euler_1step_l2": 2.7231175899505615,
+      "euler_chain_1step_l2": 2.7231175899505615,
+      "euler_chain_2step_l2": 1.0892882347106934,
+      "euler_chain_4step_l2": 0.27276864647865295,
+      "euler_chain_8step_l2": 0.13335910439491272,
+      "euler_chain_16step_l2": 0.06630143523216248,
+      "euler_chain_32step_l2": 0.033075492829084396
+    },
+    {
+      "T": 4.0,
+      "reference_method": "dopri5",
+      "euler_1step_l2": 7.667343616485596,
+      "euler_chain_1step_l2": 7.667343616485596,
+      "euler_chain_2step_l2": 6.587371826171875,
+      "euler_chain_4step_l2": 3.409367561340332,
+      "euler_chain_8step_l2": 0.4528990387916565,
+      "euler_chain_16step_l2": 0.23297400772571564,
+      "euler_chain_32step_l2": 0.11857772618532181
+    }
+  ],
+  "D3_direction_agreement_eta_2": {
+    "eta": 2.0,
+    "cosine_v10_vs_v11_mean": 0.9536713361740112,
+    "cosine_v10_vs_v11_min": 0.8940871953964233,
+    "cosine_v10_vs_v11_p25": 0.9449627995491028,
+    "step_norm_ratio_v11_v10_mean": 0.8027293682098389,
+    "step_norm_ratio_v11_v10_p25": 0.7540297508239746,
+    "step_norm_ratio_v11_v10_p75": 0.8576454520225525,
+    "interpretation": "cos\u22481, ratio\u22481 \u21d2 v10 single-Euler agrees with the true ODE flow. cos<1 means v10's drift direction is WRONG; ratio\u22601 means its step magnitude is wrong even when direction is right."
+  }
+}

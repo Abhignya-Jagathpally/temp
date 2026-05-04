@@ -1,0 +1,141 @@
+{
+  "design": "S6b v2 \u2014 native-AML F3: RWR seeded on AML driver genes, evaluated against Beat AML 1.0 ex-vivo drug response \u00d7 RPKM",
+  "Bonferroni_alpha": 0.01,
+  "n_drugs": 5,
+  "n_bonferroni_pass": 0,
+  "spec_target": "\u22654 drugs Bonferroni-pass (mirrors Sprint 3 F3 v2 4/10 threshold, scaled to 8 drugs)",
+  "scaled_threshold": 2.0,
+  "strict_pass": false,
+  "results": {
+    "Quizartinib (AC220)": {
+      "seeds": [
+        "FLT3"
+      ],
+      "top50_first10": [
+        "FLT3",
+        "SLA",
+        "PTPRJ",
+        "SH2B3",
+        "SOCS2",
+        "SPI1",
+        "FLT3LG",
+        "KITLG",
+        "GALNT3",
+        "FGF23"
+      ],
+      "n_top50_in_oracle": 35,
+      "drv_mean_corr_AML": 0.017244728197092805,
+      "bg_mean_corr_AML": 0.023166038858562516,
+      "drv_minus_bg": -0.005921310661469711,
+      "permutation_p_one_sided_greater": 0.618,
+      "bonferroni_pass": false,
+      "n_aml_patients": 278,
+      "rationale": "FLT3-ITD inhibitor; FDA-approved for FLT3-ITD AML"
+    },
+    "Sorafenib": {
+      "seeds": [
+        "FLT3",
+        "RAF1",
+        "BRAF"
+      ],
+      "top50_first10": [
+        "CNKSR2",
+        "BRAF",
+        "KIAA1549",
+        "FAM131B",
+        "RIT2",
+        "RIT1",
+        "CLCN6",
+        "AGTRAP",
+        "PITPNC1",
+        "CNKSR1"
+      ],
+      "n_top50_in_oracle": 46,
+      "drv_mean_corr_AML": -0.043495734897020036,
+      "bg_mean_corr_AML": 0.028552162188373552,
+      "drv_minus_bg": -0.07204789708539358,
+      "permutation_p_one_sided_greater": 0.999,
+      "bonferroni_pass": false,
+      "n_aml_patients": 314,
+      "rationale": "FLT3/RAF/VEGFR multi-kinase, used for FLT3-ITD AML"
+    },
+    "Midostaurin": {
+      "seeds": [
+        "FLT3",
+        "KIT"
+      ],
+      "top50_first10": [
+        "FLT3",
+        "SLA",
+        "PTPRJ",
+        "GRAP",
+        "KIT",
+        "PTPRU",
+        "TFAP2B",
+        "KCTD15",
+        "TFAP2D",
+        "KCTD1"
+      ],
+      "n_top50_in_oracle": 37,
+      "drv_mean_corr_AML": 0.010983075272617365,
+      "bg_mean_corr_AML": 0.01373777106697636,
+      "drv_minus_bg": -0.002754695794358995,
+      "permutation_p_one_sided_greater": 0.548,
+      "bonferroni_pass": false,
+      "n_aml_patients": 283,
+      "rationale": "FLT3/KIT inhibitor (FDA-approved for FLT3+ AML)"
+    },
+    "Venetoclax": {
+      "seeds": [
+        "BCL2"
+      ],
+      "top50_first10": [
+        "BCL2",
+        "BCL2L10",
+        "CTSV",
+        "CTSC",
+        "CTSF",
+        "CTSO",
+        "CTSW",
+        "CTSH",
+        "BMF",
+        "CTSZ"
+      ],
+      "n_top50_in_oracle": 41,
+      "drv_mean_corr_AML": -0.03532957777897639,
+      "bg_mean_corr_AML": 0.0669750012234335,
+      "drv_minus_bg": -0.10230457900240988,
+      "permutation_p_one_sided_greater": 0.999,
+      "bonferroni_pass": false,
+      "n_aml_patients": 186,
+      "rationale": "BCL2 inhibitor (FDA-approved for AML in combination)"
+    },
+    "Bortezomib (Velcade)": {
+      "seeds": [
+        "PSMB5",
+        "PSMB1",
+        "PSMB2"
+      ],
+      "top50_first10": [
+        "PSMB1",
+        "PSMB2",
+        "FBXO7",
+        "UBXN7",
+        "ACAD11",
+        "PSMB5",
+        "PSMF1",
+        "AKIRIN1",
+        "AKIRIN2",
+        "BTBD9"
+      ],
+      "n_top50_in_oracle": 46,
+      "drv_mean_corr_AML": -0.01170893463744096,
+      "bg_mean_corr_AML": -0.028504646546044947,
+      "drv_minus_bg": 0.01679571190860399,
+      "permutation_p_one_sided_greater": 0.102,
+      "bonferroni_pass": false,
+      "n_aml_patients": 294,
+      "rationale": "MM-specific control \u2014 expected to NOT pass strict on AML (MM is uniquely proteasome-addicted via plasma-cell secretory phenotype)"
+    }
+  }
+}

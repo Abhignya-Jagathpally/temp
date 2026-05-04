@@ -1,0 +1,511 @@
+{
+  "consensus_set_size_total": 47,
+  "consensus_in_ppi": [
+    "ABCF1",
+    "ARID1A",
+    "ARID2",
+    "ATM",
+    "ATR",
+    "ATRX",
+    "BIRC2",
+    "BIRC3",
+    "BRAF",
+    "CCND1",
+    "CDKN1B",
+    "CDKN2C",
+    "CYLD",
+    "DIS3",
+    "DUSP2",
+    "EGR1",
+    "FGFR3",
+    "HUWE1",
+    "IGLL5",
+    "IRF4",
+    "KDM6A",
+    "KMT2C",
+    "KRAS",
+    "MAF",
+    "MAFB",
+    "MAX",
+    "MYC",
+    "NF1",
+    "NFKB2",
+    "NRAS",
+    "PRKD2",
+    "RB1",
+    "RPL10",
+    "RPL5",
+    "SAMHD1",
+    "SETD2",
+    "SOCS1",
+    "SP140",
+    "STAT3",
+    "TET2",
+    "TP53",
+    "TRAF3"
+  ],
+  "consensus_in_ppi_size": 42,
+  "missing_from_ppi": [
+    "FAM46C",
+    "HIST1H1E",
+    "MMSET",
+    "TGDS",
+    "ZNF292"
+  ],
+  "alpha": 0.7,
+  "top_k": 100,
+  "per_driver": {
+    "ABCF1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "RPL5",
+        "RPL10"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "ARID1A": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "ARID2",
+        "RB1",
+        "CCND1",
+        "MYC",
+        "TP53"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "ARID2": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "ARID1A",
+        "RB1",
+        "TP53",
+        "SETD2"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "ATM": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "TP53",
+        "ATR"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "ATR": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "ATM",
+        "TP53"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "ATRX": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "TP53",
+        "ATM"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "BIRC2": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "BIRC3",
+        "TRAF3",
+        "CYLD",
+        "TP53"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "BIRC3": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "BIRC2",
+        "TRAF3",
+        "CYLD"
+      ],
+      "recall_count": 3,
+      "recall_frac": 0.07317073170731707
+    },
+    "BRAF": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "KRAS",
+        "NRAS",
+        "TP53"
+      ],
+      "recall_count": 3,
+      "recall_frac": 0.07317073170731707
+    },
+    "CCND1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "CDKN1B",
+        "MYC",
+        "RB1",
+        "STAT3",
+        "CDKN2C",
+        "ARID1A"
+      ],
+      "recall_count": 6,
+      "recall_frac": 0.14634146341463414
+    },
+    "CDKN1B": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "CCND1",
+        "TP53",
+        "CDKN2C",
+        "RB1",
+        "MYC"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "CDKN2C": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "CCND1",
+        "CDKN1B",
+        "TP53",
+        "RB1",
+        "MYC",
+        "STAT3"
+      ],
+      "recall_count": 6,
+      "recall_frac": 0.14634146341463414
+    },
+    "CYLD": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "BIRC2",
+        "BIRC3",
+        "TP53",
+        "TRAF3",
+        "NFKB2"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "DIS3": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "RPL5"
+      ],
+      "recall_count": 1,
+      "recall_frac": 0.024390243902439025
+    },
+    "DUSP2": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "TP53",
+        "MAX",
+        "KRAS",
+        "NRAS"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "EGR1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "TP53",
+        "MYC",
+        "STAT3",
+        "CCND1"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "FGFR3": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "KRAS",
+        "NRAS"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "HUWE1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "MYC",
+        "TP53",
+        "MAX",
+        "KRAS",
+        "NRAS",
+        "CDKN1B"
+      ],
+      "recall_count": 6,
+      "recall_frac": 0.14634146341463414
+    },
+    "IGLL5": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "STAT3",
+        "TRAF3"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "IRF4": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "STAT3",
+        "TP53",
+        "MYC",
+        "CCND1",
+        "SOCS1"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "KDM6A": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "KMT2C"
+      ],
+      "recall_count": 1,
+      "recall_frac": 0.024390243902439025
+    },
+    "KMT2C": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "KDM6A",
+        "MAFB",
+        "TP53"
+      ],
+      "recall_count": 3,
+      "recall_frac": 0.07317073170731707
+    },
+    "KRAS": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "NRAS",
+        "BRAF",
+        "FGFR3",
+        "NF1"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "MAF": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "MAFB",
+        "RB1",
+        "KMT2C",
+        "CCND1",
+        "TP53",
+        "EGR1",
+        "MYC",
+        "STAT3"
+      ],
+      "recall_count": 8,
+      "recall_frac": 0.1951219512195122
+    },
+    "MAFB": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "MAF",
+        "KMT2C",
+        "KDM6A",
+        "EGR1",
+        "TP53"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "MAX": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "MYC",
+        "TP53"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "MYC": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "CCND1",
+        "STAT3",
+        "MAX",
+        "RB1",
+        "HUWE1"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "NF1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "KRAS",
+        "NRAS",
+        "BRAF",
+        "FGFR3"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "NFKB2": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "STAT3",
+        "CYLD",
+        "TP53",
+        "BIRC3",
+        "BIRC2",
+        "TRAF3"
+      ],
+      "recall_count": 6,
+      "recall_frac": 0.14634146341463414
+    },
+    "NRAS": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "KRAS",
+        "BRAF",
+        "NF1",
+        "FGFR3"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "PRKD2": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "BRAF",
+        "KRAS",
+        "NRAS",
+        "STAT3",
+        "TP53"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "RB1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "CCND1",
+        "TP53",
+        "MYC",
+        "CDKN1B",
+        "ARID1A",
+        "ARID2"
+      ],
+      "recall_count": 6,
+      "recall_frac": 0.14634146341463414
+    },
+    "RPL10": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "RPL5"
+      ],
+      "recall_count": 1,
+      "recall_frac": 0.024390243902439025
+    },
+    "RPL5": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "RPL10"
+      ],
+      "recall_count": 1,
+      "recall_frac": 0.024390243902439025
+    },
+    "SAMHD1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "CDKN1B",
+        "STAT3",
+        "TP53",
+        "TRAF3"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "SETD2": {
+      "n_top_k": 100,
+      "recovered_consensus": [],
+      "recall_count": 0,
+      "recall_frac": 0.0
+    },
+    "SOCS1": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "STAT3",
+        "TP53",
+        "ATM"
+      ],
+      "recall_count": 3,
+      "recall_frac": 0.07317073170731707
+    },
+    "SP140": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "IGLL5"
+      ],
+      "recall_count": 1,
+      "recall_frac": 0.024390243902439025
+    },
+    "STAT3": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "TP53",
+        "MYC",
+        "SOCS1",
+        "CCND1"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    },
+    "TET2": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "TP53",
+        "RB1"
+      ],
+      "recall_count": 2,
+      "recall_frac": 0.04878048780487805
+    },
+    "TP53": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "ATM",
+        "STAT3",
+        "CDKN1B",
+        "ATR",
+        "RB1"
+      ],
+      "recall_count": 5,
+      "recall_frac": 0.12195121951219512
+    },
+    "TRAF3": {
+      "n_top_k": 100,
+      "recovered_consensus": [
+        "BIRC2",
+        "BIRC3",
+        "CYLD",
+        "IGLL5"
+      ],
+      "recall_count": 4,
+      "recall_frac": 0.0975609756097561
+    }
+  },
+  "mean_consensus_recall_per_driver_seed": 3.5952380952380953,
+  "median_consensus_recall_per_driver_seed": 4.0,
+  "permutation_null_mean_recall": 1.253000020980835,
+  "permutation_p_value": 0.129,
+  "threshold_count_in_top_k": 29,
+  "n_drivers_meeting_threshold": 0,
+  "f6_pass_overall": false,
+  "spec_threshold_note": "Spec asks \u226535/50 Walker 2018 drivers in top-100 with permutation p<0.001. We use a 4-cohort consensus (Walker+Lohr+Bolli+Manier) and adapt to \u22650.7 \u00d7 |consensus|."
+}

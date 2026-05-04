@@ -1,0 +1,244 @@
+{
+  "design": "Mondrian jackknife+ on log(tt2L+1) with 3 base learners under identical wrapper. Waddington features = [U(z0), U(z(T)), \u2016\u2207U(z0)\u2016, \u2016z(T)-z0\u2016] from v11 Neural-ODE.",
+  "n_total": 787,
+  "strata_sizes": {
+    "S1_del17p": 105,
+    "S2_t_4_14": 97,
+    "S3_1q21": 165,
+    "S4_t_11_14": 95,
+    "S5_other": 325
+  },
+  "alpha": 0.1,
+  "nominal_coverage": 0.9,
+  "Ridge_v10": {
+    "per_stratum": {
+      "S1_del17p": {
+        "n_test": 105,
+        "coverage_at_alpha_0p10": 0.9047619047619048,
+        "deviation_from_nominal": 0.004761904761904745,
+        "median_pred_interval_days": [
+          115.86608927869113,
+          1791.4318945371906
+        ],
+        "median_interval_width_days": 1675.5658052584995,
+        "median_interval_width_log": 2.730299833835989,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S2_t_4_14": {
+        "n_test": 97,
+        "coverage_at_alpha_0p10": 0.8969072164948454,
+        "deviation_from_nominal": -0.003092783505154628,
+        "median_pred_interval_days": [
+          163.83812169625176,
+          1596.350901951926
+        ],
+        "median_interval_width_days": 1432.5127802556742,
+        "median_interval_width_log": 2.271137938087305,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S3_1q21": {
+        "n_test": 165,
+        "coverage_at_alpha_0p10": 0.896969696969697,
+        "deviation_from_nominal": -0.00303030303030305,
+        "median_pred_interval_days": [
+          139.50596089714983,
+          1722.7121721671695
+        ],
+        "median_interval_width_days": 1581.9518276295255,
+        "median_interval_width_log": 2.5074855507935645,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S4_t_11_14": {
+        "n_test": 95,
+        "coverage_at_alpha_0p10": 0.9052631578947369,
+        "deviation_from_nominal": 0.0052631578947368585,
+        "median_pred_interval_days": [
+          113.12091242625992,
+          2260.0481050571125
+        ],
+        "median_interval_width_days": 2147.0424824417173,
+        "median_interval_width_log": 2.986347731334318,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S5_other": {
+        "n_test": 325,
+        "coverage_at_alpha_0p10": 0.8984615384615384,
+        "deviation_from_nominal": -0.0015384615384615996,
+        "median_pred_interval_days": [
+          186.89129948551093,
+          1819.0452731116843
+        ],
+        "median_interval_width_days": 1632.1539736261734,
+        "median_interval_width_log": 2.270753053712344,
+        "within_3pct": true,
+        "within_5pct": true
+      }
+    },
+    "marginal": {
+      "coverage": 0.8996188055908514,
+      "median_width_log": 2.273421312997984,
+      "median_width_days": 1642.717443417329,
+      "n_strata_within_3pct": 5,
+      "n_strata_within_5pct": 5,
+      "F_S5_strict_pass": true
+    }
+  },
+  "Ridge_v11features": {
+    "per_stratum": {
+      "S1_del17p": {
+        "n_test": 105,
+        "coverage_at_alpha_0p10": 0.8952380952380953,
+        "deviation_from_nominal": -0.004761904761904745,
+        "median_pred_interval_days": [
+          123.38014615280709,
+          1764.2077800607685
+        ],
+        "median_interval_width_days": 1640.8276339079614,
+        "median_interval_width_log": 2.6526811141269304,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S2_t_4_14": {
+        "n_test": 97,
+        "coverage_at_alpha_0p10": 0.8969072164948454,
+        "deviation_from_nominal": -0.003092783505154628,
+        "median_pred_interval_days": [
+          155.9639010823055,
+          1584.4631597694822
+        ],
+        "median_interval_width_days": 1428.4992586871767,
+        "median_interval_width_log": 2.3126160084922613,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S3_1q21": {
+        "n_test": 165,
+        "coverage_at_alpha_0p10": 0.9030303030303031,
+        "deviation_from_nominal": 0.00303030303030305,
+        "median_pred_interval_days": [
+          136.92992863080747,
+          1723.8022939469386
+        ],
+        "median_interval_width_days": 1586.872365316131,
+        "median_interval_width_log": 2.526121918035538,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S4_t_11_14": {
+        "n_test": 95,
+        "coverage_at_alpha_0p10": 0.8947368421052632,
+        "deviation_from_nominal": -0.0052631578947368585,
+        "median_pred_interval_days": [
+          111.52586470438538,
+          2618.096012476051
+        ],
+        "median_interval_width_days": 2506.5701477716657,
+        "median_interval_width_log": 3.147401400108339,
+        "within_3pct": true,
+        "within_5pct": true
+      },
+      "S5_other": {
+        "n_test": 325,
+        "coverage_at_alpha_0p10": 0.8984615384615384,
+        "deviation_from_nominal": -0.0015384615384615996,
+        "median_pred_interval_days": [
+          182.9490307552456,
+          1788.146379167407
+        ],
+        "median_interval_width_days": 1605.1973484121615,
+        "median_interval_width_log": 2.274835189472614,
+        "within_3pct": true,
+        "within_5pct": true
+      }
+    },
+    "marginal": {
+      "coverage": 0.8983481575603558,
+      "median_width_log": 2.3126160084922613,
+      "median_width_days": 1634.5140919672522,
+      "n_strata_within_3pct": 5,
+      "n_strata_within_5pct": 5,
+      "F_S5_strict_pass": true
+    }
+  },
+  "GBM_v10": {
+    "per_stratum": {
+      "S1_del17p": {
+        "n_test": 105,
+        "coverage_at_alpha_0p10": 0.9523809523809523,
+        "deviation_from_nominal": 0.052380952380952306,
+        "median_pred_interval_days": [
+          95.56205048411479,
+          2169.2743552707384
+        ],
+        "median_interval_width_days": 2079.3738261986873,
+        "median_interval_width_log": 3.119462947538482,
+        "within_3pct": false,
+        "within_5pct": false
+      },
+      "S2_t_4_14": {
+        "n_test": 97,
+        "coverage_at_alpha_0p10": 0.9690721649484536,
+        "deviation_from_nominal": 0.06907216494845358,
+        "median_pred_interval_days": [
+          143.6616608183497,
+          1913.9200628694382
+        ],
+        "median_interval_width_days": 1769.7721763401594,
+        "median_interval_width_log": 2.581541164652309,
+        "within_3pct": false,
+        "within_5pct": false
+      },
+      "S3_1q21": {
+        "n_test": 165,
+        "coverage_at_alpha_0p10": 0.9393939393939394,
+        "deviation_from_nominal": 0.039393939393939426,
+        "median_pred_interval_days": [
+          147.64083930080287,
+          1726.276362600254
+        ],
+        "median_interval_width_days": 1581.1154937496485,
+        "median_interval_width_log": 2.4564088763722554,
+        "within_3pct": false,
+        "within_5pct": true
+      },
+      "S4_t_11_14": {
+        "n_test": 95,
+        "coverage_at_alpha_0p10": 0.968421052631579,
+        "deviation_from_nominal": 0.06842105263157894,
+        "median_pred_interval_days": [
+          110.89652528023572,
+          2796.977598111556
+        ],
+        "median_interval_width_days": 2684.945875795674,
+        "median_interval_width_log": 3.20898364102547,
+        "within_3pct": false,
+        "within_5pct": false
+      },
+      "S5_other": {
+        "n_test": 325,
+        "coverage_at_alpha_0p10": 0.9446153846153846,
+        "deviation_from_nominal": 0.04461538461538461,
+        "median_pred_interval_days": [
+          162.5752507517645,
+          2031.1935310155081
+        ],
+        "median_interval_width_days": 1868.4992493872005,
+        "median_interval_width_log": 2.5118265289702117,
+        "within_3pct": false,
+        "within_5pct": true
+      }
+    },
+    "marginal": {
+      "coverage": 0.9504447268106735,
+      "median_width_log": 2.5215982096269194,
+      "median_width_days": 1859.608302903225,
+      "n_strata_within_3pct": 0,
+      "n_strata_within_5pct": 2,
+      "F_S5_strict_pass": false
+    }
+  }
+}

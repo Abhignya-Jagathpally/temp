@@ -1,0 +1,131 @@
+{
+  "top_k_tested": 50,
+  "n_drugs_panel": 10,
+  "n_significant_uncorrected_p_lt_0.05": 3,
+  "n_significant_bonferroni_p_lt_0.05_div_n": 3,
+  "bonferroni_alpha": 0.005,
+  "drugs_significant_uncorrected": [
+    "Bortezomib",
+    "Carfilzomib",
+    "Ixazomib"
+  ],
+  "drugs_significant_bonferroni": [
+    "Bortezomib",
+    "Carfilzomib",
+    "Ixazomib"
+  ],
+  "per_drug": {
+    "Bortezomib": {
+      "n_input": 50,
+      "n_present": 50,
+      "n_present_after_nan": 50,
+      "drv_mean_chronos": -0.3956917991741463,
+      "bg_mean_chronos": -0.1476207625920532,
+      "mannwhitneyu_p_one_sided_less": 1.2360684462343355e-06,
+      "permutation_p": 0.0,
+      "n_permutations": 1000,
+      "significant_uncorrected": true
+    },
+    "Carfilzomib": {
+      "n_input": 50,
+      "n_present": 50,
+      "n_present_after_nan": 50,
+      "drv_mean_chronos": -0.5483615550382573,
+      "bg_mean_chronos": -0.14720556064518317,
+      "mannwhitneyu_p_one_sided_less": 7.218476725191247e-07,
+      "permutation_p": 0.0,
+      "n_permutations": 1000,
+      "significant_uncorrected": true
+    },
+    "Ixazomib": {
+      "n_input": 50,
+      "n_present": 50,
+      "n_present_after_nan": 50,
+      "drv_mean_chronos": -0.4441791259264548,
+      "bg_mean_chronos": -0.1474888960520687,
+      "mannwhitneyu_p_one_sided_less": 0.00011431170235886078,
+      "permutation_p": 0.0,
+      "n_permutations": 1000,
+      "significant_uncorrected": true
+    },
+    "Panobinostat": {
+      "n_input": 50,
+      "n_present": 46,
+      "n_present_after_nan": 44,
+      "drv_mean_chronos": -0.0755580791839663,
+      "bg_mean_chronos": -0.148467606695096,
+      "mannwhitneyu_p_one_sided_less": 0.2048894777523002,
+      "permutation_p": 0.901,
+      "n_permutations": 1000,
+      "significant_uncorrected": false
+    },
+    "Vorinostat": {
+      "n_input": 50,
+      "n_present": 46,
+      "n_present_after_nan": 44,
+      "drv_mean_chronos": -0.07386404914116113,
+      "bg_mean_chronos": -0.14847165961891115,
+      "mannwhitneyu_p_one_sided_less": 0.2270961366023988,
+      "permutation_p": 0.897,
+      "n_permutations": 1000,
+      "significant_uncorrected": false
+    },
+    "Lenalidomide": {
+      "n_input": 50,
+      "n_present": 50,
+      "n_present_after_nan": 50,
+      "drv_mean_chronos": -0.2448383680704534,
+      "bg_mean_chronos": -0.14803102484689054,
+      "mannwhitneyu_p_one_sided_less": 0.1853353322082607,
+      "permutation_p": 0.067,
+      "n_permutations": 1000,
+      "significant_uncorrected": false
+    },
+    "Pomalidomide": {
+      "n_input": 50,
+      "n_present": 50,
+      "n_present_after_nan": 50,
+      "drv_mean_chronos": -0.20142596079115582,
+      "bg_mean_chronos": -0.14814908959336676,
+      "mannwhitneyu_p_one_sided_less": 0.07139714161182906,
+      "permutation_p": 0.181,
+      "n_permutations": 1000,
+      "significant_uncorrected": false
+    },
+    "Daratumumab": {
+      "n_input": 50,
+      "n_present": 48,
+      "n_present_after_nan": 48,
+      "drv_mean_chronos": -0.030742824336921135,
+      "bg_mean_chronos": -0.14860045981646997,
+      "mannwhitneyu_p_one_sided_less": 0.9871310398711323,
+      "permutation_p": 0.996,
+      "n_permutations": 1000,
+      "significant_uncorrected": false
+    },
+    "Venetoclax": {
+      "n_input": 50,
+      "n_present": 48,
+      "n_present_after_nan": 48,
+      "drv_mean_chronos": -0.012060648413659183,
+      "bg_mean_chronos": -0.14864923038504108,
+      "mannwhitneyu_p_one_sided_less": 0.9922031119904041,
+      "permutation_p": 0.999,
+      "n_permutations": 1000,
+      "significant_uncorrected": false
+    },
+    "Selinexor": {
+      "n_input": 50,
+      "n_present": 46,
+      "n_present_after_nan": 45,
+      "drv_mean_chronos": -0.24933593652017072,
+      "bg_mean_chronos": -0.1480463400255681,
+      "mannwhitneyu_p_one_sided_less": 0.022242697784947127,
+      "permutation_p": 0.051,
+      "n_permutations": 1000,
+      "significant_uncorrected": false
+    }
+  },
+  "f3_pass": false,
+  "spec_threshold": "F3 PASS = \u22654/10 drugs Bonferroni-significant on Chronos rank-sum"
+}

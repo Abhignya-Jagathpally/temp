@@ -332,7 +332,7 @@ def prepare_data(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     """Preprocess and harmonize all multi-omics datasets."""
     from resistancemap.data.loaders import (
         load_ccle_proteomics, load_ccle_epigenomics, load_string_ppi,
-        load_scrna_data, load_mmrf_data,
+        load_scrna_data, load_mmrf_data, load_depmap_crispr,
     )
     from resistancemap.data.preprocessors import harmonize_omics, build_train_val_test_splits
     from resistancemap.utils.logging_utils import log_stage_start, log_stage_end
@@ -346,8 +346,14 @@ def prepare_data(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     ppi_graph = load_string_ppi(config.data)
     scrna_data = load_scrna_data(config.data)
     mmrf_data = load_mmrf_data(config.data)
+    crispr_data = load_depmap_crispr(config.data)
 
-    dataset = harmonize_omics(proteomics, epigenomics, ppi_graph, scrna_data=scrna_data, mmrf_data=mmrf_data, config=config.data)
+    dataset = harmonize_omics(
+        proteomics, epigenomics, ppi_graph,
+        scrna_data=scrna_data, mmrf_data=mmrf_data,
+        crispr_data=crispr_data,
+        config=config.data,
+    )
     splits = build_train_val_test_splits(dataset, config.data)
 
     ckpt_path = ckpt_mgr.save("data_ready", {"dataset": dataset, "splits": splits, "config": config.data})
@@ -1915,6 +1921,19 @@ Examples:
             "evaluation.log_root/<run_id>/."
         ),
     )
+    # v10 paper-spec sprint orchestrator (separate from legacy STAGES registry)
+    from resistancemap.v10_runner import VALID_STAGE_NAMES as _V10_STAGES
+    parser.add_argument(
+        "--v10-sprint", type=str, default=None, choices=_V10_STAGES,
+        help=(
+            "Run the v10 paper-spec pipeline (orthogonal to the legacy "
+            "STAGES registry). Semantic stage names: 'all' runs the full "
+            "S1→S7 pipeline; individual stages: landscape_dsm (S1), "
+            "hbayes_strata (S2), propagation_rwr (S3), mediation_nie (S4), "
+            "conformal_mondrian (S5), beataml_xdisease (S6), "
+            "dps_singlesnapshot (S7), fixes (F7-Vorinostat + F10 attempts)."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -1937,6 +1956,14 @@ def main() -> None:
     if args.evaluate:
         asyncio.run(run_evaluation_governance(config))
         return
+
+    # v10 sprint orchestrator: orthogonal to legacy training DAG and
+    # evaluation governance. Runs scripts/v10/s*.py via subprocess in
+    # dependency order; logs land in <log_dir>/v10_e2e/<stage>.log.
+    if args.v10_sprint:
+        from resistancemap.v10_runner import run_v10_e2e
+        rc = run_v10_e2e(args.v10_sprint, log_dir=Path(config.log_dir) / "v10_e2e")
+        sys.exit(rc)
 
     # Single-stage mode always uses sequential execution
     if args.stage:

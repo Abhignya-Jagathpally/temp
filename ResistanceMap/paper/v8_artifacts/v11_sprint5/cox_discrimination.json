@@ -1,0 +1,110 @@
+{
+  "design": "Cox PH LOO log-partial-hazard predictions, lifelines CoxPHFitter penalizer=0.1; 3 feature variants; risk score = log-hazard; Harrell C-index per stratum + marginal.",
+  "n_total": 787,
+  "n_events": 224,
+  "median_tt2L_days": 654.001,
+  "feature_counts": {
+    "v10": 11,
+    "v11features": 15,
+    "v11_richer": 23
+  },
+  "results": {
+    "Cox_v10": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7027729636048526
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6054987212276215
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6982434127979925
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5172031076581576
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6122720897615709
+        }
+      },
+      "marginal": {
+        "c_index": 0.6526234680383602,
+        "AUROC_12mo": 0.7038123167155425,
+        "AUROC_24mo": 0.6609957708573625
+      }
+    },
+    "Cox_v11features": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7114384748700173
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5677749360613811
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6852781263069845
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.4961154273029967
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6223001402524544
+        }
+      },
+      "marginal": {
+        "c_index": 0.6511865218613659,
+        "AUROC_12mo": 0.7183600713012478,
+        "AUROC_24mo": 0.6604190695886197
+      }
+    },
+    "Cox_v11_richer": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6984402079722704
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5863171355498721
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6879966541196152
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5205327413984462
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.620687237026648
+        }
+      },
+      "marginal": {
+        "c_index": 0.6537584472651166,
+        "AUROC_12mo": 0.712293715140015,
+        "AUROC_24mo": 0.665032679738562
+      }
+    }
+  },
+  "v11_mse_reference_c_index_marginal": {
+    "Ridge_v10": 0.537,
+    "Ridge_v11features": 0.556,
+    "GBM_v10": 0.546,
+    "GBM_v11features": 0.566
+  },
+  "mmSYGNAL_reference_c_index_range": [
+    0.65,
+    0.75
+  ]
+}

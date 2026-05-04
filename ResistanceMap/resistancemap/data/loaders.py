@@ -52,6 +52,13 @@ class MultiOmicsDataset(Dataset):
         drug_target_mean: Optional[torch.Tensor] = None,
         drug_target_std: Optional[torch.Tensor] = None,
         patient_ids: Optional[list[str]] = None,
+        scrna_pseudobulk: Optional[torch.Tensor] = None,
+        scrna_stages: Optional[list[str]] = None,
+        scrna_samples: Optional[list[str]] = None,
+        scrna_sources: Optional[list[str]] = None,
+        scrna_gene_names: Optional[list[str]] = None,
+        crispr_effect: Optional[torch.Tensor] = None,
+        crispr_gene_names: Optional[list[str]] = None,
     ) -> None:
         """Initialize MultiOmicsDataset.
 
@@ -111,6 +118,22 @@ class MultiOmicsDataset(Dataset):
         self.drug_target_mean = drug_target_mean
         self.drug_target_std = drug_target_std
         self.patient_ids = patient_ids
+        # Auxiliary scRNA pseudobulk side-channel (NOT aligned with proteomics rows;
+        # patient-level stage trajectories from GSE124310 + GSE271107). Consumers
+        # such as TrajectoryAgent can use this as a longitudinal disease-stage
+        # anchor (HD → MGUS → SMM → MM). None when scrna_summary.pt is absent.
+        self.scrna_pseudobulk = scrna_pseudobulk
+        self.scrna_stages = scrna_stages
+        self.scrna_samples = scrna_samples
+        self.scrna_sources = scrna_sources
+        self.scrna_gene_names = scrna_gene_names
+        # DepMap CRISPR knockout phenotypes (Chronos / DEMETER scores).
+        # Row-aligned with proteomics rows (same sample_ids); NaN where the
+        # cell line has no CRISPR screen. Used by data-integration-validator
+        # and proteomics-pathway-validator as a causal-grounding signal:
+        # without perturbation data, attribution scores are association-only.
+        self.crispr_effect = crispr_effect
+        self.crispr_gene_names = crispr_gene_names
 
     def __len__(self) -> int:
         return self.proteomics.shape[0]
@@ -131,6 +154,9 @@ class MultiOmicsDataset(Dataset):
             if self.patient_ids is not None
             else None
         )
+        crispr_subset = (
+            self.crispr_effect[indices] if self.crispr_effect is not None else None
+        )
         return MultiOmicsDataset(
             proteomics=self.proteomics[indices],
             epigenomics=self.epigenomics[indices],
@@ -146,6 +172,13 @@ class MultiOmicsDataset(Dataset):
             drug_target_mean=self.drug_target_mean,
             drug_target_std=self.drug_target_std,
             patient_ids=patient_ids_subset,
+            scrna_pseudobulk=self.scrna_pseudobulk,
+            scrna_stages=self.scrna_stages,
+            scrna_samples=self.scrna_samples,
+            scrna_sources=self.scrna_sources,
+            scrna_gene_names=self.scrna_gene_names,
+            crispr_effect=crispr_subset,
+            crispr_gene_names=self.crispr_gene_names,
         )
 
 
@@ -459,9 +492,12 @@ def load_scrna_h5ad(path: Path, config: DataConfig) -> dict[str, Any]:
 
 
 def load_drug_sensitivity(config: DataConfig) -> dict[str, Any]:
-    """Load drug sensitivity data from GDSC and CTRPv2.
+    """Load drug sensitivity data from GDSC, CTRPv2, and PRISM.
 
-    Merges sources, preferring GDSC for duplicates.
+    Merges sources; conflicting (sample, drug) pairs are aggregated by median
+    in the downstream pivot. PRISM is included when ``config.prism_path``
+    exists, providing the Broad Repurposing Hub's ~4,500-compound coverage
+    on top of the GDSC + CTRPv2 baselines.
 
     Args:
         config: DataConfig with paths to sensitivity data.
@@ -472,8 +508,19 @@ def load_drug_sensitivity(config: DataConfig) -> dict[str, Any]:
     logger.info("Loading drug sensitivity data")
 
     frames = []
+    sources = [
+        ("GDSC", config.gdsc_path),
+        ("CTRPv2", config.ctrpv2_path),
+    ]
+    # PRISM is optional and only present when the file is staged. Add as a
+    # third source so target_drugs that exist in PRISM but not GDSC/CTRPv2
+    # (e.g. clinical compounds with broader Broad screen coverage) get
+    # pulled into the matrix.
+    prism_path = getattr(config, "prism_path", None)
+    if prism_path is not None:
+        sources.append(("PRISM", Path(prism_path)))
 
-    for name, path in [("GDSC", config.gdsc_path), ("CTRPv2", config.ctrpv2_path)]:
+    for name, path in sources:
         if path.exists():
             df = pd.read_csv(path, low_memory=False)
             logger.info(f"  {name}: {len(df)} records")
@@ -495,6 +542,26 @@ def load_drug_sensitivity(config: DataConfig) -> dict[str, Any]:
         )
     combined["drug_lower"] = combined["drug_name"].str.lower()
     combined = combined[combined["drug_lower"].isin(target)]
+
+    # Canonicalize drug_name to a single case per compound so cross-source
+    # screens (GDSC: "Bortezomib", PRISM: "bortezomib") collapse into one
+    # pivot column. Use the original config.target_drugs spelling as the
+    # canonical form when available; otherwise fall back to title-case.
+    canonical = {d.lower(): d for d in config.target_drugs}
+    combined["drug_name"] = combined["drug_lower"].map(
+        lambda s: canonical.get(s, s.title())
+    )
+
+    # Canonicalize sample_id to DepMap IDs *before* pivoting. GDSC ships
+    # CELL_LINE_NAME strings ("22RV1"), PRISM ships depmap_id ("ACH-000956"),
+    # CTRPv2 ships its own cell-line names. Without this step, the same
+    # cell line shows up as multiple pivot rows and downstream reindex onto
+    # a DepMap-keyed common_ids set silently drops the name-keyed rows
+    # whenever any DepMap-keyed source is also present (the harmonize
+    # fallback only triggers on zero-overlap, and PRISM gives non-zero
+    # overlap by itself).
+    sample_info_path = config.ccle_proteomics_path.parent / "sample_info.csv"
+    combined = _map_sample_ids_to_depmap(combined, sample_info_path)
 
     # Pivot to matrix
     pivot = combined.pivot_table(
@@ -530,6 +597,11 @@ def _standardize_drug_columns(df: pd.DataFrame, source_name: str) -> pd.DataFram
     col_map = {}
     cols_lower = {c: c.lower().strip().replace(" ", "_") for c in df.columns}
 
+    # PRISM ships compound names in a generic 'name' column; only treat
+    # it as the drug name when we know the source is PRISM (the column
+    # is too generic to claim unconditionally).
+    is_prism = source_name.upper() == "PRISM"
+
     for orig, lower in cols_lower.items():
         if lower in ("arxspan_id", "depmap_id", "modelid", "patient_id"):
             col_map[orig] = "sample_id"
@@ -539,6 +611,8 @@ def _standardize_drug_columns(df: pd.DataFrame, source_name: str) -> pd.DataFram
         elif lower == "drug_name":
             col_map[orig] = "drug_name"
         elif lower == "cpd_name" and "drug_name" not in col_map.values():
+            col_map[orig] = "drug_name"
+        elif is_prism and lower == "name" and "drug_name" not in col_map.values():
             col_map[orig] = "drug_name"
         elif lower in ("ic50_published", "ic50"):
             col_map[orig] = "ic50"
@@ -557,6 +631,131 @@ def _standardize_drug_columns(df: pd.DataFrame, source_name: str) -> pd.DataFram
         df["ic50"] = _np.exp(df["ln_ic50"])
 
     logger.info(f"  {source_name}: standardized columns")
+    return df
+
+
+_ACH_PREFIX = "ACH-"
+
+
+def _map_sample_ids_to_depmap(
+    df: pd.DataFrame, sample_info_path: Path
+) -> pd.DataFrame:
+    """Canonicalize the ``sample_id`` column to DepMap IDs (``ACH-NNNNNN``).
+
+    Rows whose ``sample_id`` already starts with ``ACH-`` are passed through
+    unchanged (PRISM, DepMap-keyed sources). For the remainder we look up
+    each id against ``sample_info.csv``, choosing the alias column with the
+    highest match count among ``stripped_cell_line_name``, ``cell_line_name``,
+    ``CCLE_Name`` (in that order on ties — stripped names win because they
+    canonicalize away whitespace and punctuation that GDSC keeps and DepMap
+    drops).
+
+    Rows that fail to map are kept with their original id and will simply be
+    dropped by the downstream ``drug_df.reindex(common_ids)`` in
+    ``harmonize_omics``. We never silently fabricate a DepMap ID; unmapped
+    means unmapped.
+
+    Args:
+        df: DataFrame with at least a ``sample_id`` column.
+        sample_info_path: Path to CCLE ``sample_info.csv`` (DepMap_ID + alias
+            columns). When absent, the function logs a warning and returns
+            ``df`` unchanged.
+
+    Returns:
+        ``df`` with ``sample_id`` rewritten in place where a DepMap ID was
+        recoverable.
+    """
+    if "sample_id" not in df.columns:
+        return df
+
+    if not sample_info_path.exists():
+        logger.warning(
+            f"sample_info.csv not found at {sample_info_path}; "
+            "drug-sensitivity sample IDs will not be canonicalized to DepMap IDs"
+        )
+        return df
+
+    meta = pd.read_csv(sample_info_path)
+    id_col = meta.columns[0]  # DepMap_ID by convention
+    if not meta[id_col].astype(str).str.startswith(_ACH_PREFIX).any():
+        logger.warning(
+            f"sample_info.csv first column {id_col!r} does not look like "
+            "DepMap IDs; skipping sample_id canonicalization"
+        )
+        return df
+
+    # Identify rows already in DepMap form vs rows that need mapping.
+    sids = df["sample_id"].astype(str)
+    already_depmap_mask = sids.str.startswith(_ACH_PREFIX)
+    n_pre_mapped = int(already_depmap_mask.sum())
+    n_to_map = int((~already_depmap_mask).sum())
+
+    if n_to_map == 0:
+        logger.info(
+            f"  Sample-ID canonicalization: all {n_pre_mapped} rows are "
+            "already DepMap-keyed; nothing to map"
+        )
+        return df
+
+    # Try alias columns in priority order; pick the one giving the most
+    # matches against the rows that still need mapping. This is more robust
+    # than the harmonize fallback, which short-circuits on first non-zero
+    # overlap and can therefore pick a low-yield column when a higher-yield
+    # one exists later in the list.
+    alias_priority = ["stripped_cell_line_name", "cell_line_name", "CCLE_Name"]
+    available = [c for c in alias_priority if c in meta.columns]
+    if not available:
+        logger.warning(
+            f"sample_info.csv has none of {alias_priority}; "
+            "skipping sample_id canonicalization"
+        )
+        return df
+
+    needs_mapping = sids[~already_depmap_mask]
+    needs_set = set(needs_mapping.astype(str).str.strip())
+
+    best_col: Optional[str] = None
+    best_map: dict[str, str] = {}
+    best_hits = -1
+    for col in available:
+        alias_to_id = (
+            meta[[col, id_col]]
+            .dropna()
+            .astype(str)
+            .assign(_alias=lambda d: d[col].str.strip())
+            .drop_duplicates(subset="_alias")
+            .set_index("_alias")[id_col]
+            .to_dict()
+        )
+        hits = sum(1 for s in needs_set if s in alias_to_id)
+        if hits > best_hits:
+            best_hits = hits
+            best_map = alias_to_id
+            best_col = col
+
+    if best_hits <= 0 or best_col is None:
+        logger.warning(
+            "Sample-ID canonicalization: no alias column matched any "
+            f"non-DepMap sample_id ({n_to_map} rows unmapped)"
+        )
+        return df
+
+    # Apply only to the rows that were not already DepMap-keyed; leave PRISM
+    # rows untouched even if their ACH id happens to also appear as an alias.
+    mapped = sids.where(
+        already_depmap_mask,
+        sids.str.strip().map(lambda s: best_map.get(s, s)),
+    )
+    n_mapped = int((mapped != sids).sum())
+    n_unmapped = n_to_map - n_mapped
+    df = df.copy()
+    df["sample_id"] = mapped.values
+    logger.info(
+        f"  Sample-ID canonicalization via {best_col!r}: "
+        f"{n_pre_mapped} already-DepMap rows + {n_mapped}/{n_to_map} newly "
+        f"mapped ({n_unmapped} unmappable rows kept verbatim and will be "
+        "filtered by the downstream reindex)"
+    )
     return df
 
 
@@ -591,6 +790,59 @@ def load_scrna_data(config: DataConfig) -> Optional[dict[str, Any]]:
 
     # Return None if no datasets loaded (graceful degradation)
     return result if result else None
+
+
+def load_depmap_crispr(config: DataConfig) -> Optional[dict[str, Any]]:
+    """Load DepMap CRISPR gene-effect (Chronos) matrix.
+
+    Format: CSV with cell lines (DepMap ModelID) as rows and genes as
+    columns. DepMap ships gene names with the legacy ``"GENE_SYMBOL
+    (entrez_id)"`` decoration; we strip the trailing ``(NNN)`` so the
+    columns are clean HGNC symbols matching CCLE proteomics + STRING PPI.
+
+    Returns ``None`` (graceful degradation) when the file is absent so
+    the pipeline can still run on cell-line-only feature data.
+
+    Args:
+        config: DataConfig with ``depmap_crispr_path``.
+
+    Returns:
+        Dict with 'data' (DataFrame, ModelID rows × gene cols),
+        'sample_ids', 'gene_names'. None if the file is missing.
+    """
+    path = getattr(config, "depmap_crispr_path", None)
+    if path is None:
+        logger.info("DepMap CRISPR path not configured; skipping")
+        return None
+    path = Path(path)
+    if not path.exists():
+        logger.info(f"DepMap CRISPR not found at {path} (graceful degradation)")
+        return None
+
+    logger.info(f"Loading DepMap CRISPR gene-effect from {path}")
+    df = pd.read_csv(path, index_col=0, low_memory=False)
+    logger.info(
+        f"  CRISPR matrix: {df.shape[0]} cell lines × {df.shape[1]} genes"
+    )
+
+    # Strip "GENE (entrez_id)" decoration the same way load_ccle_proteomics
+    # does so the gene columns join cleanly with proteomics + PPI.
+    import re as _re
+    _decoration = _re.compile(r"\s*\(\d+\)\s*$")
+    cleaned = [_decoration.sub("", str(c)).strip() for c in df.columns]
+    n_stripped = sum(1 for o, n in zip(df.columns, cleaned) if o != n)
+    if n_stripped:
+        logger.info(
+            f"  Stripped '(entrez_id)' decoration from {n_stripped}/{len(cleaned)} CRISPR genes"
+        )
+        df.columns = cleaned
+        df = df.loc[:, ~df.columns.duplicated()]
+
+    return {
+        "data": df,
+        "sample_ids": df.index.tolist(),
+        "gene_names": df.columns.tolist(),
+    }
 
 
 def load_mmrf_data(config: DataConfig) -> dict[str, Any]:

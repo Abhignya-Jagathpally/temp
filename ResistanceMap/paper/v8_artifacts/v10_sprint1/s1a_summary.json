@@ -1,0 +1,7 @@
+{
+  "n_aliquots_in_matrix": 859,
+  "n_patients_baseline": 787,
+  "n_genes_after_var_filter": 57690,
+  "spec_target_1313": "spec assumed 994 baseline-only + 319 Recurrent-BM; actual depends on RNA-seq availability on disk",
+  "aliquot_patient_mismatch_count": 0
+}

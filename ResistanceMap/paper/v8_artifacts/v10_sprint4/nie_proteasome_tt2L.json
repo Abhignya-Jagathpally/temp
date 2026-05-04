@@ -1,0 +1,151 @@
+{
+  "design": {
+    "treatment_A": "bort_1L  (Bortezomib 1st-line vs not)",
+    "mediator_M": "M_proteasome  (z-weighted MMRF baseline expression of Sprint-3 Bortezomib RWR top-50)",
+    "outcome_Y": "(tt2L_days, had_2L)  right-censored time-to-2nd-line therapy",
+    "confounders_C": [
+      "iss_stage_ord",
+      "age_at_dx_years",
+      "gender_male",
+      "cyto_del17p",
+      "cyto_chr1q21_gain",
+      "cyto_del13q",
+      "cyto_t_4_14",
+      "cyto_t_11_14"
+    ],
+    "model": "Cox PH with A + M + A:M + C",
+    "scale": "log-hazard (Lange & Hansen 2011 mediation)",
+    "Pearl_tier": "L2 (interventional under documented assumptions)",
+    "EIMOC_assumptions": [
+      "A1. No unmeasured confounding A\u2192Y given C",
+      "A2. No unmeasured confounding A\u2192M given C",
+      "A3. No unmeasured confounding M\u2192Y given (A, C)",
+      "A4. No exposure-induced mediator-outcome confounder",
+      "A5. Cox proportional hazards holds for modeled covariates"
+    ]
+  },
+  "cohort": {
+    "N": 787,
+    "n_bort_1L": 579,
+    "n_non_bort_1L": 208,
+    "n_observed_2L": 224,
+    "n_censored": 563
+  },
+  "point_estimate": {
+    "coefs": {
+      "beta_A": 0.8418192585601879,
+      "beta_M": 0.5244986725245524,
+      "beta_AM": -0.07756884083718331,
+      "concordance": 0.6688255568166436,
+      "ll": -1277.7655522958064,
+      "params": {
+        "bort_1L": 0.8418192585601879,
+        "M_proteasome": 0.5244986725245524,
+        "A_x_M": -0.07756884083718331,
+        "iss_stage_ord": 0.15255277811017337,
+        "age_at_dx_years": 0.013362309735650647,
+        "gender_male": 0.1284186083287957,
+        "cyto_del17p": 0.4153423877238121,
+        "cyto_chr1q21_gain": 0.5772511629212815,
+        "cyto_del13q": -0.07560833840969039,
+        "cyto_t_4_14": 0.3852283743087695,
+        "cyto_t_11_14": 0.11209244358655791
+      },
+      "p_values": {
+        "bort_1L": 0.0007924061207546782,
+        "M_proteasome": 0.07851970281437799,
+        "A_x_M": 0.8051471930419307,
+        "iss_stage_ord": 0.06546295155386118,
+        "age_at_dx_years": 0.03948336767564344,
+        "gender_male": 0.3693184667131768,
+        "cyto_del17p": 0.022676633188155725,
+        "cyto_chr1q21_gain": 7.086671159562702e-05,
+        "cyto_del13q": 0.6229119302980424,
+        "cyto_t_4_14": 0.04027464513273464,
+        "cyto_t_11_14": 0.5651135164680121
+      }
+    },
+    "decomposition": {
+      "NDE_log_hr": 0.8465551168609807,
+      "NDE_hr": 2.3316009085587663,
+      "NIE_log_hr": 0.037089152582281806,
+      "NIE_hr": 1.0377855379745902,
+      "TE_log_hr": 0.8836442694432626,
+      "TE_hr": 2.419701703230703,
+      "delta_M_A1_minus_A0": 0.0829865226097191,
+      "M_mean_A1": 0.021932905594436534,
+      "M_mean_A0": -0.061053617015282564,
+      "proportion_mediated": 0.04197294529579162
+    }
+  },
+  "bootstrap_B1000": {
+    "n_ok": 1000,
+    "n_attempts": 1000,
+    "NDE_log_hr": {
+      "mean": 0.8820928543073253,
+      "ci_95": [
+        0.4139431237645526,
+        1.384854008328859
+      ]
+    },
+    "NIE_log_hr": {
+      "mean": 0.03657577586058333,
+      "ci_95": [
+        -0.00873481990924945,
+        0.09033068059586413
+      ]
+    },
+    "TE_log_hr": {
+      "mean": 0.9186686301679087,
+      "ci_95": [
+        0.4482846656773769,
+        1.4223573894309152
+      ]
+    },
+    "NDE_hr": {
+      "mean": 2.415950651855161,
+      "ci_95": [
+        1.5127710837131767,
+        3.9942427360767963
+      ]
+    },
+    "NIE_hr": {
+      "mean": 1.0372528997710044,
+      "ci_95": [
+        0.9913032177987622,
+        1.094536165739711
+      ]
+    },
+    "TE_hr": {
+      "mean": 2.505951819340414,
+      "ci_95": [
+        1.5656243117299278,
+        4.146884748868712
+      ]
+    },
+    "beta_AM": {
+      "mean": -0.09427397521444479,
+      "ci_95": [
+        -0.5884937430687316,
+        0.4302076133529093
+      ]
+    },
+    "beta_M": {
+      "mean": 0.5409406145772697,
+      "ci_95": [
+        0.06419991896782418,
+        1.0158811008026107
+      ]
+    }
+  },
+  "evalue_sensitivity": {
+    "NIE_hr_point": 1.2338252231340683,
+    "NIE_hr_ci_bound": 1.1028477665505099,
+    "NDE_hr_point": 4.265509220904602,
+    "interpretation": "Minimum strength of unmeasured confounding (on RR scale) that would explain away the observed effect if no other confounding is present."
+  },
+  "falsification": {
+    "F8_NIE_CI_excludes_zero": false,
+    "F10_E_value_ci_bound_ge_1p5": false
+  }
+}

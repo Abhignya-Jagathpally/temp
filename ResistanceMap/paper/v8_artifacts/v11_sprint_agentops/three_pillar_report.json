@@ -1,0 +1,127 @@
+{
+  "report_version": "v11.agentops.0.1",
+  "generated_at": "2026-05-03",
+  "generator": "resistancemap.observability.v11_stage_decorator",
+  "scope": {
+    "stages_instrumented": [
+      "s1f_ode_forward_diagnostic",
+      "s7_v11_dps_neural_ode",
+      "s3_gat_f6_replication",
+      "s5_v11_conformal_waddington_features",
+      "s5c_discrimination_metrics",
+      "s5d_cox_discrimination"
+    ],
+    "stages_with_real_trace_after_wiring": [
+      "s1f_ode_forward_diagnostic"
+    ],
+    "stages_with_only_pre_existing_artifact": [
+      "s7_v11_dps_neural_ode",
+      "s3_gat_f6_replication",
+      "s5_v11_conformal_waddington_features",
+      "s5c_discrimination_metrics",
+      "s5d_cox_discrimination"
+    ],
+    "rationale_for_partial_rerun": "Per zero-trust constraint, only the lightest stage (s1f, ~1.3 s) was re-run after wiring. The other four sprints already have valid outputs in paper/v8_artifacts/v11_sprint{1,3,5,7}/; re-running them would duplicate ~10 minutes of compute for no scientific gain. Their wrapper code is identical to s1f's and will emit traces on the next legitimate sprint re-run."
+  },
+  "observability": {
+    "per_stage": {
+      "s1f_ode_forward_diagnostic": {
+        "trace_source": "logs/agentops/v11/s1f_ode_forward_diagnostic_a7820f0c-83e8-4326-9893-9ca861dee8b2.json",
+        "trace_id": "a7820f0c-83e8-4326-9893-9ca861dee8b2",
+        "duration_s": 1.3016695976257324,
+        "span_count": 1,
+        "status": "completed",
+        "stdout_chars": 983,
+        "cost_proxy_kchar": 0.983,
+        "real_trace_emitted": true
+      },
+      "s7_v11_dps_neural_ode": {
+        "trace_source": null,
+        "duration_s": null,
+        "span_count": null,
+        "status": "not_re_run_post_wiring",
+        "real_trace_emitted": false,
+        "note": "Wrapper code present; trace will emit on next run."
+      },
+      "s3_gat_f6_replication": {
+        "trace_source": null,
+        "duration_s": null,
+        "span_count": null,
+        "status": "not_re_run_post_wiring",
+        "real_trace_emitted": false,
+        "note": "Wrapper code present; trace will emit on next run."
+      },
+      "s5_v11_conformal_waddington_features": {
+        "trace_source": null,
+        "duration_s": null,
+        "span_count": null,
+        "status": "not_re_run_post_wiring",
+        "real_trace_emitted": false,
+        "note": "Wrapper code present; trace will emit on next run."
+      },
+      "s5c_discrimination_metrics": {
+        "trace_source": null,
+        "duration_s": null,
+        "span_count": null,
+        "status": "not_re_run_post_wiring",
+        "real_trace_emitted": false,
+        "note": "Wrapper code present; trace will emit on next run."
+      },
+      "s5d_cox_discrimination": {
+        "trace_source": null,
+        "duration_s": null,
+        "span_count": null,
+        "status": "not_re_run_post_wiring",
+        "real_trace_emitted": false,
+        "note": "Wrapper code present; trace will emit on next run. Per spec the cox LOO is ~50 s/stratum * many strata; not re-run on this turn."
+      }
+    },
+    "totals": {
+      "total_wall_time_s_real_traces_only": 1.3016695976257324,
+      "total_span_count_real_traces_only": 1,
+      "total_stages_with_real_trace": 1,
+      "total_stages_instrumented": 6
+    }
+  },
+  "evaluation": {
+    "task_completion": {
+      "stages_with_recorded_TaskResult_status_completed": 1,
+      "stages_with_recorded_TaskResult_status_failed": 0,
+      "stages_not_yet_re_run": 5,
+      "task_completion_rate_observed_subset": 1.0,
+      "task_completion_rate_observed_subset_note": "1/1 instrumented re-runs completed cleanly (s1f). Population estimate over the full 6-stage suite requires a fresh end-to-end re-run that this turn intentionally skips."
+    },
+    "guardrail_violations": {
+      "total": 0,
+      "by_type": {},
+      "by_severity": {},
+      "fabrication_sentinel_hits_during_v11": 0,
+      "fabrication_sentinel_evidence": "No fabrication-sentinel violations have been logged for the v11 sprint scripts; the scripts read MMRF + STRING + chronos artifacts and write deterministic JSONs.",
+      "note": "Guardrails are surfaced via Evaluator.record_guardrail_violation; current v11 scripts do not call any LLM and therefore do not exercise the LLM-side guardrails (hallucination, safety). The numerical guardrails (Lyapunov-decay, ODE-solver tolerance, Mondrian per-stratum coverage) are enforced INSIDE the scripts and recorded as PASS/FAIL in the per-sprint JSONs (e.g. F8_strict_pass=false in v11_sprint7/f8_neural_ode.json), not via the Evaluator API."
+    }
+  },
+  "optimization": {
+    "status": "scaffolding_only",
+    "reason": "Optimization metrics in resistancemap/agentops/optimizer.py target prompt-token efficiency, retrieval@k, agent-handoff success, and flow efficiency for LLM-driven flows. The v11 sprint scripts are pure-numeric (PyTorch + lifelines) and do not invoke an LLM, so no token usage exists to optimize. The cost-proxy len(stdout)/1000 is a coarse byte-volume signal recorded for completeness, not a true cost.",
+    "metrics_currently_measurable": {
+      "token_efficiency": null,
+      "retrieval_at_k": null,
+      "handoff_success_rate": null,
+      "flow_efficiency": null
+    },
+    "stdout_byte_volume_proxy_kchar": {
+      "s1f_ode_forward_diagnostic": 0.983
+    },
+    "v12_work": "The Claude review subagents (sota-comparator, literature-deep-researcher, causal-inference-auditor, fabrication-sentinel) ARE LLM-driven and CAN emit token-efficiency / retrieval / handoff metrics once they are wired to the same Tracer/Evaluator/Optimizer instance the v11 stage decorator uses. That wiring is out of scope for this turn — track as v12 task: 'AgentOps three-pillar layer extends to Claude subagents'."
+  },
+  "verdict": {
+    "scaffolding_to_observation_progress": "PARTIAL",
+    "before_this_turn": "AgentOps existed as ~1750 LoC of unused scaffolding; no v11 sprint emitted spans (per V11_AGENTIC_JUSTIFICATION.md §3.3 / §4.1).",
+    "after_this_turn": "Six v11 entry points wrapped with v11_stage(); one re-run (s1f) produced a real trace JSON at logs/agentops/v11/. The remaining five wrappers are inert until the next legitimate sprint re-run.",
+    "still_scaffolding": [
+      "AgentOps Optimizer pillar — token/retrieval/handoff metrics require LLM-driven flows, which v11 stage scripts are not.",
+      "Claude review subagents (sota-comparator, fabrication-sentinel, ...) do not yet feed the Evaluator/Optimizer.",
+      "MCP connectors in resistancemap/mcp_integration/connectors.py remain stubs."
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "n_encoded": 29,
+  "n_strict_paired": 20,
+  "z_shift_norm_mean": 54.5402717590332,
+  "z_shift_norm_median": 45.19479751586914,
+  "z_norm_t0_mean": 70.63789367675781,
+  "z_norm_t1_mean": 61.63518142700195,
+  "encoder": "Sprint-1 frozen PCA-64"
+}

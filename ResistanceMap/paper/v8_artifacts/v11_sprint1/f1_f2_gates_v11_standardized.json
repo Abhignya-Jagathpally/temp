@@ -1,0 +1,13 @@
+{
+  "encoder": "v11_geneformer_v1_10m_per_dim_standardized",
+  "n_test_paired": 27,
+  "delta_mean": 8.441583896427696,
+  "delta_std": 13.855337568566975,
+  "delta_bootstrap_95_ci": [
+    3.8556008806161195,
+    14.114943137796216
+  ],
+  "ci_contains_zero": false,
+  "passes_F2": true,
+  "verdict": "F2 PASS post-standardization \u2192 encoder leak suspected"
+}

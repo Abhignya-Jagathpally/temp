@@ -1,0 +1,112 @@
+{
+  "configs": {
+    "steps=50_step=5e-03": {
+      "all_paired": {
+        "n": 29,
+        "median_r": 0.9988552927970886,
+        "mean_r": 0.998468816280365,
+        "p25_r": 0.9976664185523987,
+        "p75_r": 0.9995643496513367,
+        "min_r": 0.9927391409873962,
+        "max_r": 1.0029655694961548,
+        "frac_below_1": 0.8275862068965517,
+        "frac_below_0.9": 0.0
+      },
+      "strict_paired_with_2nd_line": {
+        "n": 20,
+        "median_r": 0.998438835144043,
+        "mean_r": 0.9981158971786499,
+        "p25_r": 0.9975008368492126,
+        "p75_r": 0.9993059635162354,
+        "min_r": 0.9927391409873962,
+        "max_r": 1.0014501810073853,
+        "frac_below_1": 0.9,
+        "frac_below_0.9": 0.0
+      },
+      "n_steps": 50,
+      "step_size": 0.005
+    },
+    "steps=50_step=5e-02": {
+      "all_paired": {
+        "n": 29,
+        "median_r": 0.993656575679779,
+        "mean_r": 0.995079517364502,
+        "p25_r": 0.9849417209625244,
+        "p75_r": 1.0038717985153198,
+        "min_r": 0.9307258725166321,
+        "max_r": 1.069239854812622,
+        "frac_below_1": 0.6896551724137931,
+        "frac_below_0.9": 0.0
+      },
+      "strict_paired_with_2nd_line": {
+        "n": 20,
+        "median_r": 0.9921056628227234,
+        "mean_r": 0.9929822087287903,
+        "p25_r": 0.9826869964599609,
+        "p75_r": 1.0017331838607788,
+        "min_r": 0.9307258725166321,
+        "max_r": 1.069239854812622,
+        "frac_below_1": 0.7,
+        "frac_below_0.9": 0.0
+      },
+      "n_steps": 50,
+      "step_size": 0.05
+    },
+    "steps=200_step=5e-03": {
+      "all_paired": {
+        "n": 29,
+        "median_r": 0.9962745308876038,
+        "mean_r": 0.9956514239311218,
+        "p25_r": 0.9919659495353699,
+        "p75_r": 0.9999762773513794,
+        "min_r": 0.9718066453933716,
+        "max_r": 1.0125070810317993,
+        "frac_below_1": 0.7586206896551724,
+        "frac_below_0.9": 0.0
+      },
+      "strict_paired_with_2nd_line": {
+        "n": 20,
+        "median_r": 0.994895339012146,
+        "mean_r": 0.9944864511489868,
+        "p25_r": 0.9916646480560303,
+        "p75_r": 0.9986602067947388,
+        "min_r": 0.9718066453933716,
+        "max_r": 1.0111768245697021,
+        "frac_below_1": 0.8,
+        "frac_below_0.9": 0.0
+      },
+      "n_steps": 200,
+      "step_size": 0.005
+    },
+    "steps=200_step=5e-02": {
+      "all_paired": {
+        "n": 29,
+        "median_r": 1.0152060985565186,
+        "mean_r": 1.0337268114089966,
+        "p25_r": 0.9691110253334045,
+        "p75_r": 1.060758352279663,
+        "min_r": 0.7913678288459778,
+        "max_r": 1.5721919536590576,
+        "frac_below_1": 0.4482758620689655,
+        "frac_below_0.9": 0.06896551724137931
+      },
+      "strict_paired_with_2nd_line": {
+        "n": 20,
+        "median_r": 1.0163604021072388,
+        "mean_r": 1.0338866710662842,
+        "p25_r": 0.9678966999053955,
+        "p75_r": 1.0488005876541138,
+        "min_r": 0.7913678288459778,
+        "max_r": 1.5721919536590576,
+        "frac_below_1": 0.4,
+        "frac_below_0.9": 0.1
+      },
+      "n_steps": 200,
+      "step_size": 0.05
+    }
+  },
+  "best_median_r": 0.993656575679779,
+  "refutation_threshold": 0.9,
+  "refuted": true,
+  "note": "Snapshot-only DSM-trained U_\u03b8 has no temporal supervision; F5 against real pairs tests whether the stationary energy alone encodes baseline\u2192relapse direction. Failure here is expected at this stage and motivates Sprint 3 trajectory likelihood + Bellman-Harris branching prior."
+}

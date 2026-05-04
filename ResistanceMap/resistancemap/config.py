@@ -30,6 +30,19 @@ class DataConfig:
     scrna_gse271107_path: Path = Path("data/raw/gse271107.h5ad")  # Lenalidomide response
     mmrf_commpass_dir: Path = Path("data/raw/mmrf_commpass/")  # Clinical + genomic data
 
+    # Pre-aggregated scRNA pseudobulk (per-(sample, disease_stage)).
+    # Built by scripts/build_scrna_summary.py. When present, harmonize_omics
+    # attaches it to MultiOmicsDataset as a longitudinal HD/MGUS/SMM/MM axis.
+    scrna_summary_path: Path = Path("checkpoints/scrna_summary.pt")
+
+    # Tier-2 baseline datasets used by similar models. Optional — pipeline
+    # degrades gracefully when absent. See docs/DATASETS_AND_BENCHMARKS.md
+    # for the strategic rationale (DrugCell/MOLI/PaccMann use CRISPR + PRISM
+    # alongside CCLE proteomics; HMCL is the MM-specific cell-line cohort).
+    depmap_crispr_path: Path = Path("data/raw/depmap/CRISPRGeneEffect.csv")
+    hmcl_keats_dir: Path = Path("data/raw/hmcl_keats/")
+    prism_path: Path = Path("data/raw/prism/secondary-screen-dose-response-curve-parameters.csv")
+
     # Preprocessing
     min_coverage: float = 0.7  # Drop proteins missing in >30% of samples
     imputation: str = "knn"  # knn | median | zero

@@ -6,6 +6,7 @@ Transforms raw DataFrames and AnnData objects into matched PyTorch tensors ready
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
@@ -281,6 +282,7 @@ def harmonize_omics(
     ppi_graph: dict[str, Any],
     scrna_data: dict[str, Any] | None = None,
     mmrf_data: dict[str, Any] | None = None,
+    crispr_data: dict[str, Any] | None = None,
     config: DataConfig = None,
 ) -> MultiOmicsDataset:
     """Harmonize proteomics, epigenomics, and drug sensitivity into a single dataset.
@@ -310,6 +312,11 @@ def harmonize_omics(
         logger.info(f"  Additional scRNA-seq datasets: {list(scrna_data.keys())}")
     if mmrf_data:
         logger.info(f"  Additional MMRF data: {list(mmrf_data.keys())}")
+    if crispr_data:
+        logger.info(
+            f"  DepMap CRISPR: {len(crispr_data.get('sample_ids', []))} cell lines × "
+            f"{len(crispr_data.get('gene_names', []))} genes"
+        )
 
     prot_df = proteomics["data"]
     prot_ids = set(proteomics["sample_ids"])
@@ -442,6 +449,59 @@ def harmonize_omics(
         )
     logger.info(f"PPI-proteomics overlap: {len(matched_proteins)} proteins")
 
+    # Optional scRNA pseudobulk side-channel: longitudinal HD/MGUS/SMM/MM
+    # disease-stage anchors built by scripts/build_scrna_summary.py from
+    # GSE124310 + GSE271107. Attached only when the checkpoint is present.
+    scrna_kwargs: dict[str, Any] = {}
+    scrna_ckpt = (
+        Path(getattr(config, "scrna_summary_path", "checkpoints/scrna_summary.pt"))
+        if config is not None
+        else Path("checkpoints/scrna_summary.pt")
+    )
+    if scrna_ckpt.exists():
+        try:
+            summary = torch.load(scrna_ckpt, map_location="cpu", weights_only=False)
+            harm = summary.get("harmonized") or {}
+            pb = harm.get("pseudobulk")
+            if pb is not None and len(pb) > 0:
+                scrna_kwargs = dict(
+                    scrna_pseudobulk=torch.tensor(pb, dtype=torch.float32),
+                    scrna_stages=list(harm.get("stages", [])),
+                    scrna_samples=list(harm.get("samples", [])),
+                    scrna_sources=list(harm.get("source", [])),
+                    scrna_gene_names=list(harm.get("gene_names", [])),
+                )
+                logger.info(
+                    f"scRNA pseudobulk attached: {pb.shape[0]} (sample, stage) groups × "
+                    f"{pb.shape[1]} shared genes "
+                    f"(stages: {sorted(set(harm.get('stages', [])))})"
+                )
+        except Exception as e:
+            logger.warning(f"failed to load scRNA summary from {scrna_ckpt}: {e}")
+    else:
+        logger.info(
+            f"scRNA summary not found at {scrna_ckpt}; "
+            "run scripts/build_scrna_summary.py to enable the longitudinal stage axis"
+        )
+
+    # Optional DepMap CRISPR (Chronos) gene-effect side-channel: row-aligned
+    # to common_ids. Cell lines without a CRISPR screen are filled with NaN
+    # (so downstream consumers can mask them); gene columns are kept as
+    # CRISPR-native (~18k genes), not intersected with proteomics, since
+    # the validator wants the full essentiality landscape.
+    crispr_kwargs: dict[str, Any] = {}
+    if crispr_data is not None and "data" in crispr_data:
+        crispr_df = crispr_data["data"].reindex(common_ids)
+        n_with_crispr = int(crispr_df.notna().any(axis=1).sum())
+        logger.info(
+            f"CRISPR coverage: {n_with_crispr}/{len(common_ids)} common cell lines "
+            f"have a CRISPR screen"
+        )
+        crispr_kwargs = dict(
+            crispr_effect=torch.tensor(crispr_df.values, dtype=torch.float32),
+            crispr_gene_names=crispr_df.columns.tolist(),
+        )
+
     # Build dataset
     dataset = MultiOmicsDataset(
         proteomics=torch.tensor(prot_df.values, dtype=torch.float32),
@@ -457,6 +517,8 @@ def harmonize_omics(
         drug_names=drug_names,
         drug_target_mean=drug_target_mean,
         drug_target_std=drug_target_std,
+        **scrna_kwargs,
+        **crispr_kwargs,
     )
 
     logger.info(

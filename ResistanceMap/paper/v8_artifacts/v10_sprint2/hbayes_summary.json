@@ -1,0 +1,25 @@
+{
+  "n_patients": 716,
+  "n_strata": 5,
+  "latent_dim": 64,
+  "elbo_init": 253157.21875,
+  "elbo_final": 160339.375,
+  "tau_hat": 1.5049508810043335,
+  "sigma_obs_hat": 7.988274574279785,
+  "theta_norm_per_stratum": {
+    "del17p": 10.499671936035156,
+    "chr1q21_gain": 9.955641746520996,
+    "del13q": 9.610899925231934,
+    "t_4_14": 12.583422660827637,
+    "t_11_14": 12.862791061401367
+  },
+  "stratum_prevalence": {
+    "del17p": 0.14664804469273743,
+    "chr1q21_gain": 0.33798882681564246,
+    "del13q": 0.5237430167597765,
+    "t_4_14": 0.14385474860335196,
+    "t_11_14": 0.1717877094972067
+  },
+  "spec_target_5_strata": true,
+  "honest_disclosure": "Multi-label additive HBayes generalizes the spec's 'one-of-5' stratum assignment because patients commonly carry multiple cytogenetic abnormalities (e.g., del13q + chr1q21+). The marginal likelihood interpretation in spec \u00a72.6 carries through with M as the membership matrix."
+}

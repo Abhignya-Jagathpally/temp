@@ -1,0 +1,326 @@
+{
+  "haem64": {
+    "per_drug": {
+      "Bortezomib": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.43741646127975575,
+        "bg_mean_chronos": -0.1475072878514886,
+        "mw_p_one_sided_less": 4.3806368738468856e-07,
+        "permutation_p": 0.0,
+        "seeds_used": [
+          "PSMB5",
+          "PSMB1",
+          "PSMB2"
+        ],
+        "seeds_in_top_k": [
+          "PSMB5",
+          "PSMB1",
+          "PSMB2"
+        ],
+        "bonferroni_pass": true
+      },
+      "Carfilzomib": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.5328156214032843,
+        "bg_mean_chronos": -0.14724783949651574,
+        "mw_p_one_sided_less": 2.814411627111727e-06,
+        "permutation_p": 0.0,
+        "seeds_used": [
+          "PSMB5"
+        ],
+        "seeds_in_top_k": [
+          "PSMB5"
+        ],
+        "bonferroni_pass": true
+      },
+      "Ixazomib": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.46484822612942245,
+        "bg_mean_chronos": -0.14743268419402417,
+        "mw_p_one_sided_less": 6.566956383386604e-06,
+        "permutation_p": 0.0,
+        "seeds_used": [
+          "PSMB5"
+        ],
+        "seeds_in_top_k": [
+          "PSMB5"
+        ],
+        "bonferroni_pass": true
+      },
+      "Panobinostat": {
+        "n_present": 44,
+        "drv_mean_chronos": -0.1413315738313574,
+        "bg_mean_chronos": -0.1483102452811172,
+        "mw_p_one_sided_less": 0.05471166167312257,
+        "permutation_p": 0.506,
+        "seeds_used": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3",
+          "HDAC6"
+        ],
+        "seeds_in_top_k": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3",
+          "HDAC6"
+        ],
+        "bonferroni_pass": false
+      },
+      "Vorinostat": {
+        "n_present": 46,
+        "drv_mean_chronos": -0.11830873319561343,
+        "bg_mean_chronos": -0.14836859581742387,
+        "mw_p_one_sided_less": 0.1512811997884051,
+        "permutation_p": 0.65,
+        "seeds_used": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3"
+        ],
+        "seeds_in_top_k": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3"
+        ],
+        "bonferroni_pass": false
+      },
+      "Lenalidomide": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.20420965924781587,
+        "bg_mean_chronos": -0.14814151902372666,
+        "mw_p_one_sided_less": 0.11399736150178735,
+        "permutation_p": 0.141,
+        "seeds_used": [
+          "CRBN"
+        ],
+        "seeds_in_top_k": [
+          "CRBN"
+        ],
+        "bonferroni_pass": false
+      },
+      "Pomalidomide": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.12908830542613647,
+        "bg_mean_chronos": -0.14834581968682614,
+        "mw_p_one_sided_less": 0.27817400012617816,
+        "permutation_p": 0.597,
+        "seeds_used": [
+          "CRBN"
+        ],
+        "seeds_in_top_k": [
+          "CRBN"
+        ],
+        "bonferroni_pass": false
+      },
+      "Daratumumab": {
+        "n_present": 47,
+        "drv_mean_chronos": -0.03552823343643814,
+        "bg_mean_chronos": -0.14858181875364873,
+        "mw_p_one_sided_less": 0.9820956233068052,
+        "permutation_p": 0.987,
+        "seeds_used": [
+          "CD38"
+        ],
+        "seeds_in_top_k": [
+          "CD38"
+        ],
+        "bonferroni_pass": false
+      },
+      "Venetoclax": {
+        "n_present": 48,
+        "drv_mean_chronos": -0.012838326602605518,
+        "bg_mean_chronos": -0.14864720022497854,
+        "mw_p_one_sided_less": 0.9879543787349748,
+        "permutation_p": 0.997,
+        "seeds_used": [
+          "BCL2"
+        ],
+        "seeds_in_top_k": [
+          "BCL2"
+        ],
+        "bonferroni_pass": false
+      },
+      "Selinexor": {
+        "n_present": 45,
+        "drv_mean_chronos": -0.3105813676803984,
+        "bg_mean_chronos": -0.14789647355453983,
+        "mw_p_one_sided_less": 0.009024831997468266,
+        "permutation_p": 0.01,
+        "seeds_used": [
+          "XPO1"
+        ],
+        "seeds_in_top_k": [
+          "XPO1"
+        ],
+        "bonferroni_pass": false
+      }
+    },
+    "n_bonferroni_pass": 3,
+    "bonferroni_alpha": 0.005,
+    "spec_threshold": "\u22654/10",
+    "pass": false
+  },
+  "mm19": {
+    "per_drug": {
+      "Bortezomib": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.47154392423675523,
+        "bg_mean_chronos": -0.1486016488394801,
+        "mw_p_one_sided_less": 8.865977776781608e-08,
+        "permutation_p": 0.0,
+        "seeds_used": [
+          "PSMB5",
+          "PSMB1",
+          "PSMB2"
+        ],
+        "seeds_in_top_k": [
+          "PSMB5",
+          "PSMB1",
+          "PSMB2"
+        ],
+        "bonferroni_pass": true
+      },
+      "Carfilzomib": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.5684279369259567,
+        "bg_mean_chronos": -0.1483381622670319,
+        "mw_p_one_sided_less": 8.001711251967912e-07,
+        "permutation_p": 0.0,
+        "seeds_used": [
+          "PSMB5"
+        ],
+        "seeds_in_top_k": [
+          "PSMB5"
+        ],
+        "bonferroni_pass": true
+      },
+      "Ixazomib": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.4977022733394477,
+        "bg_mean_chronos": -0.1485305083741478,
+        "mw_p_one_sided_less": 1.8691745742188739e-06,
+        "permutation_p": 0.0,
+        "seeds_used": [
+          "PSMB5"
+        ],
+        "seeds_in_top_k": [
+          "PSMB5"
+        ],
+        "bonferroni_pass": true
+      },
+      "Panobinostat": {
+        "n_present": 44,
+        "drv_mean_chronos": -0.1341683448029171,
+        "bg_mean_chronos": -0.14951417013508517,
+        "mw_p_one_sided_less": 0.15002150439680834,
+        "permutation_p": 0.562,
+        "seeds_used": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3",
+          "HDAC6"
+        ],
+        "seeds_in_top_k": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3",
+          "HDAC6"
+        ],
+        "bonferroni_pass": false
+      },
+      "Vorinostat": {
+        "n_present": 46,
+        "drv_mean_chronos": -0.12330006668688778,
+        "bg_mean_chronos": -0.1495430261057199,
+        "mw_p_one_sided_less": 0.21360497298289371,
+        "permutation_p": 0.619,
+        "seeds_used": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3"
+        ],
+        "seeds_in_top_k": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3"
+        ],
+        "bonferroni_pass": false
+      },
+      "Lenalidomide": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.21677739118883813,
+        "bg_mean_chronos": -0.14929451403678204,
+        "mw_p_one_sided_less": 0.1256525149482584,
+        "permutation_p": 0.104,
+        "seeds_used": [
+          "CRBN"
+        ],
+        "seeds_in_top_k": [
+          "CRBN"
+        ],
+        "bonferroni_pass": false
+      },
+      "Pomalidomide": {
+        "n_present": 50,
+        "drv_mean_chronos": -0.134728498450725,
+        "bg_mean_chronos": -0.14951765489274646,
+        "mw_p_one_sided_less": 0.40077477687797647,
+        "permutation_p": 0.569,
+        "seeds_used": [
+          "CRBN"
+        ],
+        "seeds_in_top_k": [
+          "CRBN"
+        ],
+        "bonferroni_pass": false
+      },
+      "Daratumumab": {
+        "n_present": 47,
+        "drv_mean_chronos": -0.033449956822240445,
+        "bg_mean_chronos": -0.14977411149418285,
+        "mw_p_one_sided_less": 0.9828251638051275,
+        "permutation_p": 0.988,
+        "seeds_used": [
+          "CD38"
+        ],
+        "seeds_in_top_k": [
+          "CD38"
+        ],
+        "bonferroni_pass": false
+      },
+      "Venetoclax": {
+        "n_present": 48,
+        "drv_mean_chronos": -0.01832719217901006,
+        "bg_mean_chronos": -0.14981991651172497,
+        "mw_p_one_sided_less": 0.9857744756191931,
+        "permutation_p": 0.996,
+        "seeds_used": [
+          "BCL2"
+        ],
+        "seeds_in_top_k": [
+          "BCL2"
+        ],
+        "bonferroni_pass": false
+      },
+      "Selinexor": {
+        "n_present": 45,
+        "drv_mean_chronos": -0.3251712279691013,
+        "bg_mean_chronos": -0.14904762397319576,
+        "mw_p_one_sided_less": 0.011923164323116872,
+        "permutation_p": 0.007,
+        "seeds_used": [
+          "XPO1"
+        ],
+        "seeds_in_top_k": [
+          "XPO1"
+        ],
+        "bonferroni_pass": false
+      }
+    },
+    "n_bonferroni_pass": 3,
+    "bonferroni_alpha": 0.005,
+    "spec_threshold": "\u22654/10",
+    "pass": false
+  }
+}

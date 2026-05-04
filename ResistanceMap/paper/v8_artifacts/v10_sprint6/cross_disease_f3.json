@@ -1,0 +1,60 @@
+{
+  "design": "Cross-disease F3: MM-derived (Sprint 3) STRING/PPI RWR top-50 evaluated on Beat AML 1.0 ex-vivo drug response \u00d7 RPKM",
+  "Bonferroni_alpha": 0.005,
+  "results": {
+    "Bortezomib (Velcade)": {
+      "seeds": [
+        "PSMB5",
+        "PSMB1",
+        "PSMB2"
+      ],
+      "top50_first10": [
+        "PSMB1",
+        "FBXO7",
+        "PSMB5",
+        "PSMB2",
+        "UBXN7",
+        "ACAD11",
+        "BTBD9",
+        "AKIRIN2",
+        "AKIRIN1",
+        "PSMF1"
+      ],
+      "n_top50_in_oracle": 46,
+      "drv_mean_corr_AML": -0.010384744184684488,
+      "bg_mean_corr_AML": -0.02850731850993611,
+      "permutation_p_one_sided_greater": 0.095,
+      "drv_minus_bg": 0.018122574325251623,
+      "bonferroni_pass_at_0p005": false,
+      "rationale": "20S \u03b2-subunit (Bortezomib direct target). Same seed used in Sprint 3 F3 v2."
+    },
+    "Panobinostat": {
+      "seeds": [
+        "HDAC1",
+        "HDAC2",
+        "HDAC3",
+        "HDAC6"
+      ],
+      "top50_first10": [
+        "HDAC2",
+        "HDAC1",
+        "LCOR",
+        "TRIM50",
+        "HDAC6",
+        "H2BW1",
+        "H2BE1",
+        "H2BW2",
+        "TPPP",
+        "PLAA"
+      ],
+      "n_top50_in_oracle": 38,
+      "drv_mean_corr_AML": -0.07527941345673132,
+      "bg_mean_corr_AML": -0.045074551219760124,
+      "permutation_p_one_sided_greater": 0.846,
+      "drv_minus_bg": -0.0302048622369712,
+      "bonferroni_pass_at_0p005": false,
+      "rationale": "pan-HDAC, all 4 paralogs IC50 < 10 nM (Bradner 2010). Same seed used in Sprint 3 F3 v2 (failed there on Chronos but passed at single-seed in F7 v4 PRISM)."
+    }
+  },
+  "overall_strict_pass_all_drugs": false
+}

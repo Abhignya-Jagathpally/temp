@@ -1,0 +1,50 @@
+{
+  "K=3": {
+    "K": 3,
+    "n_folds": 1000,
+    "n_targets": 42,
+    "obs_mean": 4.211,
+    "obs_std": 1.8200217031673003,
+    "null_mean": 1.037,
+    "null_std": 1.3541163170126855,
+    "fold_enrichment": 4.060752169720348,
+    "permutation_p": 0.026,
+    "pass": false
+  },
+  "K=5": {
+    "K": 5,
+    "n_folds": 1000,
+    "n_targets": 40,
+    "obs_mean": 4.315,
+    "obs_std": 1.8071455392413749,
+    "null_mean": 1.134,
+    "null_std": 1.3740611340111473,
+    "fold_enrichment": 3.8051146384479724,
+    "permutation_p": 0.029,
+    "pass": false
+  },
+  "K=10": {
+    "K": 10,
+    "n_folds": 1000,
+    "n_targets": 35,
+    "obs_mean": 3.958,
+    "obs_std": 1.725756645648511,
+    "null_mean": 1.087,
+    "null_std": 1.2559581999413834,
+    "fold_enrichment": 3.641214351425943,
+    "permutation_p": 0.054,
+    "pass": false
+  },
+  "K=15": {
+    "K": 15,
+    "n_folds": 1000,
+    "n_targets": 30,
+    "obs_mean": 4.071,
+    "obs_std": 1.6522587569748268,
+    "null_mean": 1.167,
+    "null_std": 1.3065645793453915,
+    "fold_enrichment": 3.4884318766066835,
+    "permutation_p": 0.023,
+    "pass": false
+  }
+}

@@ -1,0 +1,234 @@
+{
+  "M_seed3 (PSMB5+1+2)": {
+    "n_genes_used": 3,
+    "genes_used_symbols": [
+      "PSMB5",
+      "PSMB1",
+      "PSMB2"
+    ],
+    "point_NIE_log_hr": 0.08626126588091192,
+    "boot_NIE_log_hr_mean": 0.08621936962557122,
+    "boot_NIE_log_hr_ci95": [
+      0.03159382875052923,
+      0.1497439133937939
+    ],
+    "boot_NIE_hr_mean": 1.0900454249356244,
+    "boot_NIE_hr_ci95": [
+      1.0320982115381891,
+      1.161536750633585
+    ],
+    "proportion_mediated": 0.09634845197408543,
+    "evalue_NIE_point": 1.4033401798988403,
+    "evalue_NIE_ci_bound": 1.2141105922218653,
+    "F8_pass": true,
+    "F10_pass": false
+  },
+  "M_20S_beta (PSMB1-7)": {
+    "n_genes_used": 7,
+    "genes_used_symbols": [
+      "PSMB1",
+      "PSMB2",
+      "PSMB3",
+      "PSMB4",
+      "PSMB5",
+      "PSMB6",
+      "PSMB7"
+    ],
+    "point_NIE_log_hr": 0.06710867193418295,
+    "boot_NIE_log_hr_mean": 0.06586299667747142,
+    "boot_NIE_log_hr_ci95": [
+      0.011745292218390152,
+      0.12997104502058196
+    ],
+    "boot_NIE_hr_mean": 1.0680803765813298,
+    "boot_NIE_hr_ci95": [
+      1.011814539005393,
+      1.138795409049609
+    ],
+    "proportion_mediated": 0.07459220907962326,
+    "evalue_NIE_point": 1.3377381490574547,
+    "evalue_NIE_ci_bound": 1.1211494480569073,
+    "F8_pass": true,
+    "F10_pass": false
+  },
+  "M_alpha (PSMA1-7)": {
+    "n_genes_used": 7,
+    "genes_used_symbols": [
+      "PSMA1",
+      "PSMA2",
+      "PSMA3",
+      "PSMA4",
+      "PSMA5",
+      "PSMA6",
+      "PSMA7"
+    ],
+    "point_NIE_log_hr": 0.06128403440991058,
+    "boot_NIE_log_hr_mean": 0.06065102021313092,
+    "boot_NIE_log_hr_ci95": [
+      0.008938363054271424,
+      0.11672051888046522
+    ],
+    "boot_NIE_hr_mean": 1.062528048666708,
+    "boot_NIE_hr_ci95": [
+      1.008978429508516,
+      1.12380530343206
+    ],
+    "proportion_mediated": 0.06716980564419235,
+    "evalue_NIE_point": 1.3202833697306466,
+    "evalue_NIE_ci_bound": 1.1041574277431865,
+    "F8_pass": true,
+    "F10_pass": false
+  },
+  "M_19S_ATPase (PSMC1-6)": {
+    "n_genes_used": 6,
+    "genes_used_symbols": [
+      "PSMC1",
+      "PSMC2",
+      "PSMC3",
+      "PSMC4",
+      "PSMC5",
+      "PSMC6"
+    ],
+    "point_NIE_log_hr": 0.06480783859556012,
+    "boot_NIE_log_hr_mean": 0.06406888392165465,
+    "boot_NIE_log_hr_ci95": [
+      0.014890424031863615,
+      0.11769768718638834
+    ],
+    "boot_NIE_hr_mean": 1.0661658379161376,
+    "boot_NIE_hr_ci95": [
+      1.01500183871285,
+      1.1249039870685922
+    ],
+    "proportion_mediated": 0.071069782831222,
+    "evalue_NIE_point": 1.3317665834408485,
+    "evalue_NIE_ci_bound": 1.138399139646122,
+    "F8_pass": true,
+    "F10_pass": false
+  },
+  "M_19S_nonATPase (PSMD)": {
+    "n_genes_used": 14,
+    "genes_used_symbols": [
+      "PSMD1",
+      "PSMD2",
+      "PSMD3",
+      "PSMD4",
+      "PSMD5",
+      "PSMD6",
+      "PSMD7",
+      "PSMD8",
+      "PSMD9",
+      "PSMD10",
+      "PSMD11",
+      "PSMD12",
+      "PSMD13",
+      "PSMD14"
+    ],
+    "point_NIE_log_hr": 0.02471165342934513,
+    "boot_NIE_log_hr_mean": 0.022793433440590802,
+    "boot_NIE_log_hr_ci95": [
+      -0.028749947683365563,
+      0.0792093969739684
+    ],
+    "boot_NIE_hr_mean": 1.023055188728542,
+    "boot_NIE_hr_ci95": [
+      0.9716593997759642,
+      1.0824309561079846
+    ],
+    "proportion_mediated": 0.02867001367661687,
+    "evalue_NIE_point": 1.1766349089257433,
+    "evalue_NIE_ci_bound": 1.2024240871579503,
+    "F8_pass": false,
+    "F10_pass": false
+  },
+  "M_20S (alpha+beta)": {
+    "n_genes_used": 14,
+    "genes_used_symbols": [
+      "PSMA1",
+      "PSMA2",
+      "PSMA3",
+      "PSMA4",
+      "PSMA5",
+      "PSMA6",
+      "PSMA7",
+      "PSMB1",
+      "PSMB2",
+      "PSMB3",
+      "PSMB4",
+      "PSMB5",
+      "PSMB6",
+      "PSMB7"
+    ],
+    "point_NIE_log_hr": 0.06841161962380499,
+    "boot_NIE_log_hr_mean": 0.06736267165832711,
+    "boot_NIE_log_hr_ci95": [
+      0.01395563878645242,
+      0.13063367520541344
+    ],
+    "boot_NIE_hr_mean": 1.069683351670022,
+    "boot_NIE_hr_ci95": [
+      1.0140534732980133,
+      1.1395502593276625
+    ],
+    "proportion_mediated": 0.07490606905109623,
+    "evalue_NIE_point": 1.3427018879821007,
+    "evalue_NIE_ci_bound": 1.1334309142563086,
+    "F8_pass": true,
+    "F10_pass": false
+  },
+  "M_26S (full complex)": {
+    "n_genes_used": 34,
+    "genes_used_symbols": [
+      "PSMA1",
+      "PSMA2",
+      "PSMA3",
+      "PSMA4",
+      "PSMA5",
+      "PSMA6",
+      "PSMA7",
+      "PSMB1",
+      "PSMB2",
+      "PSMB3",
+      "PSMB4",
+      "PSMB5",
+      "PSMB6",
+      "PSMB7",
+      "PSMC1",
+      "PSMC2",
+      "PSMC3",
+      "PSMC4",
+      "PSMC5",
+      "PSMC6",
+      "PSMD1",
+      "PSMD2",
+      "PSMD3",
+      "PSMD4",
+      "PSMD5",
+      "PSMD6",
+      "PSMD7",
+      "PSMD8",
+      "PSMD9",
+      "PSMD10",
+      "PSMD11",
+      "PSMD12",
+      "PSMD13",
+      "PSMD14"
+    ],
+    "point_NIE_log_hr": 0.051741614470012166,
+    "boot_NIE_log_hr_mean": 0.05030875301328627,
+    "boot_NIE_log_hr_ci95": [
+      0.0007127194715098854,
+      0.10769447208459215
+    ],
+    "boot_NIE_hr_mean": 1.0515957296079763,
+    "boot_NIE_hr_ci95": [
+      1.000712973516383,
+      1.1137074246925383
+    ],
+    "proportion_mediated": 0.05788498217223483,
+    "evalue_NIE_point": 1.2845288722084995,
+    "evalue_NIE_ci_bound": 1.027424054505706,
+    "F8_pass": true,
+    "F10_pass": false
+  }
+}

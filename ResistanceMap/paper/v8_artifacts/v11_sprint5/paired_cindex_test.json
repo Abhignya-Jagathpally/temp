@@ -1,0 +1,117 @@
+{
+  "design": "Paired C-index test for v11.5 (Cox_v11_routed_mmsygnal) vs the Caveat-#3-corrected 6-submodel mmSYGNAL reference. Two methods: (1) U-statistic-based normal-approximation z-test using per-patient H\u00e1jek-projection influence functions; (2) B=10000 paired percentile bootstrap with two-sided empirical P-value at \u0394=0, marginal + stratified.",
+  "n_patients": 787,
+  "n_events": 224,
+  "C_v11_5_marginal": 0.6955131876256027,
+  "C_mmsygnal_6submodel_marginal": 0.6956589647739934,
+  "delta_marginal": -0.00014577714839070222,
+  "u_statistic_test": {
+    "marginal": {
+      "C_A": 0.6955012612312118,
+      "C_B": 0.6956054952156601,
+      "delta_hat": -0.00010423398444825427,
+      "se_delta": 0.013835663939927783,
+      "z": -0.007533717565042153,
+      "p_two_sided": 0.9939890199302235,
+      "n_patients": 787,
+      "n_comparable_pairs": 95938
+    },
+    "per_stratum": {
+      "S1_del17p": {
+        "C_A": 0.729518855656697,
+        "C_B": 0.7022106631989596,
+        "delta_hat": 0.027308192457737412,
+        "se_delta": 0.028232964768214373,
+        "z": 0.9672449451175563,
+        "p_two_sided": 0.333421598711519,
+        "n_patients": 105,
+        "n_comparable_pairs": 2307,
+        "n": 105
+      },
+      "S2_t_4_14": {
+        "C_A": 0.6666666666666666,
+        "C_B": 0.72552783109405,
+        "delta_hat": -0.05886116442738332,
+        "se_delta": 0.02922113430536341,
+        "z": -2.014335371525246,
+        "p_two_sided": 0.04397433469377421,
+        "n_patients": 97,
+        "n_comparable_pairs": 1563,
+        "n": 97
+      },
+      "S3_1q21": {
+        "C_A": 0.6944036889540977,
+        "C_B": 0.6692517291972333,
+        "delta_hat": 0.02515195975686435,
+        "se_delta": 0.023398152244673693,
+        "z": 1.074954957718505,
+        "p_two_sided": 0.28239489481377955,
+        "n_patients": 165,
+        "n_comparable_pairs": 4771,
+        "n": 165
+      },
+      "S4_t_11_14": {
+        "C_A": 0.6440489432703004,
+        "C_B": 0.692992213570634,
+        "delta_hat": -0.04894327030033363,
+        "se_delta": 0.05342782214219441,
+        "z": -0.9160633605853247,
+        "p_two_sided": 0.3596336635589936,
+        "n_patients": 95,
+        "n_comparable_pairs": 899,
+        "n": 95
+      },
+      "S5_other": {
+        "C_A": 0.6590382590382591,
+        "C_B": 0.6798876798876798,
+        "delta_hat": -0.020849420849420763,
+        "se_delta": 0.020910945464723746,
+        "z": -0.9970577793621636,
+        "p_two_sided": 0.31873646503759945,
+        "n_patients": 325,
+        "n_comparable_pairs": 14245,
+        "n": 325
+      }
+    }
+  },
+  "paired_bootstrap_B10000": {
+    "marginal": {
+      "delta_mean": -4.6576464489635525e-05,
+      "delta_median": -0.0001794349671043194,
+      "ci95": [
+        -0.026483771767887507,
+        0.02673425596763273
+      ],
+      "ci99": [
+        -0.03504534081135001,
+        0.03567965429788111
+      ],
+      "p_a_beats_b": 0.494,
+      "p_two_sided_empirical": 0.9888,
+      "n_boot": 10000,
+      "stratified": false
+    },
+    "stratified": {
+      "delta_mean": -0.00025970110770470544,
+      "delta_median": -0.0003716367709393209,
+      "ci95": [
+        -0.026690635809645695,
+        0.02629204318246033
+      ],
+      "ci99": [
+        -0.03431553469727407,
+        0.035644930101866534
+      ],
+      "p_a_beats_b": 0.4894,
+      "p_two_sided_empirical": 0.9788,
+      "n_boot": 10000,
+      "stratified": true
+    }
+  },
+  "verdict_marginal_tie": "TIE",
+  "honest_caveats": [
+    "U-statistic z-test uses H\u00e1jek-projection IFs; it is asymptotically valid but does not adjust for the discrete distribution of small C-index differences in finite samples.",
+    "Both methods test marginal \u0394_C only. Per-stratum z-tests are reported but small-stratum power is limited.",
+    "All comparisons hold N=787 patients, same event/time, same submitter_id alignment as r-2026-05-03-v11s5-mmsygnal-complete-routing."
+  ]
+}

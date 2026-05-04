@@ -1,186 +1,287 @@
-# MMRF CoMMpass Acquisition — Step-by-Step
+# MMRF CoMMpass Acquisition — Step-by-Step (rewritten 2026-05-03)
 
-The MMRF CoMMpass study (Multiple Myeloma Research Foundation Compass) is a
-multi-center longitudinal study of newly-diagnosed MM patients with paired
-RNA-seq + WGS + clinical follow-up. It is **controlled-access** — you can't
-`curl` it. To use it in this pipeline you need three things:
+The MMRF CoMMpass study is a multi-center longitudinal study of newly-
+diagnosed multiple myeloma patients with paired RNA-Seq + WGS/WES + clinical
+follow-up, hosted at the NCI Genomic Data Commons (GDC).
 
-1. **dbGaP authorization** (one-time, weeks-long IRB process)
-2. **A current GDC user-token** (5-minute refresh, expires every 30 days)
-3. **A manifest** describing which files to download (5-minute generate)
-
-Then you run `gdc-client download` and the data lands under
-`data/raw/mmrf_commpass/` where `configs/default.yaml` already expects it.
-
-The disk has **168 GB free** as of this run; budget the full MMRF release at
-**~3-5 TB**. If you only need RNA-seq + clinical, the subset is ~400 GB.
+> **Earlier versions of this document claimed MMRF was "controlled-access only"
+> and pointed at legacy `*.rsem.genes.results` files. Both claims are wrong as
+> of 2026-05-03.** The corrected facts and a working open-access path are below.
+> All numbers in this doc were verified live against the GDC API on 2026-05-03;
+> see `## Verification log` at the end.
 
 ---
 
-## 1. dbGaP authorization
+## TL;DR
 
-The MMRF data is in dbGaP study **phs000748** ("Relating Clinical Outcomes in
-Multiple Myeloma to Personal Assessment of Genetic Profile").
+You probably do **not** need dbGaP. **2,960 files (~3.7 GB)** are open-access
+and cover everything needed for Tier 2 predictive validation per
+`docs/CAUSAL_VALIDITY_AUDIT.md`:
 
-### Prerequisites
-- An eRA Commons account tied to your UNT institutional credentials.
-  https://www.era.nih.gov/register-accounts/individual-registration-process.htm
-- Your PI's name + their eRA Commons ID (you'll list them as the data
-  custodian).
-- An IRB-approved protocol from UNT covering use of dbGaP-controlled human
-  genomic data. If your group already has one for adjacent MM work, attach
-  that.
+| Modality | Files | Size | Format | Access |
+|---|---:|---:|---|---|
+| RNA-Seq STAR augmented gene counts | 859 | ~3.5 GB | TSV (genes × counts) | open |
+| Masked Somatic Mutations | 1,091 | ~50 MB | MAF | open |
+| Copy Number Segments | 1,010 | ~150 MB | TXT (segment-mean) | open |
+| Clinical / treatment / sample timeline | (API only — see §3) | <1 MB | TSV | open |
+| **TOTAL** | **2,960 files + clinical** | **~3.7 GB** | | **no dbGaP, no token** |
 
-### Submission
-1. Sign in to dbGaP: https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/login.cgi
-2. **Submit a Data Access Request (DAR)** for phs000748.
-3. Fill the Research Use Statement (1-2 paragraphs explaining what you'll
-   model — drug response prediction, resistance landscape, etc.).
-4. Have your PI co-sign as Authorized User and your Signing Official sign as
-   the Institutional SO. UNT's SO contact is in the eRA Commons institution
-   profile.
-5. Submit. NIH usually approves within **2-6 weeks**.
-
-Track status via the "My Requests" tab in dbGaP.
+dbGaP study `phs000748` is required only if you want raw BAM/FASTQ reads or
+unmasked variant calls — those are the bulk of the 206 TB controlled-access
+release and we do not need them for Tier 2.
 
 ---
 
-## 2. GDC user-token
+## 1. What's actually at GDC for MMRF-COMMPASS
 
-Once your DAR is approved, you can mint a GDC token any time. Tokens are
-valid for **30 days** and you'll re-mint freely.
+Verified live 2026-05-03 against `https://api.gdc.cancer.gov/projects/MMRF-COMMPASS`:
 
-1. Log in to the GDC portal with your eRA Commons credentials:
-   https://portal.gdc.cancer.gov/
-2. Top-right user menu → **Download Token**. A file named
-   `gdc-user-token.<timestamp>.txt` lands in your Downloads folder.
-3. Move it to this machine and lock it down:
-   ```bash
-   mkdir -p ~/.gdc
-   mv ~/Downloads/gdc-user-token.*.txt ~/.gdc/token.txt
-   chmod 600 ~/.gdc/token.txt
-   ```
-   Do **not** check this file into git. The repo's `.gitignore` already
-   ignores `data/raw/` but tokens deserve their own dir under `~/.gdc`.
+| Statistic | Value |
+|---|---|
+| Project ID | MMRF-COMMPASS |
+| dbGaP accession | phs000748 |
+| Cases (patients) | 995 |
+| Total files | 34,109 |
+| Total release size | ~206 TB (mostly controlled BAM/FASTQ) |
+| **Open-access files** | **2,960** |
+| Open-access by data category | Simple Nucleotide Variation 1,091; Copy Number Variation 1,010; Transcriptome Profiling 859 |
 
-If you want me (Claude) to help with the token step, I can guide you but I
-**cannot** mint it for you — only you can authenticate to NIH.
+There is **no `Clinical` or `Biospecimen` *file* category** for this project —
+clinical data lives only as case-level metadata in the `/cases` API. That is
+expected; see §3.
 
 ---
 
-## 3. Manifest
+## 2. Build the manifests via the GDC API (skip the Repository tab)
 
-A manifest is a TSV listing the file UUIDs you want. The two ways to build
-one:
-
-### Option A: GDC Portal (recommended, point-and-click)
-1. Go to https://portal.gdc.cancer.gov/projects/MMRF-COMMPASS
-2. **Repository** tab → filter:
-   - Project: `MMRF-COMMPASS`
-   - Data Category: pick what you need (RNA-Seq, WGS, etc.)
-   - Experimental Strategy: e.g. `RNA-Seq` for transcriptome
-   - Data Format: `BAM` for raw, `TSV` for normalized counts
-3. **Add All Files to Cart** → **Cart** → **Download Manifest**.
-4. Save as `~/.gdc/mmrf_manifest.txt`.
-
-### Option B: gdc-client manifest CLI
-```bash
-gdc-client manifest --project MMRF-COMMPASS --data-category Transcriptome\ Profiling \
-    -t ~/.gdc/token.txt -o ~/.gdc/mmrf_manifest.txt
-```
-
-Pick A unless you know exactly which UUIDs you want — the portal is more
-reliable for getting a complete clinical+omic bundle.
-
----
-
-## 4. Install gdc-client (this machine)
-
-`gdc-client` is **not currently installed on this host** (`command -v
-gdc-client` returns empty). One-time install:
+The Repository tab in the GDC portal has a 10,000-file cart limit and a
+notorious failure mode where the Project filter silently resets when you
+navigate from the global search. Every cart session we tried that way pulled
+in tens of thousands of cross-project files. **Bypass the cart entirely** —
+the API supports `return_type=manifest` and emits the exact TSV format
+gdc-client (or our pure-Python downloader) consumes.
 
 ```bash
-# Latest binary release (no sudo, drops into ~/.local/bin)
-mkdir -p ~/.local/bin
-cd /tmp
-curl -L -o gdc-client.zip \
-    https://gdc.cancer.gov/files/public/file/gdc-client_v1.6.1_Ubuntu_x64-py3.8-ubuntu-20.04.zip
-unzip gdc-client.zip
-mv gdc-client ~/.local/bin/
-chmod +x ~/.local/bin/gdc-client
-~/.local/bin/gdc-client --version   # should print 1.6.1
+mkdir -p ~/.gdc
+
+# Manifest 1: RNA-Seq STAR Counts (859 files, ~3.5 GB)
+curl -sS -X POST "https://api.gdc.cancer.gov/files" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": {"op":"and","content":[
+      {"op":"in","content":{"field":"cases.project.project_id","value":["MMRF-COMMPASS"]}},
+      {"op":"in","content":{"field":"access","value":["open"]}},
+      {"op":"in","content":{"field":"data_category","value":["Transcriptome Profiling"]}},
+      {"op":"in","content":{"field":"analysis.workflow_type","value":["STAR - Counts"]}}
+    ]},
+    "return_type":"manifest","size":5000
+  }' -o ~/.gdc/mmrf_rna.tsv
+
+# Manifest 2: Masked Somatic Mutations (1,091 files, ~50 MB)
+curl -sS -X POST "https://api.gdc.cancer.gov/files" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": {"op":"and","content":[
+      {"op":"in","content":{"field":"cases.project.project_id","value":["MMRF-COMMPASS"]}},
+      {"op":"in","content":{"field":"access","value":["open"]}},
+      {"op":"in","content":{"field":"data_category","value":["Simple Nucleotide Variation"]}},
+      {"op":"in","content":{"field":"data_type","value":["Masked Somatic Mutation"]}}
+    ]},
+    "return_type":"manifest","size":5000
+  }' -o ~/.gdc/mmrf_snv.tsv
+
+# Manifest 3: Copy Number Segments (1,010 files, ~150 MB)
+curl -sS -X POST "https://api.gdc.cancer.gov/files" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": {"op":"and","content":[
+      {"op":"in","content":{"field":"cases.project.project_id","value":["MMRF-COMMPASS"]}},
+      {"op":"in","content":{"field":"access","value":["open"]}},
+      {"op":"in","content":{"field":"data_category","value":["Copy Number Variation"]}}
+    ]},
+    "return_type":"manifest","size":5000
+  }' -o ~/.gdc/mmrf_cnv.tsv
+
+# Sanity-check counts
+for f in ~/.gdc/mmrf_rna.tsv ~/.gdc/mmrf_snv.tsv ~/.gdc/mmrf_cnv.tsv; do
+  echo "$f: $(($(wc -l < "$f") - 1)) files"
+done
+# expected: 859 / 1091 / 1010
 ```
 
-Add `~/.local/bin` to PATH in your `~/.bashrc` if it isn't already.
+These manifests are deterministic (same filters → same UUID list). Re-run the
+curls to refresh if the GDC release advances.
 
 ---
 
-## 5. Download
+## 3. Pull clinical / treatment / sample data via the `/cases` API
+
+There are no clinical *files* at GDC for MMRF; clinical lives in case-level
+metadata. Use the included puller — it paginates through all 995 cases,
+expands `demographic + diagnoses + treatments + follow_ups + samples`, and
+flattens to three TSVs:
 
 ```bash
-mkdir -p data/raw/mmrf_commpass
-gdc-client download \
-    -m ~/.gdc/mmrf_manifest.txt \
-    -t ~/.gdc/token.txt \
-    -d data/raw/mmrf_commpass/ \
-    --n-processes 4 \
-    --retry-amount 5
+python scripts/pull_mmrf_clinical.py --output-dir data/raw/mmrf_commpass
 ```
 
-- `--n-processes 4` is conservative; bump to 8 if your bandwidth allows.
-- `gdc-client` is **resumable** — kill it and restart and it picks up where
-  it left off.
-- For the full RNA-seq subset budget **~6-12 hours** depending on bandwidth.
+Outputs (verified on a 2026-05-03 run):
 
-Files arrive nested under `data/raw/mmrf_commpass/<uuid>/<filename>` —
-that's fine, the loader walks the tree.
-
----
-
-## 6. What the pipeline expects
-
-`configs/default.yaml` (already wired) reads:
-
-```yaml
-data:
-  mmrf_commpass_dir: data/raw/mmrf_commpass/
-```
-
-The downstream loader at `resistancemap/data/clinical_labels.py` expects:
-- One subdir per patient: `MMRF_<patient-id>_BM_*` (gdc-client lays it out
-  this way automatically).
-- For each patient: `*.rsem.genes.results` (RNA-seq) and the matching
-  clinical TSV (you'll get this in the same manifest if you select the
-  Clinical category).
-
-Once the download finishes, **re-run the agentic pipeline from a clean
-checkpoints/ dir** so the data-prep stage rebuilds `data_ready.pt` against
-the much larger MMRF cohort:
-
-```bash
-mv checkpoints checkpoints.bak.pre_mmrf_$(date +%Y%m%dT%H%M%S)
-mkdir checkpoints
-python main.py --config configs/default.yaml
-```
-
-After that, `scripts/run_baselines_real.py` will produce a fresh comparison
-table on the MMRF-augmented dataset.
-
----
-
-## 7. What I (Claude) can help with
-
-| Step | Who does it | Notes |
+| File | Rows × Cols | What it carries |
 |---|---|---|
-| 1. dbGaP DAR | **You + PI + UNT SO** | I can draft your Research Use Statement if you paste your protocol abstract |
-| 2. GDC token | **You** (NIH login) | I can verify the token file format once you put it at `~/.gdc/token.txt` |
-| 3. Manifest | You or me | If you paste the portal-generated manifest, I can sanity-check it (file counts, project tag) |
-| 4. Install gdc-client | I can do this | Just say the word and I'll run the install commands above |
-| 5. Run download | Either | Long-running; I can kick it off in the background and notify you when done |
-| 6. Re-run pipeline | I'll do this | Same agentic DAG, will pick up the bigger dataset automatically |
+| `clinical.tsv` | 995 × 16 | One row per patient. ISS stage, demographics, vital status, days_to_death, days_to_last_followup. |
+| `treatments.tsv` | 7,184 × 11 | One row per (patient, treatment). `regimen_or_line_of_therapy`, `therapeutic_agents`, `days_to_treatment_start/end`. **This is the time-to-resistance signal.** |
+| `samples.tsv` | 4,860 × 7 | One row per (patient, sample, aliquot). `aliquot_submitter_id` is the join key against the RNA/SNV/CNV file names. |
 
-When you're ready, paste me:
-- The path of your token file (so I can `chmod 600` and verify it parses)
-- The path of your manifest (so I can show file counts before download)
+**Cohort highlights** (from the 2026-05-03 pull):
 
-…and I'll run steps 4-6 from there.
+- 988 / 994 patients have ≥2 lines of therapy → resistance event observable
+- 191 deaths + 804 censored alive → 995 usable for OS C-index
+- ISS: I 348 / II 353 / III 266 / unknown 28
+- Drug coverage of our 11 cell-line targets:
+  Lenalidomide 1,393 / Bortezomib 1,076 / Cyclophosphamide 694 /
+  Carfilzomib 567 / Pomalidomide 127 / Daratumumab 59 /
+  Doxorubicin 22 (8 of 11 present)
+
+Open access; no token required for any of this.
+
+---
+
+## 4. Download the open-access files
+
+The historical advice was to use the `gdc-client` binary. As of 2026-05-03 the
+GDC's binary distribution links 302-redirect to a not-found page, the recent
+GitHub releases (2.1, 2.2, 2.3) ship source-only with no binary asset, and
+`pip install gdc-client` is unavailable. We bypass all of that with a pure-
+Python downloader (`scripts/gdc_download.py`) that hits the
+`/data/<UUID>` endpoint with parallel workers, MD5 verification, and
+resume-by-existence.
+
+```bash
+mkdir -p data/raw/mmrf_commpass/{rna,snv,cnv} logs/gdc_downloads
+
+# RNA-Seq (~3.5 GB; ~2-5 min on a fast connection at 8 workers)
+nohup python scripts/gdc_download.py \
+    --manifest ~/.gdc/mmrf_rna.tsv \
+    --out-dir data/raw/mmrf_commpass/rna \
+    --workers 8 > logs/gdc_downloads/rna.log 2>&1 &
+
+# Mutations (~50 MB, much smaller per-file → bandwidth-limited by per-request overhead)
+nohup python scripts/gdc_download.py \
+    --manifest ~/.gdc/mmrf_snv.tsv \
+    --out-dir data/raw/mmrf_commpass/snv \
+    --workers 8 > logs/gdc_downloads/snv.log 2>&1 &
+
+# Copy Number (~150 MB)
+nohup python scripts/gdc_download.py \
+    --manifest ~/.gdc/mmrf_cnv.tsv \
+    --out-dir data/raw/mmrf_commpass/cnv \
+    --workers 8 > logs/gdc_downloads/cnv.log 2>&1 &
+
+# Watch progress
+tail -f logs/gdc_downloads/rna.log
+```
+
+The downloader is **resumable** — re-running it skips files whose existing
+size + md5 match the manifest. Failed files retry up to 3× per worker; any
+remaining failures are surfaced in the final summary line.
+
+---
+
+## 5. Final disk layout the loader expects
+
+```
+data/raw/mmrf_commpass/
+├── rna/
+│   ├── 1b166f66-….rna_seq.augmented_star_gene_counts.tsv
+│   └── … (859 files, gene_id × counts/TPM/FPKM TSVs)
+├── snv/
+│   └── … (1,091 MAF.gz files, masked somatic mutations)
+├── cnv/
+│   └── … (1,010 CNV segment TXT files)
+├── clinical.tsv             ← from pull_mmrf_clinical.py
+├── treatments.tsv           ← from pull_mmrf_clinical.py
+└── samples.tsv              ← from pull_mmrf_clinical.py (UUID join key)
+```
+
+The current `resistancemap/data/loaders.py:load_mmrf_data` expects
+**already-merged** `clinical.txt` + `gene_expression.tsv` + `mutations.tsv`
+files. To produce those from the per-sample GDC outputs above, run
+`scripts/preprocess_mmrf_gdc.py` (write pending — see §7).
+
+---
+
+## 6. dbGaP path (only if you decide you need raw reads or unmasked variants)
+
+You only need this for the ~31,000 controlled-access files (BAM/FASTQ raw
+reads, unmasked VCFs). For Tier 2 validation, we do not.
+
+If you decide to go controlled:
+
+1. Apply for dbGaP study **phs000748** ("Relating Clinical Outcomes in
+   Multiple Myeloma to Personal Assessment of Genetic Profile") via the
+   eRA Commons — typical 2–6 week approval.
+2. Once approved, mint a GDC user token from the GDC portal user menu.
+   Tokens last 30 days.
+3. Pass `--token PATH/to/gdc-user-token.txt` to `scripts/gdc_download.py`
+   (the script already supports this flag).
+
+Storage budget for the full controlled release: ~206 TB. Per-modality
+subsets (e.g., WGS BAMs only, or RNA-seq BAMs only) are 5–30 TB each.
+
+---
+
+## 7. After the download — convert to the loader's expected format
+
+The current `loaders.py:load_mmrf_data` reads **single merged files**:
+`clinical.txt`, `gene_expression.tsv`, `mutations.tsv`. GDC ships per-sample
+files. The adapter `scripts/preprocess_mmrf_gdc.py` (write pending) will:
+
+- Concatenate the 859 STAR TSVs into a single `gene_expression.tsv`
+  (rows = Ensembl gene_id, columns = aliquot_submitter_id from
+  `samples.tsv`).
+- Parse the 1,091 MAFs into a long-format `mutations.tsv`
+  (Tumor_Sample_Barcode → patient via `samples.tsv`).
+- Concatenate the 1,010 CNV segments and derive per-gene segment-mean +
+  binary del17p / chr1q21 flags using GENCODE v36 gene coordinates.
+
+Once the merged files exist, the existing pipeline will pick them up via
+`configs/default.yaml: data.mmrf_commpass_dir: data/raw/mmrf_commpass/`.
+
+---
+
+## 8. What I (Claude) can do for you
+
+| Step | Status |
+|---|---|
+| Build the three API manifests | ✅ done — see `~/.gdc/mmrf_*.tsv` |
+| Pull clinical / treatments / samples from `/cases` API | ✅ done — see `data/raw/mmrf_commpass/{clinical,treatments,samples}.tsv` |
+| Write `scripts/gdc_download.py` (replaces broken gdc-client) | ✅ done |
+| Kick off the three downloads | ✅ running in background; see `logs/gdc_downloads/*.log` |
+| Write `scripts/preprocess_mmrf_gdc.py` (merge to loader format) | ⏳ pending |
+| Write `scripts/derive_cytogenetics.py` (chr1q21 / del17p flags from CNV) | ⏳ pending |
+| Update `loaders.py:load_mmrf_data` schema if needed | ⏳ depends on preprocess output |
+
+You only need to do dbGaP if reviewers later ask for raw-read evidence; for
+the Tier 2 escalation in `CAUSAL_VALIDITY_AUDIT.md` and the SOTA bar in
+`SOTA_BENCHMARK_PROTOCOL.md`, the open-access path above is sufficient.
+
+---
+
+## Verification log (live fetches, 2026-05-03)
+
+| Endpoint | Filter | Result |
+|---|---|---|
+| `GET /projects/MMRF-COMMPASS?expand=summary` | — | 995 cases, 34,109 files, 206.5 TB, dbgap=phs000748 |
+| `POST /files (return_type=manifest)` | open + Transcriptome + STAR Counts | 859 files |
+| `POST /files (return_type=manifest)` | open + SNV + Masked Somatic Mutation | 1,091 files |
+| `POST /files (return_type=manifest)` | open + CNV | 1,010 files |
+| `POST /files (return_type=manifest)` | Clinical or Biospecimen | **0 files** (expected — clinical is metadata, not files) |
+| `GET /cases?expand=...` | project=MMRF-COMMPASS | 995 cases, 7,184 treatments, 4,860 aliquots flattened |
+| `GET /data/<uuid>` (one RNA STAR file) | open-access UUID | 4.21 MB TSV with 60,672 genes, GENCODE v36 |
+| `gdc-client` binary URLs (1.6.1 / 2.0 / 2.3) | — | All 302→not-found |
+| `pip install gdc-client` | — | No matching distribution on PyPI |
+| `https://api.github.com/repos/NCI-GDC/gdc-client/releases` | — | Releases 2.1, 2.2, 2.3 ship source-only (no binary assets) |
+
+The pure-Python `scripts/gdc_download.py` we wrote sidesteps the broken
+binary distribution and is what this doc now recommends.

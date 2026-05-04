@@ -1,0 +1,56 @@
+{
+  "primary_mediator": {
+    "definition": "M_seed3 = z-score-of-mean(PSMB5, PSMB1, PSMB2) \u2014 Bortezomib direct targets",
+    "rationale": "PSMB5 is Bortezomib's primary binding subunit; PSMB1+PSMB2 co-essential per proteasome assembly. RWR top-50 includes 47 non-target neighbors that dilute the mediation signal.",
+    "N_cohort": 787,
+    "point_estimate": {
+      "beta_A": 0.8169934941175743,
+      "beta_M": 0.3210094915470743,
+      "beta_AM": 0.04596916456248673,
+      "NIE_log_hr": 0.08626126588091192,
+      "NIE_hr": 1.09009109471377,
+      "NDE_log_hr": 0.8090438906992204,
+      "TE_log_hr": 0.8953051565801323,
+      "proportion_mediated": 0.09634845197408543,
+      "concordance": 0.6717306871310016,
+      "p_value_M": 0.16338597345508132
+    },
+    "bootstrap_B1000": {
+      "NIE_log_hr_ci95": [
+        0.028840027671225486,
+        0.1522475594768659
+      ],
+      "NIE_hr_ci95": [
+        1.02925992819683,
+        1.16444847100736
+      ],
+      "NDE_log_hr_ci95": [
+        0.36225249629727113,
+        1.3564711951357227
+      ],
+      "n_ok": 1000
+    }
+  },
+  "evalue_sensitivity": {
+    "NIE_HR_point": 1.0901116576945515,
+    "NIE_HR_lower_CI": 1.02925992819683,
+    "E_value_NIE_point": 1.4035311346691193,
+    "E_value_NIE_lower_CI": 1.2027997553112812,
+    "NDE_HR_point": 2.328806034537375,
+    "E_value_NDE_point": 4.087934088989443,
+    "interpretation": "Min strength of unmeasured confounding (RR scale) to nullify the observed NIE."
+  },
+  "neg_control_F9": {
+    "B": 50,
+    "neg_control_NIE_log_hr_mean": 0.004896828079400896,
+    "neg_control_NIE_log_hr_std": 0.03086812281132187,
+    "neg_control_NIE_log_hr_95th_abs_pct": 0.06853974378336053,
+    "fraction_above_proteasome_abs": 0.02
+  },
+  "falsification_strict": {
+    "F8_NIE_CI_excludes_zero": true,
+    "F9_neg_control_pass": true,
+    "F10_E_value_ge_1p5_at_CI_bound": false,
+    "all_three_pass": false
+  }
+}

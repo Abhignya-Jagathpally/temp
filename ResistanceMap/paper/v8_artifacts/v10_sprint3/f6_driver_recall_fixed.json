@@ -1,0 +1,19 @@
+{
+  "consensus_size_after_alias_rescue": 45,
+  "rescued_aliases": [
+    "H1-4",
+    "NSD2",
+    "TENT5C"
+  ],
+  "K_seed": 5,
+  "n_targets": 40,
+  "n_folds": 1000,
+  "obs_recall_mean": 4.173,
+  "obs_recall_std": 1.6772212137938156,
+  "null_recall_mean": 1.123,
+  "null_recall_std": 1.3423378859288744,
+  "fold_enrichment": 3.715939447907391,
+  "permutation_p": 0.026,
+  "spec_threshold": "p < 0.001",
+  "pass": false
+}

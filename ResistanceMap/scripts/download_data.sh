@@ -13,8 +13,11 @@
 #   GDSC1 + GDSC2 drug response ..... cog.sanger.ac.uk Cell Model Passports
 #   CTRPv2 drug sensitivity ......... ctd2-data.nci.nih.gov
 #
-# NOT downloaded (controlled access — needs institutional credentials):
+# NOT downloaded (controlled access OR release-versioned IDs):
 #   MMRF CoMMpass ................... GDC dbGaP, requires IRB + GDC token
+#   DepMap CRISPR (CRISPRGeneEffect)  figshare ID changes per quarterly release
+#   HMCL Keats Lab MM panel ......... MMRF researcher gateway (request access)
+#   PRISM Broad Repurposing Hub ..... figshare ID changes per release
 #
 # Usage:
 #   bash scripts/download_data.sh                      # everything public
@@ -269,6 +272,45 @@ if want MMRF; then
   warn "If you have a manifest + token, run:"
   echo  "    gdc-client download -m <manifest.txt> -t <gdc-user-token.txt> \\"
   echo  "        -d $DATA_ROOT/mmrf_commpass/"
+fi
+
+# ─── DepMap CRISPR essentiality — release-versioned, manual fetch ────────────
+if want DEPMAP_CRISPR; then
+  section "DepMap CRISPR gene effect (release-versioned, manual)"
+  warn "CRISPRGeneEffect.csv lives on figshare with a per-release file ID"
+  warn "(24Q4, 24Q2, 23Q4, ...). Pinning a stale ID here would silently fetch"
+  warn "outdated essentiality scores. Visit:"
+  echo  "    https://depmap.org/portal/data_page/?tab=allData"
+  echo  "  -> choose the latest 'DepMap Public' release"
+  echo  "  -> download CRISPRGeneEffect.csv"
+  echo  "  -> place at: $DATA_ROOT/depmap/CRISPRGeneEffect.csv"
+  warn "Used by similar models (DrugCell, MOLI) as gene-knockout phenotypes."
+fi
+
+# ─── HMCL Keats Lab — controlled access, MM-specific ─────────────────────────
+if want HMCL; then
+  section "HMCL Keats Lab MM cell-line characterization (manual)"
+  warn "Keats Lab Human Myeloma Cell Line panel data is hosted on the MMRF"
+  warn "researcher gateway, not curl-able. Process:"
+  echo  "    1. Register at https://research.themmrf.org"
+  echo  "    2. Request access to the Keats Lab HMCL Characterization dataset"
+  echo  "    3. Download SNP / RNA-seq / WGS / methylation files"
+  echo  "    4. Place under: $DATA_ROOT/hmcl_keats/"
+  warn "MM-specific cohort -> better proteomics->IC50 mapping for MM lineages"
+  warn "where CCLE has thin coverage."
+fi
+
+# ─── PRISM Repurposing Hub — release-versioned, manual fetch ─────────────────
+if want PRISM; then
+  section "PRISM Broad Repurposing Hub (manual)"
+  warn "PRISM secondary-screen results are released via figshare with a"
+  warn "per-release file ID. Visit:"
+  echo  "    https://depmap.org/portal/data_page/?tab=allData"
+  echo  "  -> search 'PRISM Repurposing'"
+  echo  "  -> download secondary-screen-dose-response-curve-parameters.csv"
+  echo  "  -> place at: $DATA_ROOT/prism/secondary-screen-dose-response-curve-parameters.csv"
+  warn "PRISM provides ~4,500 compounds x ~500 cell lines (vs GDSC's 11 drugs"
+  warn "x ~250 lines used here) — largest small-molecule x cell-line panel public."
 fi
 
 # ─── Summary ─────────────────────────────────────────────────────────────────

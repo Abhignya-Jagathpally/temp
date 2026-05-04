@@ -1,0 +1,14 @@
+{
+  "n_cell_lines": 64,
+  "n_genes": 18531,
+  "id_column": "DepMap_ID",
+  "lineage_keywords": [
+    "Lymphoid",
+    "Myeloid",
+    "leukemia",
+    "lymphocyte",
+    "lymphoma",
+    "myeloid",
+    "plasma_cell"
+  ]
+}

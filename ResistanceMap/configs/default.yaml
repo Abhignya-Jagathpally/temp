@@ -16,6 +16,16 @@ data:
   scrna_gse271107_path: data/raw/gse271107.h5ad  # Lenalidomide response
   mmrf_commpass_dir: data/raw/mmrf_commpass/     # Clinical + genomic data
 
+  # Pre-aggregated scRNA pseudobulk (built by scripts/build_scrna_summary.py).
+  # Provides the HD -> MGUS -> SMM -> MM longitudinal stage axis.
+  scrna_summary_path: checkpoints/scrna_summary.pt
+
+  # Tier-2 baseline datasets (optional; see docs/DATASETS_AND_BENCHMARKS.md).
+  # Pipeline degrades gracefully when these files are absent.
+  depmap_crispr_path: data/raw/depmap/CRISPRGeneEffect.csv          # gene-knockout phenotypes (DrugCell/MOLI feature)
+  hmcl_keats_dir:     data/raw/hmcl_keats/                          # Keats Lab MM cell-line characterization
+  prism_path:         data/raw/prism/secondary-screen-dose-response-curve-parameters.csv  # Broad Repurposing Hub
+
   # Preprocessing parameters
   min_coverage: 0.7      # Drop proteins missing in >30% of samples
   imputation: knn        # knn | median | zero

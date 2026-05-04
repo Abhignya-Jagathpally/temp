@@ -1,0 +1,68 @@
+{
+  "F1_per_stratum_v11": {
+    "del17p": {
+      "n_held": 23,
+      "n_train": 693,
+      "elbo_init": 100625.6953125,
+      "elbo_final": 27577.099609375,
+      "coverage_overall": 0.9572010636329651,
+      "passes": true
+    },
+    "chr1q21_gain": {
+      "n_held": 46,
+      "n_train": 670,
+      "elbo_init": 96439.5390625,
+      "elbo_final": 26503.498046875,
+      "coverage_overall": 0.9568614363670349,
+      "passes": true
+    },
+    "del13q": {
+      "n_held": 97,
+      "n_train": 619,
+      "elbo_init": 88726.8359375,
+      "elbo_final": 24667.01953125,
+      "coverage_overall": 0.9586018323898315,
+      "passes": true
+    },
+    "t_4_14": {
+      "n_held": 103,
+      "n_train": 613,
+      "elbo_init": 87944.3125,
+      "elbo_final": 24229.263671875,
+      "coverage_overall": 0.9537317752838135,
+      "passes": true
+    },
+    "t_11_14": {
+      "n_held": 65,
+      "n_train": 651,
+      "elbo_init": 93655.9921875,
+      "elbo_final": 25922.84375,
+      "coverage_overall": 0.9521634578704834,
+      "passes": true
+    }
+  },
+  "F2_v11": {
+    "encoder": "v11_geneformer_v1_10m",
+    "design": "proper paired LOO on both arms (no train-on-test leak)",
+    "n_test_paired": 27,
+    "n_skipped_due_to_underfit": 0,
+    "ll_full_cohort_loo_mean": -48.455580193608405,
+    "ll_paired_only_loo_mean": -56.814811656658065,
+    "delta_mean": 8.359231463049666,
+    "delta_std": 17.173892763337186,
+    "delta_bootstrap_95_ci": [
+      2.3408002890866704,
+      15.17910204041352
+    ],
+    "ci_contains_zero": false,
+    "passes_F2": true,
+    "verdict": "F2 PASS at v11 \u2014 encoder may be leaking paired-patient identity (reject + revert per V11 plan \u00a72 row 1 zero-trust check)"
+  },
+  "v10_F2_passes": false,
+  "v10_F2_delta_mean": 24.18755646917841,
+  "v10_F2_ci": [
+    -43.105776725174465,
+    99.54572195894792
+  ],
+  "leak_check_passed": false
+}

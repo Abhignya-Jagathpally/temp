@@ -4,8 +4,8 @@
   "n_test": 132,
   "n_features": 19219,
   "n_drugs": 11,
-  "n_train_observed_cells": 3635,
-  "n_test_observed_cells": 736,
+  "n_train_observed_cells": 4783,
+  "n_test_observed_cells": 1015,
   "drugs": [
     "Bortezomib",
     "Cyclophosphamide",
@@ -22,79 +22,79 @@
   "results": [
     {
       "model": "Zero (z-scored target floor)",
-      "test_mse": 2.367814540863037,
-      "val_mse": 1.8841407299041748,
+      "test_mse": 2.81059193611145,
+      "val_mse": 1.9623149633407593,
       "wall_seconds": 0.0,
       "notes": "predicts 0 everywhere"
     },
     {
       "model": "PerDrugTrainMean",
-      "test_mse": 2.367814540863037,
-      "val_mse": 1.8841407299041748,
+      "test_mse": 2.81059193611145,
+      "val_mse": 1.9623149633407593,
       "wall_seconds": 0.0,
       "notes": "predicts per-drug train mean"
     },
     {
-      "model": "GradientBoosting (PCA-256)",
-      "test_mse": 2.3699265799411298,
-      "val_mse": 2.1596757997247362,
-      "wall_seconds": 78.65,
-      "notes": ""
-    },
-    {
       "model": "ResistanceMap (10-agent DAG)",
-      "test_mse": 2.3730967044830322,
+      "test_mse": 2.836390733718872,
       "val_mse": null,
       "wall_seconds": null,
       "notes": "from checkpoints/pipeline_validated.pt"
     },
     {
       "model": "RandomForest (PCA-256)",
-      "test_mse": 2.4134212816795744,
-      "val_mse": 2.0231726968596404,
-      "wall_seconds": 7.51,
+      "test_mse": 2.8608771653908525,
+      "val_mse": 2.12080003865747,
+      "wall_seconds": 7.94,
       "notes": ""
     },
     {
-      "model": "Ridge (full proteomics+epi)",
-      "test_mse": 2.4997544288635254,
-      "val_mse": 2.0536413192749023,
-      "wall_seconds": 0.55,
+      "model": "GradientBoosting (PCA-256)",
+      "test_mse": 2.864913753795941,
+      "val_mse": 2.270182360168323,
+      "wall_seconds": 107.32,
       "notes": ""
     },
     {
       "model": "ElasticNet (PCA-256)",
-      "test_mse": 2.564673662185669,
-      "val_mse": 2.1188008785247803,
-      "wall_seconds": 0.04,
+      "test_mse": 2.942319869995117,
+      "val_mse": 2.0775530338287354,
+      "wall_seconds": 0.02,
       "notes": ""
     },
     {
       "model": "Lasso (PCA-256)",
-      "test_mse": 2.5668976306915283,
-      "val_mse": 2.120676040649414,
-      "wall_seconds": 0.04,
+      "test_mse": 2.9431965351104736,
+      "val_mse": 2.078338623046875,
+      "wall_seconds": 0.02,
       "notes": ""
     },
     {
-      "model": "XGBoost (PCA-256)",
-      "test_mse": 2.7215092182159424,
-      "val_mse": 2.1428825855255127,
-      "wall_seconds": 10.29,
+      "model": "Ridge (full proteomics+epi)",
+      "test_mse": 2.972266912460327,
+      "val_mse": 2.11865496635437,
+      "wall_seconds": 0.83,
       "notes": ""
     },
     {
       "model": "Ridge (PCA-256)",
-      "test_mse": 3.247282028198242,
-      "val_mse": 2.9273157119750977,
+      "test_mse": 3.1019749641418457,
+      "val_mse": 2.2274322509765625,
       "wall_seconds": 0.03,
       "notes": ""
     },
     {
+      "model": "XGBoost (PCA-256)",
+      "test_mse": 3.5786044597625732,
+      "val_mse": 2.2583673000335693,
+      "wall_seconds": 12.37,
+      "notes": ""
+    },
+    {
       "model": "MLP-256-128 (PCA-256)",
-      "test_mse": 4.384618759155273,
-      "val_mse": 4.130160331726074,
-      "wall_seconds": 1.83,
+      "test_mse": 4.697566986083984,
+      "val_mse": 4.3402252197265625,
+      "wall_seconds": 2.1,
       "notes": ""
     }
   ]

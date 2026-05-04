@@ -1,0 +1,200 @@
+{
+  "design": "S7 v11 \u2014 single-snapshot DPS with Neural-ODE forward operator (torchdiffeq dopri5 rtol=1e-5 atol=1e-7); LOO energy-distance vs constant + pop-mean baselines; (\u03b7, \u03c3) swept on the same 4\u00d74 grid as v10 S7",
+  "n_paired": 29,
+  "latent_dim": 64,
+  "K_posterior_samples": 200,
+  "sigma_emp_per_dim_displacement": 6.81753396987915,
+  "sweep_grid": [
+    {
+      "eta": 0.5,
+      "sigma_factor": 0.5,
+      "sigma": 3.408766984939575,
+      "ED_prior_mean": 8.941765375907961,
+      "ED_const_mean": 8.946051690361488,
+      "ED_pop_mean": 9.600953695513303,
+      "p_vs_const": 0.48139453981873215,
+      "p_vs_pop": 0.061831575015614204,
+      "F8_pass": false
+    },
+    {
+      "eta": 0.5,
+      "sigma_factor": 1.0,
+      "sigma": 6.81753396987915,
+      "ED_prior_mean": 8.774858089517725,
+      "ED_const_mean": 8.781784927594641,
+      "ED_pop_mean": 9.24397738961803,
+      "p_vs_const": 0.4751997153246261,
+      "p_vs_pop": 0.06571639512271123,
+      "F8_pass": false
+    },
+    {
+      "eta": 0.5,
+      "sigma_factor": 1.5,
+      "sigma": 10.226300954818726,
+      "ED_prior_mean": 9.068036564831344,
+      "ED_const_mean": 9.073915616590932,
+      "ED_pop_mean": 9.380904553390002,
+      "p_vs_const": 0.5062038198814316,
+      "p_vs_pop": 0.06772847234184604,
+      "F8_pass": false
+    },
+    {
+      "eta": 0.5,
+      "sigma_factor": 2.0,
+      "sigma": 13.6350679397583,
+      "ED_prior_mean": 9.574792508458666,
+      "ED_const_mean": 9.558009999592404,
+      "ED_pop_mean": 9.793069889151768,
+      "p_vs_const": 0.5371704753549303,
+      "p_vs_pop": 0.06375096846994267,
+      "F8_pass": false
+    },
+    {
+      "eta": 1.0,
+      "sigma_factor": 0.5,
+      "sigma": 3.408766984939575,
+      "ED_prior_mean": 8.92861324695548,
+      "ED_const_mean": 8.951419524178315,
+      "ED_pop_mean": 9.606431415777122,
+      "p_vs_const": 0.46282952464506966,
+      "p_vs_pop": 0.056343310777563084,
+      "F8_pass": false
+    },
+    {
+      "eta": 1.0,
+      "sigma_factor": 1.0,
+      "sigma": 6.81753396987915,
+      "ED_prior_mean": 8.759370274118607,
+      "ED_const_mean": 8.76634033103573,
+      "ED_pop_mean": 9.22757320417581,
+      "p_vs_const": 0.4690108805080736,
+      "p_vs_pop": 0.06978780932008886,
+      "F8_pass": false
+    },
+    {
+      "eta": 1.0,
+      "sigma_factor": 1.5,
+      "sigma": 10.226300954818726,
+      "ED_prior_mean": 9.062098416233761,
+      "ED_const_mean": 9.079440222823452,
+      "ED_pop_mean": 9.399789116037875,
+      "p_vs_const": 0.4566571315971132,
+      "p_vs_pop": 0.05995758984972084,
+      "F8_pass": false
+    },
+    {
+      "eta": 1.0,
+      "sigma_factor": 2.0,
+      "sigma": 13.6350679397583,
+      "ED_prior_mean": 9.539754581565761,
+      "ED_const_mean": 9.569318293056469,
+      "ED_pop_mean": 9.793401992564103,
+      "p_vs_const": 0.45049517874270883,
+      "p_vs_pop": 0.04963146348899064,
+      "F8_pass": false
+    },
+    {
+      "eta": 2.0,
+      "sigma_factor": 0.5,
+      "sigma": 3.408766984939575,
+      "ED_prior_mean": 8.919702253516176,
+      "ED_const_mean": 8.943369908119529,
+      "ED_pop_mean": 9.610943483774824,
+      "p_vs_const": 0.44434513591668373,
+      "p_vs_pop": 0.05812838114566615,
+      "F8_pass": false
+    },
+    {
+      "eta": 2.0,
+      "sigma_factor": 1.0,
+      "sigma": 6.81753396987915,
+      "ED_prior_mean": 8.747412418084766,
+      "ED_const_mean": 8.775232717808294,
+      "ED_pop_mean": 9.224143277611738,
+      "p_vs_const": 0.4198931389739542,
+      "p_vs_pop": 0.05812838114566615,
+      "F8_pass": false
+    },
+    {
+      "eta": 2.0,
+      "sigma_factor": 1.5,
+      "sigma": 10.226300954818726,
+      "ED_prior_mean": 9.042212123728799,
+      "ED_const_mean": 9.074474881063336,
+      "ED_pop_mean": 9.385318252594088,
+      "p_vs_const": 0.4077760871187119,
+      "p_vs_pop": 0.052903004691397214,
+      "F8_pass": false
+    },
+    {
+      "eta": 2.0,
+      "sigma_factor": 2.0,
+      "sigma": 13.6350679397583,
+      "ED_prior_mean": 9.551034288346441,
+      "ED_const_mean": 9.567143423181388,
+      "ED_pop_mean": 9.78402347647458,
+      "p_vs_const": 0.43820846435858796,
+      "p_vs_pop": 0.05812838114566615,
+      "F8_pass": false
+    },
+    {
+      "eta": 4.0,
+      "sigma_factor": 0.5,
+      "sigma": 3.408766984939575,
+      "ED_prior_mean": 8.904797962028068,
+      "ED_const_mean": 8.951449914154164,
+      "ED_pop_mean": 9.612257644910105,
+      "p_vs_const": 0.41382435678491325,
+      "p_vs_pop": 0.04963146348899064,
+      "F8_pass": false
+    },
+    {
+      "eta": 4.0,
+      "sigma_factor": 1.0,
+      "sigma": 6.81753396987915,
+      "ED_prior_mean": 8.736137283284652,
+      "ED_const_mean": 8.771688523800949,
+      "ED_pop_mean": 9.228225784219159,
+      "p_vs_const": 0.45049517874270883,
+      "p_vs_pop": 0.05812838114566615,
+      "F8_pass": false
+    },
+    {
+      "eta": 4.0,
+      "sigma_factor": 1.5,
+      "sigma": 10.226300954818726,
+      "ED_prior_mean": 9.040479205232987,
+      "ED_const_mean": 9.081691874536956,
+      "ED_pop_mean": 9.379716314493024,
+      "p_vs_const": 0.48139453981873215,
+      "p_vs_pop": 0.061831575015614204,
+      "F8_pass": false
+    },
+    {
+      "eta": 4.0,
+      "sigma_factor": 2.0,
+      "sigma": 13.6350679397583,
+      "ED_prior_mean": 9.54360234346264,
+      "ED_const_mean": 9.568023158340639,
+      "ED_pop_mean": 9.803732212421052,
+      "p_vs_const": 0.40174971822394395,
+      "p_vs_pop": 0.06375096846994267,
+      "F8_pass": false
+    }
+  ],
+  "best": {
+    "eta": 4.0,
+    "sigma_factor": 2.0,
+    "sigma": 13.6350679397583,
+    "ED_prior_mean": 9.54360234346264,
+    "ED_const_mean": 9.568023158340639,
+    "ED_pop_mean": 9.803732212421052,
+    "p_vs_const": 0.40174971822394395,
+    "p_vs_pop": 0.06375096846994267,
+    "F8_pass": false
+  },
+  "F8_strict_pass": false,
+  "n_cells_pass": 0,
+  "expected_outcome_per_v10_spec": "FAIL \u2014 Stone minimax at N_paired=29 < ~150",
+  "verdict_consistent_with_v10": true
+}

@@ -1,0 +1,8 @@
+{
+  "n_paired": 29,
+  "n_strict_paired_with_2nd_line": 20,
+  "spec_target_N_p_strict": 42,
+  "spec_target_N_r_paired": 319,
+  "actual_vs_spec_strict_ratio": 0.476,
+  "honest_disclosure": "Spec assumed N_p=42 strict-paired and N_r=319 paired; on-disk RNA-seq files only support N=29 paired and N=20 strict-paired. Power for F5, F1, and L2-NIE in v10 is reduced proportionally."
+}

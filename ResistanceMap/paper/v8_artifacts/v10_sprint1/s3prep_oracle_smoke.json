@@ -1,0 +1,24 @@
+{
+  "proteasome_positive_control": {
+    "n_driver_genes_input": 40,
+    "n_driver_genes_present": 40,
+    "drv_mean_chronos": -1.3554685525416166,
+    "bg_mean_chronos": NaN,
+    "mannwhitneyu_p_one_sided_less": NaN,
+    "permutation_p": 0.0,
+    "percentile_in_null": 0.0,
+    "n_permutations": 1000,
+    "refuted_at_5pct": false
+  },
+  "random_negative_control": {
+    "n_driver_genes_input": 40,
+    "n_driver_genes_present": 40,
+    "drv_mean_chronos": -0.12509258635133194,
+    "bg_mean_chronos": NaN,
+    "mannwhitneyu_p_one_sided_less": NaN,
+    "permutation_p": 0.475,
+    "percentile_in_null": 47.5,
+    "n_permutations": 1000,
+    "refuted_at_5pct": true
+  }
+}

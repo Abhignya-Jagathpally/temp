@@ -1,0 +1,215 @@
+{
+  "design": "Cox PH LOO with progressive feature augmentation: v11_richer baseline + mmSYGNAL transcriptional-program features (routed risk score, 6 raw model scores, 10 PCs of IA12 program activity matrix). Per-patient log-hazards saved for paired \u0394-CI vs mmSYGNAL.",
+  "n_total": 787,
+  "n_events": 224,
+  "median_tt2L_days": 654.001,
+  "results": {
+    "Cox_v11_richer": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6984402079722704
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5863171355498721
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6879966541196152
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5205327413984462
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.620687237026648
+        }
+      },
+      "marginal": {
+        "c_index": 0.6537584472651166,
+        "AUROC_12mo": 0.712293715140015,
+        "AUROC_24mo": 0.665032679738562
+      },
+      "n_features": 23
+    },
+    "Cox_v11_routed_mmsygnal": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.729636048526863
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6668797953964194
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6942701798410706
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6426193118756937
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.65890603085554
+        }
+      },
+      "marginal": {
+        "c_index": 0.6955131876256027,
+        "AUROC_12mo": 0.7505031338048415,
+        "AUROC_24mo": 0.7110149942329874
+      },
+      "n_features": 24
+    },
+    "Cox_v11_six_mmsygnal_scores": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7383015597920277
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6227621483375959
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6836051861145964
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6237513873473918
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6642356241234222
+        }
+      },
+      "marginal": {
+        "c_index": 0.6875162697710258,
+        "AUROC_12mo": 0.7389454315450521,
+        "AUROC_24mo": 0.6981161091887735
+      },
+      "n_features": 29
+    },
+    "Cox_only_six_mmsygnal_scores": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7231369150779896
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6361892583120204
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.650564617314931
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6448390677025527
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6644460028050491
+        }
+      },
+      "marginal": {
+        "c_index": 0.6771348542749148,
+        "AUROC_12mo": 0.7009947674084297,
+        "AUROC_24mo": 0.6886774317570166
+      },
+      "n_features": 6
+    },
+    "Cox_v11_program_activity_pcs": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7218370883882149
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5856777493606138
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6693851944792973
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5926748057713651
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6496493688639551
+        }
+      },
+      "marginal": {
+        "c_index": 0.6687214302820788,
+        "AUROC_12mo": 0.7260364556379736,
+        "AUROC_24mo": 0.6810073048827373
+      },
+      "n_features": 33
+    }
+  },
+  "paired_bootstrap_delta_vs_mmsygnal_routed": {
+    "Cox_v11_richer": {
+      "delta_mean": -0.03959777548343564,
+      "delta_median": -0.03939397635387615,
+      "ci95": [
+        -0.07906828817880246,
+        -0.0029770534512654797
+      ],
+      "p_a_beats_b": 0.022,
+      "n_boot": 1000
+    },
+    "Cox_v11_routed_mmsygnal": {
+      "delta_mean": 0.0017724339342933177,
+      "delta_median": 0.0015940201351309358,
+      "ci95": [
+        -0.02449593730116933,
+        0.026026036891448688
+      ],
+      "p_a_beats_b": 0.555,
+      "n_boot": 1000
+    },
+    "Cox_v11_six_mmsygnal_scores": {
+      "delta_mean": -0.006492007770246015,
+      "delta_median": -0.006457707084524367,
+      "ci95": [
+        -0.03375574917144529,
+        0.018898689907128962
+      ],
+      "p_a_beats_b": 0.318,
+      "n_boot": 1000
+    },
+    "Cox_only_six_mmsygnal_scores": {
+      "delta_mean": -0.017090489865890724,
+      "delta_median": -0.01670468120967622,
+      "ci95": [
+        -0.03403190496981627,
+        -0.0019995561139616452
+      ],
+      "p_a_beats_b": 0.016,
+      "n_boot": 1000
+    },
+    "Cox_v11_program_activity_pcs": {
+      "delta_mean": -0.024923383972703154,
+      "delta_median": -0.024869335527343994,
+      "ci95": [
+        -0.058688582573633206,
+        0.006720057425475891
+      ],
+      "p_a_beats_b": 0.069,
+      "n_boot": 1000
+    }
+  },
+  "mmsygnal_reference_marginal_c_index": 0.694,
+  "mmsygnal_reference_ci95": [
+    0.658,
+    0.729
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "tag": "v10s2",
+  "ckpt_path": "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/checkpoints/u_theta_v10s2.pt",
+  "F4_curl_fraction": {
+    "curl_fraction_residual": 0.015081512155174916,
+    "curl_fraction_empirical": 0.014643341110865847,
+    "curl_fraction": 0.015081512155174916,
+    "n_edges": 5663,
+    "k_nn": 15,
+    "edge_emp_l2_sq": 740451328.0,
+    "edge_model_l2_sq": 1040622.375,
+    "residual_l2_sq": 718979840.0,
+    "method": "discrete_hodge_kNN_lstsq_residual_of_emp_minus_model_drift"
+  },
+  "F5_median_r": {
+    "n_test": 157,
+    "median_r": 0.9981667399406433,
+    "mean_r": 0.9979180693626404,
+    "p25_r": 0.9971598982810974,
+    "p75_r": 0.9989556074142456,
+    "n_steps": 50,
+    "step_size": 0.005,
+    "refutation_threshold": 0.9,
+    "refuted": true
+  },
+  "verdict": {
+    "F4_passes": true,
+    "F5_passes": false
+  }
+}

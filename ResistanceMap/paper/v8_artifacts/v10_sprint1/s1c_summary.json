@@ -1,0 +1,9 @@
+{
+  "encoder": "PCA-64 on log1p-TPM (Sprint-1 substitute for frozen scGPT)",
+  "n_patients": 787,
+  "latent_dim": 64,
+  "n_genes_input": 57690,
+  "n_genes_used": 5000,
+  "cumulative_explained_variance": 0.8593717217445374,
+  "scgpt_substitution_note": "scGPT swap-in is Sprint-2; downstream U_theta math is encoder-agnostic up to latent dimension; only encoder identity changes."
+}

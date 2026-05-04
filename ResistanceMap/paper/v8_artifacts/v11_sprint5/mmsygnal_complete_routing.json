@@ -1,0 +1,184 @@
+{
+  "design": "Complete mmSYGNAL routing by adding derived del(1p36) and FGFR3 subtype calls. del(1p36) from chr1 1-30Mb weighted mean Segment_Mean (CNV); FGFR3+ from baseline FGFR3 z-score (RNA-seq Wall 2021 proxy). Cutoff sweep {5,10,15,20}% per literature-prevalence range.",
+  "n_total": 787,
+  "baseline_4_submodel_routing_c": 0.693784687151827,
+  "sweep": [
+    {
+      "q_del1p_bottom_quantile": 0.05,
+      "q_fgfr3_top_quantile": 0.95,
+      "n_del1p_proxy_positive": 37,
+      "n_fgfr3_proxy_positive": 40,
+      "routing_log": {
+        "A_only": 113,
+        "B_only": 351,
+        "C_default": 323,
+        "A_or_B_via_proxy": 76,
+        "no_change": 0
+      },
+      "marginal_c_index": 0.6933785936670241,
+      "per_stratum_c_index": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7010398613518197
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.7148337595907929
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6681304893350063
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6925638179800222
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6796633941093969
+        }
+      }
+    },
+    {
+      "q_del1p_bottom_quantile": 0.1,
+      "q_fgfr3_top_quantile": 0.9,
+      "n_del1p_proxy_positive": 73,
+      "n_fgfr3_proxy_positive": 79,
+      "routing_log": {
+        "A_only": 114,
+        "B_only": 362,
+        "C_default": 311,
+        "A_or_B_via_proxy": 150,
+        "no_change": 0
+      },
+      "marginal_c_index": 0.6956589647739934,
+      "per_stratum_c_index": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7023396880415944
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.7257033248081841
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6691760769552488
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6925638179800222
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6800140252454417
+        }
+      }
+    },
+    {
+      "q_del1p_bottom_quantile": 0.15,
+      "q_fgfr3_top_quantile": 0.85,
+      "n_del1p_proxy_positive": 109,
+      "n_fgfr3_proxy_positive": 118,
+      "routing_log": {
+        "A_only": 144,
+        "B_only": 354,
+        "C_default": 289,
+        "A_or_B_via_proxy": 217,
+        "no_change": 0
+      },
+      "marginal_c_index": 0.6858710705249018,
+      "per_stratum_c_index": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6910745233968805
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.7180306905370843
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6616478460895023
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6925638179800222
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6661991584852734
+        }
+      }
+    },
+    {
+      "q_del1p_bottom_quantile": 0.2,
+      "q_fgfr3_top_quantile": 0.8,
+      "n_del1p_proxy_positive": 145,
+      "n_fgfr3_proxy_positive": 158,
+      "routing_log": {
+        "A_only": 179,
+        "B_only": 354,
+        "C_default": 254,
+        "A_or_B_via_proxy": 287,
+        "no_change": 0
+      },
+      "marginal_c_index": 0.6854025011193603,
+      "per_stratum_c_index": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6876083188908145
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.7205882352941176
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6545378502718527
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.7169811320754716
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6636746143057504
+        }
+      }
+    }
+  ],
+  "chosen_cutoff": {
+    "q_del1p_bottom": 0.1,
+    "q_fgfr3_top": 0.9,
+    "marginal_c_index": 0.6956589647739934,
+    "delta_vs_4submodel": 0.0018742776221664093
+  },
+  "v11_5_paired_bootstrap_marginal": {
+    "delta_mean": -0.00017270663828542577,
+    "delta_median": -0.0001910660206781989,
+    "ci95": [
+      -0.026172101899766643,
+      0.024803150647114008
+    ],
+    "p_a_beats_b": 0.491,
+    "n_boot": 1000,
+    "stratified": false
+  },
+  "v11_5_paired_bootstrap_stratified": {
+    "delta_mean": 0.00017734942790033958,
+    "delta_median": 0.0003183363471361833,
+    "ci95": [
+      -0.026968569055679133,
+      0.027963226805791448
+    ],
+    "p_a_beats_b": 0.513,
+    "n_boot": 1000,
+    "stratified": true
+  },
+  "honest_caveats": [
+    "del(1p36) and FGFR3 calls are V11-derived PROXIES, not official MMRF FISH labels.",
+    "Bottom-decile / top-decile is a cohort-relative threshold, not an absolute clinical cutoff.",
+    "If mmSYGNAL improves under complete routing, the v11.5 head-to-head TIE may shift."
+  ]
+}

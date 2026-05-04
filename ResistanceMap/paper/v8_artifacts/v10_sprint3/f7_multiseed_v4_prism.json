@@ -1,0 +1,82 @@
+{
+  "design": "F7 v4 \u2014 PRISM AUC \u00d7 CCLE proteomics drug-sensitivity oracle (replaces Chronos for HDAC drugs lacking essentiality signal)",
+  "results": {
+    "Vorinostat": {
+      "rationale": "class-I HDAC selective; HDAC6 IC50 1.5 \u00b5M (Bradner 2010)",
+      "single": {
+        "seeds": [
+          "HDAC1"
+        ],
+        "n_top50_present_in_oracle": 49,
+        "drv_mean_drug_corr": 0.035082096061177084,
+        "bg_mean_drug_corr": 0.009758918045040975,
+        "permutation_p_one_sided_greater": 0.001
+      },
+      "pooled": {
+        "seeds": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3"
+        ],
+        "n_top50_present_in_oracle": 50,
+        "drv_mean_drug_corr": 0.024616930490141128,
+        "bg_mean_drug_corr": 0.009784959313831082,
+        "permutation_p_one_sided_greater": 0.053
+      },
+      "delta_perm_p": 0.052,
+      "pooled_dominates": false
+    },
+    "Panobinostat": {
+      "rationale": "pan-HDAC; all 4 paralogs IC50 <10 nM (Bradner 2010)",
+      "single": {
+        "seeds": [
+          "HDAC1"
+        ],
+        "n_top50_present_in_oracle": 49,
+        "drv_mean_drug_corr": 0.016763131434802937,
+        "bg_mean_drug_corr": 0.0011444846334351466,
+        "permutation_p_one_sided_greater": 0.033
+      },
+      "pooled": {
+        "seeds": [
+          "HDAC1",
+          "HDAC2",
+          "HDAC3",
+          "HDAC6"
+        ],
+        "n_top50_present_in_oracle": 50,
+        "drv_mean_drug_corr": 0.00720758376195916,
+        "bg_mean_drug_corr": 0.0011686548513547541,
+        "permutation_p_one_sided_greater": 0.212
+      },
+      "delta_perm_p": 0.179,
+      "pooled_dominates": false
+    },
+    "Bortezomib": {
+      "rationale": "20S proteasome \u03b2-subunits (positive control)",
+      "single": {
+        "seeds": [
+          "PSMB5"
+        ],
+        "n_top50_present_in_oracle": 50,
+        "drv_mean_drug_corr": -0.004447893094166222,
+        "bg_mean_drug_corr": -0.007897519447675708,
+        "permutation_p_one_sided_greater": 0.341
+      },
+      "pooled": {
+        "seeds": [
+          "PSMB5",
+          "PSMB1",
+          "PSMB2"
+        ],
+        "n_top50_present_in_oracle": 50,
+        "drv_mean_drug_corr": -0.0011232953757902226,
+        "bg_mean_drug_corr": -0.00790621302468103,
+        "permutation_p_one_sided_greater": 0.211
+      },
+      "delta_perm_p": -0.13000000000000003,
+      "pooled_dominates": true
+    }
+  },
+  "overall_strict_pass_all_drugs": false
+}

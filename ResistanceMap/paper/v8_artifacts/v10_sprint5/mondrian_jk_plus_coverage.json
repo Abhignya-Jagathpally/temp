@@ -1,0 +1,76 @@
+{
+  "design": "Mondrian jackknife+ on log(tt2L+1) with Ridge base learner; FULL JK+ over N=787",
+  "n_total": 787,
+  "strata_sizes": {
+    "S1_del17p": 105,
+    "S2_t_4_14": 97,
+    "S3_1q21": 165,
+    "S4_t_11_14": 95,
+    "S5_other": 325
+  },
+  "alpha": 0.1,
+  "nominal_coverage": 0.9,
+  "coverage_per_stratum": {
+    "S1_del17p": {
+      "n_test": 105,
+      "coverage_at_alpha_0p10": 0.9047619047619048,
+      "deviation_from_nominal_90pct": 0.004761904761904745,
+      "median_pred_interval_days": [
+        115.86608927869113,
+        1791.4318945371906
+      ],
+      "within_3pct": true,
+      "within_5pct": true
+    },
+    "S2_t_4_14": {
+      "n_test": 97,
+      "coverage_at_alpha_0p10": 0.8969072164948454,
+      "deviation_from_nominal_90pct": -0.003092783505154628,
+      "median_pred_interval_days": [
+        163.83812169625176,
+        1596.350901951926
+      ],
+      "within_3pct": true,
+      "within_5pct": true
+    },
+    "S3_1q21": {
+      "n_test": 165,
+      "coverage_at_alpha_0p10": 0.896969696969697,
+      "deviation_from_nominal_90pct": -0.00303030303030305,
+      "median_pred_interval_days": [
+        139.50596089714983,
+        1722.7121721671695
+      ],
+      "within_3pct": true,
+      "within_5pct": true
+    },
+    "S4_t_11_14": {
+      "n_test": 95,
+      "coverage_at_alpha_0p10": 0.9052631578947369,
+      "deviation_from_nominal_90pct": 0.0052631578947368585,
+      "median_pred_interval_days": [
+        113.12091242625992,
+        2260.0481050571125
+      ],
+      "within_3pct": true,
+      "within_5pct": true
+    },
+    "S5_other": {
+      "n_test": 325,
+      "coverage_at_alpha_0p10": 0.8984615384615384,
+      "deviation_from_nominal_90pct": -0.0015384615384615996,
+      "median_pred_interval_days": [
+        186.89129948551093,
+        1819.0452731116843
+      ],
+      "within_3pct": true,
+      "within_5pct": true
+    }
+  },
+  "F_S5_aggregate": {
+    "n_strata_within_3pct": 5,
+    "n_strata_within_5pct": 5,
+    "spec_target": "\u22653 strata within \u00b13%, all 5 within \u00b15%",
+    "strict_pass": true
+  }
+}

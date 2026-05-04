@@ -1,0 +1,102 @@
+{
+  "stage": "v11_sprint1_encoder_upgrade",
+  "spec_call": "docs/V11_SOTA_UPGRADE_PLAN.md \u00a72 row 1: scFoundation + LoRA",
+  "what_was_attempted": [
+    "Search HF for scFoundation / xTrimoscFoundation",
+    "Inspect genbio-ai/scFoundation, perturblab/scfoundation-gene",
+    "Probe upstream biomap-research/scFoundation packaging",
+    "Probe `perturblab` PyPI availability"
+  ],
+  "scfoundation_blockers": {
+    "biomap_upstream": "Python 3.7 pin; weights on Tencent OneDrive; not tractable in this env.",
+    "genbio-ai_scFoundation_HF": "1.43 GB pickle ckpt only; no tokenizer/config/loader code.",
+    "perturblab_scfoundation_gene_HF": "Requires unpublished `perturblab` package (not on PyPI; HF README: 'Intended for internal use')."
+  },
+  "tractable_proxy_chosen": {
+    "model": "ctheodoris/Geneformer V1-10M",
+    "params_M": 10.29,
+    "license": "Apache-2.0",
+    "rationale": "Geneformer V1-10M is the only foundation model in the v11 plan \u00a73 priority list that (a) is HF-native with safetensors+pickle weights, (b) loads cleanly under the existing transformers 5.5 install, (c) has published gene_median + token dictionaries enabling the rank-value encoding deterministically. scFoundation (1st-priority) is blocked at the packaging layer.",
+    "off_distribution_caveat": "Geneformer was pretrained on single-cell rank-value sequences; we apply the encoding to bulk MMRF TPM (pseudobulk-as-cell). This is a known approximation. The F2 zero-trust check (s2f re-run on v11 latents) is the empirical guardrail per V11 plan \u00a72 row 1 'Zero-trust check' column."
+  },
+  "pipeline": {
+    "input": "data/processed/mmrf_baseline_expression.parquet (787 \u00d7 57690 ENSG, TPM)",
+    "encoding": "Geneformer rank-value tokenization, max_seq_len=2048",
+    "forward": "Geneformer V1-10M last_hidden_state, attention-masked mean pool \u2192 256-dim",
+    "projection": "PCA(64) for downstream U_\u03b8 / HBayes drop-in compat",
+    "output_shape": [
+      787,
+      64
+    ],
+    "explained_variance_after_pca": 0.9525236487388611
+  },
+  "gene_coverage": {
+    "mmrf_genes_total": 57690,
+    "mapped_to_geneformer_token_and_median": 19489
+  },
+  "v10_vs_v11_sanity": {
+    "n_samples_first_50": 50,
+    "cosine_v11_to_v10_z64_mean": 0.021387549322098492,
+    "cosine_v11_to_v10_z64_std": 0.46656854158682665,
+    "interpretation": "Mean cosine \u2248 0 expected: v11 lives in a different subspace than PCA(log-TPM). If |mean cosine| > 0.5 the v11 encoding may be collapsing to PCA-equivalent \u2192 investigate."
+  },
+  "next_step_zero_trust": "Run scripts/v11/s2f_f1_f2_gates_v11.py (which loads mmrf_z64_v11.npy) and verify F2 stays REFUTED. If F2 flips to PASS at v11 where v10 was REFUTED, the encoder is leaking paired-patient identity \u2192 reject and revert.",
+  "f2_zero_trust_check": {
+    "verdict_literal": "REJECT v11 encoder per V11 plan \u00a72 row 1 zero-trust language",
+    "rationale_literal": "V10 F2 = REFUTED (passes_F2=False, CI [-43.1, 99.5] contains 0). V11 F2 = PASS (passes_F2=True, \u0394\u0304=8.36, CI [2.34, 15.18] excludes 0). Plan: \"if F2 passes at v11 where it REFUTED at v10, reject and revert.\"",
+    "scale_confound_note": "V11 latent scale is ~18\u00d7 smaller than V10 (per-dim std 0.45 vs 8.19). \u0394\u0304 at v11 (8.36) is actually SMALLER than at v10 (24.19) \u2014 the F2 flip is driven by tighter posterior CIs at smaller scale, not larger \u0394. A scale-controlled re-run (z-standardize both v10 and v11 latents per-dim before HBayes fit) would disambiguate \"genuine encoder improvement\" from \"leak.\" Until that re-test runs, the LITERAL plan language says reject.",
+    "recommended_next_step": "(1) Standardize mmrf_z64_v11.npy to per-dim unit variance. (2) Re-run scripts/v11/s2f_f1_f2_gates_v11.py on the standardized latent. (3) If F2 stays PASS post-standardization \u2192 genuine leak, revert. (4) If F2 returns to REFUTED \u2192 encoder is honest; v11 latent is just better-conditioned. Do NOT promote v11 latent to downstream stages until this resolves.",
+    "v10_baseline": {
+      "passes_F2": false,
+      "delta_mean": 24.19,
+      "ci": [
+        -43.11,
+        99.55
+      ]
+    },
+    "v11_result": {
+      "passes_F2": true,
+      "delta_mean": 8.36,
+      "ci": [
+        2.34,
+        15.18
+      ]
+    },
+    "leak_check_passed": false,
+    "scale_controlled_retest": {
+      "method": "per-dim z-standardize v11 latent (mean 0 std 1) before HBayes fit",
+      "n_test_paired": 27,
+      "delta_mean": 8.442,
+      "delta_bootstrap_95_ci": [
+        3.856,
+        14.115
+      ],
+      "ci_contains_zero": false,
+      "passes_F2": true,
+      "verdict": "F2 STILL PASSES after standardization \u2192 confirmed leak (NOT a scale artifact)"
+    }
+  },
+  "final_verdict": "REJECT v11 Geneformer encoder. F2 leak check FAILS the literal V11 plan rule AND the scale-controlled retest. v10 F2 = REFUTED, v11 F2 = PASS even after per-dim standardization (\u0394\u0304=8.44, CI [3.86, 14.12]). The Geneformer rank-value embedding of bulk MMRF TPM encodes patient-identifying signal that crosses the paired-vs-unpaired information boundary. Per the V11 plan \u00a72 row 1 zero-trust check column, this requires reject + revert. v10 PCA(64) latent remains the production artifact. mmrf_z64_v11.npy is preserved for diagnostic use only and must NOT be promoted to U_\u03b8 training, HBayes inference, or downstream gates.",
+  "files_produced": [
+    "data/processed/mmrf_z64_v11.npy",
+    "data/processed/mmrf_z64_v11_pca.npz",
+    "data/processed/mmrf_z64_v11_sample_ids.json",
+    "paper/v8_artifacts/v11_sprint1/encoder_upgrade.json",
+    "paper/v8_artifacts/v11_sprint1/f1_f2_gates_v11.json",
+    "scripts/v11/s1c_encode_mmrf_v11.py",
+    "scripts/v11/s2f_f1_f2_gates_v11.py"
+  ],
+  "plausible_leak_mechanism": "Geneformer was pretrained on single-cell rank-value sequences from healthy + disease cells. When applied to bulk MMRF TPM (an off-distribution input), the last_hidden_state may pick up cohort-specific batch artifacts (sequencing center, library prep, capture chemistry) that correlate with the paired-patient subset (N=27 of 716) since the paired patients share an enrollment-protocol cluster. Mean-pooled embeddings of off-distribution inputs collapse to such artifacts more readily than PCA on log-TPM, which weights all genes by linear variance.",
+  "v12_plan": [
+    "(a) Get scFoundation working properly: port the upstream tokenizer + encoder ",
+    "    forward pass without depending on the unpublished perturblab package; or",
+    "(b) Use Geneformer with cohort-batch-effect-removed inputs (e.g., ComBat across",
+    "    paired vs unpaired subgroups before tokenization); or",
+    "(c) Replace the mean-pool with attention over a learnable 64-dim adapter token,",
+    "    pretrain the adapter on N=787 with masked-gene reconstruction loss only, then",
+    "    freeze and re-run F2 \u2014 the adapter cannot leak paired identity if its training",
+    "    loss never sees paired-patient labels.",
+    "Until any of (a)/(b)/(c) lands AND F2 stays REFUTED, the v11 encoder upgrade is",
+    "BLOCKED. v10 PCA(64) is the active production encoder."
+  ]
+}

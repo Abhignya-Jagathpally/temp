@@ -1,0 +1,13 @@
+{
+  "tag": "v10s2",
+  "n_nodes": 12651,
+  "n_edges_canonical": 141241,
+  "adjacency_nnz": 282482,
+  "mean_degree": 19.908710479736328,
+  "median_degree": 8.831999778747559,
+  "min_degree": 0.699999988079071,
+  "max_degree": 476.4059753417969,
+  "links_file": "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data/raw/string/9606.protein.links.full.v12.0.txt.gz",
+  "filter_combined_threshold": 700,
+  "filter_nonobs_threshold": 400
+}

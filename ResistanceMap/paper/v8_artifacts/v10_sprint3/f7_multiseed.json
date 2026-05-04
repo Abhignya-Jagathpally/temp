@@ -1,0 +1,131 @@
+{
+  "alpha": 0.7,
+  "n_perm": 1000,
+  "top_k": 50,
+  "per_case": {
+    "Panobinostat_single_HDAC1": {
+      "seeds_used": [
+        "HDAC1"
+      ],
+      "n_seeds": 1,
+      "alpha": 0.7,
+      "top_k_size": 50,
+      "top10_genes": [
+        "SERPINB5",
+        "FOXJ1",
+        "RFX3",
+        "RFX1",
+        "RFX2",
+        "TRERF1",
+        "ELMSAN1",
+        "DNTTIP1",
+        "BANP",
+        "ZBTB7A"
+      ],
+      "crispr_test": {
+        "n_present": 47,
+        "drv_mean_chronos": -0.10928256825556709,
+        "bg_mean_chronos": -0.14839330158285804,
+        "mannwhitneyu_p_one_sided_less": 0.39859108419764605,
+        "permutation_p": 0.748
+      }
+    },
+    "Panobinostat_pooled_HDAC1234": {
+      "seeds_used": [
+        "HDAC1",
+        "HDAC2",
+        "HDAC3",
+        "HDAC6"
+      ],
+      "n_seeds": 4,
+      "alpha": 0.7,
+      "top_k_size": 50,
+      "top10_genes": [
+        "H2BE1",
+        "H2BW1",
+        "H2BW2",
+        "AJUBA",
+        "MACROH2A2",
+        "LCOR",
+        "ZNF521",
+        "TRIM50",
+        "TBL1X",
+        "SIN3B"
+      ],
+      "crispr_test": {
+        "n_present": 44,
+        "drv_mean_chronos": -0.07973990427979562,
+        "bg_mean_chronos": -0.14845760178485642,
+        "mannwhitneyu_p_one_sided_less": 0.1394618160386802,
+        "permutation_p": 0.885
+      }
+    },
+    "Vorinostat_single_HDAC1": {
+      "seeds_used": [
+        "HDAC1"
+      ],
+      "n_seeds": 1,
+      "alpha": 0.7,
+      "top_k_size": 50,
+      "top10_genes": [
+        "RFX3",
+        "RFX2",
+        "FOXJ1",
+        "RFX1",
+        "SERPINB5",
+        "TRERF1",
+        "ELMSAN1",
+        "DNTTIP1",
+        "BANP",
+        "ARID5B"
+      ],
+      "crispr_test": {
+        "n_present": 47,
+        "drv_mean_chronos": -0.1105148971870036,
+        "bg_mean_chronos": -0.14839015173188036,
+        "mannwhitneyu_p_one_sided_less": 0.3604431515727238,
+        "permutation_p": 0.719
+      }
+    },
+    "Vorinostat_pooled_HDAC1234": {
+      "seeds_used": [
+        "HDAC1",
+        "HDAC2",
+        "HDAC3",
+        "HDAC6"
+      ],
+      "n_seeds": 4,
+      "alpha": 0.7,
+      "top_k_size": 50,
+      "top10_genes": [
+        "TRIM50",
+        "LCOR",
+        "H2BE1",
+        "H2BW1",
+        "H2BW2",
+        "PLAA",
+        "MACROH2A2",
+        "TPPP",
+        "AJUBA",
+        "H2BS1"
+      ],
+      "crispr_test": {
+        "n_present": 44,
+        "drv_mean_chronos": -0.08683876069086746,
+        "bg_mean_chronos": -0.14844061795134617,
+        "mannwhitneyu_p_one_sided_less": 0.07697935557572648,
+        "permutation_p": 0.841
+      }
+    }
+  },
+  "comparison": {
+    "Panobinostat_single_p": 0.748,
+    "Panobinostat_pooled_p": 0.885,
+    "Panobinostat_p_improvement": -0.137,
+    "Vorinostat_single_p": 0.719,
+    "Vorinostat_pooled_p": 0.841,
+    "Vorinostat_p_improvement": -0.122
+  },
+  "f7_pass_pooled_at_least_as_good": false,
+  "interpretation": "F7 PASSES if pooled HDAC1+2+3+6 seeds give a permutation-p \u2264 the single-HDAC1 seed for both pan-HDAC drugs. The pilot's PPI_PROPAGATION_PILOT.md showed this fix was needed."
+}
