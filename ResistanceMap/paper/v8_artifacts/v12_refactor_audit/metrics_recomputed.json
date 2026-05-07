@@ -1,0 +1,201 @@
+{
+  "audit_date": "2026-05-07",
+  "auditor": "metrics-auditor-agent",
+  "authoritative_sources": [
+    "checkpoints/pipeline_validated.pt",
+    "checkpoints/data_ready.pt",
+    "paper/v8_artifacts/v11_sprint5/cox_per_patient_log_hazards.npz",
+    "paper/v8_artifacts/v12_sprint1/mofa_vs_v11_5_per_patient_log_hazards.npz",
+    "paper/tables/baseline_comparison.json",
+    "paper/v8_artifacts/baselines/mofa_results.json"
+  ],
+  "checkpoint_inventory": {
+    "pipeline_validated.pt": {
+      "sha256": "605aa02af961dda16649307874034164517b27ee00300a209e1365b7d26ee39d",
+      "last_modified": "2026-05-03T10:22:40-05:00",
+      "size_bytes": 8588,
+      "runs_md_row": "pipeline_validated (v6 era)"
+    },
+    "data_ready.pt": {
+      "sha256": "a149f86e16e9f8138172dbf6450e91869bbe228ab837b230bcc652c9c1704b6f",
+      "last_modified": "2026-05-03T09:51:09-05:00",
+      "size_bytes": 151285221,
+      "runs_md_row": "data_ready (v6 era)"
+    },
+    "u_theta_v10s1.pt": {
+      "sha256": "e40d8053b20ce25e1881a8825213f4a27bc83eb1fb82b149b0212cd73d7cf559",
+      "last_modified": "2026-05-03T19:43:43-05:00",
+      "size_bytes": 465672
+    },
+    "u_theta_v10s2.pt": {
+      "sha256": "a81f11ce0c5711545b1d7451f8b81ee222626f7f7f6f4f335d064af0f83be846",
+      "last_modified": "2026-05-03T19:44:41-05:00",
+      "size_bytes": 465672
+    },
+    "v11_sprint5/cox_per_patient_log_hazards.npz": {
+      "sha256": "3317ab00f1e3fbc2fa6159e8990b7c9124ff7ca38b4eb19638c8761ebd92716c",
+      "last_modified": "2026-05-03T20:34:06-05:00",
+      "size_bytes": 64406,
+      "runs_md_row": "r-2026-05-03-v11s5-cox-with-programs"
+    },
+    "v12_sprint1/mofa_vs_v11_5_per_patient_log_hazards.npz": {
+      "sha256": "b1a2f698012c71fa805a7e054f2fb5bb090b2e0216c819c6449d1bccabfddc54",
+      "last_modified": "2026-05-04T11:25:25-05:00",
+      "size_bytes": 227474,
+      "runs_md_row": "r-2026-05-04-v12-mofa-vs-v115"
+    }
+  },
+  "pipeline_validated_metrics": {
+    "aggregate_test_mse": 2.836390733718872,
+    "n_test_samples": 132,
+    "n_drugs": 11,
+    "per_drug_present": true,
+    "p0_flag": false
+  },
+  "data_ready_splits": {
+    "train": 622,
+    "val": 132,
+    "test": 132
+  },
+  "recomputed_cindex_marginal": {
+    "source_npz": "v11_sprint5/cox_per_patient_log_hazards.npz",
+    "n_patients": 787,
+    "n_events": 224,
+    "method": "lifelines.concordance_index(t, -log_hazard, event)",
+    "models": {
+      "Cox_v11_richer": 0.6538,
+      "Cox_v11_routed_mmsygnal": 0.6955,
+      "Cox_v11_six_mmsygnal_scores": 0.6875,
+      "Cox_only_six_mmsygnal_scores": 0.6771,
+      "Cox_v11_program_activity_pcs": 0.6687,
+      "mmsygnal_routed": 0.6938
+    }
+  },
+  "recomputed_cindex_v12": {
+    "source_npz": "v12_sprint1/mofa_vs_v11_5_per_patient_log_hazards.npz",
+    "models": {
+      "Cox_v11_richer": 0.6538,
+      "MOFA_factors": 0.6600,
+      "MOFA_factors_plus_v11": 0.6751,
+      "delta_mofa_plus_v11_minus_cox_v11_richer": 0.0213
+    }
+  },
+  "recomputed_per_stratum_cindex": {
+    "source": "v11 sprint5 NPZ (Cox_v11_routed_mmsygnal)",
+    "S1_del17p": {"n": 105, "c_index": 0.7296},
+    "S2_t_4_14": {"n": 97, "c_index": 0.6669},
+    "S3_1q21": {"n": 165, "c_index": 0.6943},
+    "S4_t_11_14": {"n": 95, "c_index": 0.6426},
+    "S5_other": {"n": 325, "c_index": 0.6589}
+  },
+  "recomputed_per_stratum_mmsygnal_routed": {
+    "source": "v11 sprint5 NPZ (mmsygnal_routed)",
+    "S1_del17p": {"n": 105, "c_index": 0.7045},
+    "S2_t_4_14": {"n": 97, "c_index": 0.7219},
+    "S3_1q21": {"n": 165, "c_index": 0.6637},
+    "S4_t_11_14": {"n": 95, "c_index": 0.6926},
+    "S5_other": {"n": 325, "c_index": 0.6824}
+  },
+  "recomputed_paired_bootstrap": {
+    "method": "B=10000 paired percentile bootstrap, seed=42",
+    "comparison": "Cox_v11_routed_mmsygnal vs mmsygnal_routed",
+    "observed_delta": 0.0017,
+    "ci_95_lower": -0.024,
+    "ci_95_upper": 0.0277,
+    "verdict": "TIE"
+  },
+  "recomputed_auroc": {
+    "Cox_v11_routed_mmsygnal": {
+      "auroc_12mo": 0.7505,
+      "auroc_24mo": 0.7110,
+      "n_at_12mo": 623,
+      "n_at_24mo": 493
+    },
+    "mmsygnal_routed": {
+      "auroc_12mo": 0.7153,
+      "auroc_24mo": 0.7099
+    },
+    "Cox_v11_richer": {
+      "auroc_12mo": 0.7123,
+      "auroc_24mo": 0.6650
+    }
+  },
+  "nie_sprint4_bortezomib": {
+    "N_cohort": 787,
+    "n_bort_1L": 579,
+    "n_non_bort_1L": 208,
+    "mediator_M_seed3_point_NIE_log_hr": 0.08626,
+    "mediator_M_seed3_boot_ci95": [0.0316, 0.1498],
+    "NIE_HR_point": 1.0901,
+    "NIE_HR_ci95_lower": 1.0293,
+    "F8_pass": true,
+    "F9_pass": true,
+    "F10_pass": false,
+    "overall_strict": false,
+    "proportion_mediated": 0.0963
+  },
+  "cross_disease_f3": {
+    "mm_bortezomib_p_permutation": 0.095,
+    "mm_bonferroni_pass": false,
+    "aml_native_n_bonferroni_pass": 0,
+    "aml_native_n_drugs": 5,
+    "aml_native_strict_pass": false,
+    "n_aml_patients_range": "186-314"
+  },
+  "baseline_ranking_drug_response_mse": [
+    {"rank": 1, "model": "Zero / PerDrugTrainMean", "test_mse": 2.8106},
+    {"rank": 2, "model": "MOFA+Ridge (20 factors)", "test_mse": 2.8155},
+    {"rank": 3, "model": "ResistanceMap (10-agent DAG)", "test_mse": 2.8364},
+    {"rank": 4, "model": "RandomForest (PCA-256)", "test_mse": 2.8609},
+    {"rank": 5, "model": "GradientBoosting (PCA-256)", "test_mse": 2.8649},
+    {"rank": 6, "model": "ElasticNet (PCA-256)", "test_mse": 2.9423},
+    {"rank": 7, "model": "Ridge (full proteomics+epi)", "test_mse": 2.9723}
+  ],
+  "discrepancies": [
+    {
+      "id": "D1",
+      "claim_source": "RUNS.md r-2026-05-04-v12-mofa-vs-v115 row 37",
+      "claim": "MOFA+v11 delta = +0.0214 vs Cox_v11_richer",
+      "recomputed": 0.0213,
+      "delta": 0.0001,
+      "severity": "PASS (within floating-point rounding)"
+    },
+    {
+      "id": "D2",
+      "claim_source": "RUNS.md r-2026-05-03-v11s5-paired-cindex-test row 32",
+      "claim": "paired bootstrap 95% CI = [-0.0265, +0.0267]",
+      "recomputed_ci": [-0.0240, 0.0277],
+      "delta": "lower bound differs by +0.0025, upper by +0.0010",
+      "severity": "MINOR — seed difference (stored file used B=10000 from production run; re-run with seed=42 yields slightly different bootstrap replicates). TIE verdict unchanged."
+    },
+    {
+      "id": "D3",
+      "claim_source": "RUNS.md r-2026-05-03-v11s5-mmsygnal-complete-routing row 33",
+      "claim": "6-submodel mmSYGNAL marginal C = 0.6957",
+      "recomputed_from_npz": 0.6938,
+      "note": "0.6938 is the 4-submodel score in the NPZ; the 6-submodel score (0.6957) lives in mmsygnal_complete_routing.json but is NOT present in cox_per_patient_log_hazards.npz. The NPZ key mmsygnal_routed = 0.6938 (4-submodel). RUNS.md correctly distinguishes these — no fabrication, but NPZ does not contain the 6-submodel vector.",
+      "severity": "INFO — the 6-submodel C=0.6957 is authoritative from mmsygnal_complete_routing.json; NPZ bootstrap CI uses 4-submodel as reference"
+    },
+    {
+      "id": "D4",
+      "claim_source": "RUNS.md r-2026-05-03-v11s5-cox-with-programs row 34",
+      "claim": "Cox_v11_routed_mmsygnal marginal C = 0.6955",
+      "recomputed": 0.6955,
+      "delta": 0.0000,
+      "severity": "PASS"
+    },
+    {
+      "id": "D5",
+      "claim_source": "pipeline_validated.pt per_drug_metrics",
+      "note": "per_drug_metrics IS present (v7 fix present). Keys: drug, n_obs, mse, mae, spearman, reliable. 11 drugs, all n_obs >= 10. No P0 flag.",
+      "severity": "PASS"
+    },
+    {
+      "id": "D6",
+      "claim_source": "memory / project_resistancemap_floor_evidence",
+      "claim": "ResistanceMap ties MOFA+Ridge (19.7s) and loses to predict-mean on pooled MSE",
+      "recomputed": "CONFIRMED: predict-mean/Zero MSE = 2.8106; MOFA+Ridge = 2.8155; ResistanceMap = 2.8364. RM ranks 3rd, BELOW predict-mean floor.",
+      "severity": "CONFIRMED FLOOR — no fix possible without architectural change"
+    }
+  ]
+}

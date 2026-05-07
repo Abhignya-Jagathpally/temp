@@ -1,0 +1,273 @@
+{
+  "design": "V12 wave-4: TrajectoryNet adaptation. CNF trained on N_paired=29 (z0->z1), embedded all N=787 z0, fed Cox PH LOO. Compared vs v11.5 with B=10000 paired bootstrap, Bonferroni m=3.",
+  "run_id": "r-2026-05-07-v12-refactor-trajectorynet-adaptation",
+  "fit_for_purpose_verdict": "(B) feature-extractor at bare-minimum 2-timepoint regime; structural mismatch flagged.",
+  "n_total": 787,
+  "n_events": 224,
+  "n_paired_train": 29,
+  "expr_sha16": "08fc7bf286413112",
+  "z_dim": 64,
+  "flow_embed_dim": 66,
+  "training": {
+    "n_iter": 10000,
+    "lr": 0.001,
+    "weight_decay": 5e-05,
+    "lambda_energy": 0.01,
+    "lambda_jac_frobenius": 0.001,
+    "ode_solver": "dopri5 (atol=rtol=1e-5)",
+    "loss_terms": "MMD + lam_E*||f||^2 + lam_J*Hutchinson(||J_f||_F^2)",
+    "wall_time_s": 511.6,
+    "mmd_train_post": -0.01075,
+    "mmd_identity_baseline": -0.00879,
+    "log_path": "/home/aj0486@students.ad.unt.edu/pipeline3/.claude/worktrees/tier1-refactor/ResistanceMap/logs/v12_refactor_audit/wave4/trajectorynet_train.log",
+    "note": "MMD plateau from iter 500; flow stays near identity (energy reg > data fit power at N=29)."
+  },
+  "v11_richer_recompute_rho_vs_production": 1.0,
+  "v115_reference_C": 0.6955131876256027,
+  "summary_per_set": {
+    "Cox_v11_routed_mmsygnal": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.729636048526863
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6668797953964194
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6942701798410706
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6426193118756937
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.65890603085554
+        }
+      },
+      "marginal": {
+        "c_index": 0.6955131876256027
+      },
+      "n_features": "production"
+    },
+    "Cox_v11_richer_production": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6984402079722704
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5863171355498721
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6879966541196152
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5205327413984462
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.620687237026648
+        }
+      },
+      "marginal": {
+        "c_index": 0.6537584472651166
+      },
+      "n_features": "production"
+    },
+    "Cox_v11_richer_recompute": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6984402079722704
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5863171355498721
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6879966541196152
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5205327413984462
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.620687237026648
+        }
+      },
+      "marginal": {
+        "c_index": 0.6537584472651166
+      },
+      "n_features": 23
+    },
+    "Cox_flow_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6889081455805892
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5856777493606138
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6074864073609368
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6126526082130965
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.5831697054698457
+        }
+      },
+      "marginal": {
+        "c_index": 0.6231556587565209
+      },
+      "n_features": 66
+    },
+    "Cox_v11_richer_plus_flow": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.712738301559792
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.600383631713555
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6480552070263488
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.6159822419533851
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6077840112201963
+        }
+      },
+      "marginal": {
+        "c_index": 0.6512906483959308
+      },
+      "n_features": 89
+    }
+  },
+  "paired_bootstrap_vs_v115_routed_mmsygnal": {
+    "Cox_flow_alone": {
+      "marginal": {
+        "delta_mean": -0.07240526441993063,
+        "ci95": [
+          -0.10508659743142247,
+          -0.03981369519986544
+        ],
+        "ci99": [
+          -0.11662948634376287,
+          -0.03007652191789767
+        ],
+        "p_two_sided_empirical": 0.0002,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": -0.07243725567877471,
+        "ci95": [
+          -0.10550608578894592,
+          -0.040008486373118955
+        ],
+        "ci99": [
+          -0.11496986532566332,
+          -0.028424577799015513
+        ],
+        "p_two_sided_empirical": 0.0,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "bonferroni_alpha": 0.016666666666666666,
+      "beats_v115_strict": false,
+      "loses_to_v115_strict": true
+    },
+    "Cox_v11_richer_recompute": {
+      "marginal": {
+        "delta_mean": -0.04178094223879044,
+        "ci95": [
+          -0.05830403279697273,
+          -0.02503904620848533
+        ],
+        "ci99": [
+          -0.06330287936561499,
+          -0.01959690533167822
+        ],
+        "p_two_sided_empirical": 0.0,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": -0.04184438223558392,
+        "ci95": [
+          -0.058581382102419616,
+          -0.025197199510286986
+        ],
+        "ci99": [
+          -0.06397292031642982,
+          -0.020402357238658162
+        ],
+        "p_two_sided_empirical": 0.0,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "bonferroni_alpha": 0.016666666666666666,
+      "beats_v115_strict": false,
+      "loses_to_v115_strict": true
+    },
+    "Cox_v11_richer_plus_flow": {
+      "marginal": {
+        "delta_mean": -0.04429711616578983,
+        "ci95": [
+          -0.06906089986449211,
+          -0.02010955251971668
+        ],
+        "ci99": [
+          -0.07602007710680003,
+          -0.013390244039198813
+        ],
+        "p_two_sided_empirical": 0.0004,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": -0.04417567709783924,
+        "ci95": [
+          -0.06860140435140999,
+          -0.019810170501282306
+        ],
+        "ci99": [
+          -0.07618292848770268,
+          -0.012784998751052172
+        ],
+        "p_two_sided_empirical": 0.0,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "bonferroni_alpha": 0.016666666666666666,
+      "beats_v115_strict": false,
+      "loses_to_v115_strict": true
+    }
+  },
+  "bonferroni_m": 3,
+  "bonferroni_alpha": 0.016666666666666666,
+  "wall_time_total_s": 774.1
+}

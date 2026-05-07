@@ -1,0 +1,240 @@
+{
+  "run_id": "r-2026-05-07-v12-wave3-pca-substitution",
+  "wall_time_s": 471.6,
+  "factor_info": {
+    "factor_method": "sklearn.PCA(n_components=29, random_state=0)",
+    "K": 29,
+    "n_samples": 787,
+    "n_features_hvg": 5000,
+    "explained_variance_ratio_cumsum": 0.5689003467559814,
+    "elapsed_s": 0.038,
+    "env_RM_INCLUDE_MOFA_FACTORS": "0"
+  },
+  "factor_label": "PCA_factors",
+  "n_total": 787,
+  "n_events": 224,
+  "expr_sha16": "08fc7bf286413112",
+  "strata_counts": {
+    "S1_del17p": 105,
+    "S2_t_4_14": 97,
+    "S3_1q21": 165,
+    "S4_t_11_14": 95,
+    "S5_other": 325
+  },
+  "K_factors": 29,
+  "factors_npy": "/home/aj0486@students.ad.unt.edu/pipeline3/.claude/worktrees/tier1-refactor/ResistanceMap/paper/v8_artifacts/v12_refactor_audit/wave3/mmrf_pca_K29_factors.npy",
+  "results": {
+    "PCA_factors": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7027729636048526
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6195652173913043
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6771225428690925
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5338512763596004
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.634992987377279
+        }
+      },
+      "marginal": {
+        "c_index": 0.6587356956173142
+      },
+      "n_features": 29
+    },
+    "Cox_v11_richer": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6984402079722704
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5863171355498721
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6879966541196152
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5205327413984462
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.620687237026648
+        }
+      },
+      "marginal": {
+        "c_index": 0.6537584472651166
+      },
+      "n_features": 23
+    },
+    "PCA_factors_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7196707105719238
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6285166240409207
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.7024257632789628
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5460599334073252
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.646774193548387
+        }
+      },
+      "marginal": {
+        "c_index": 0.6754480044149651
+      },
+      "n_features": 52
+    }
+  },
+  "paired_bootstrap_B10000_vs_v11_richer": {
+    "PCA_factors": {
+      "marginal": {
+        "delta_mean": 0.005064333211948991,
+        "delta_median": 0.00496732530773325,
+        "ci95": [
+          -0.02763486514070993,
+          0.037910605659298435
+        ],
+        "ci99": [
+          -0.03814348183190347,
+          0.046717510892307024
+        ],
+        "p_a_beats_b": 0.6208,
+        "p_two_sided_empirical": 0.7584,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.00507113649071924,
+        "delta_median": 0.0051026895724974874,
+        "ci95": [
+          -0.027379429237994156,
+          0.03695028725400038
+        ],
+        "ci99": [
+          -0.03670878343921187,
+          0.046566021094431975
+        ],
+        "p_a_beats_b": 0.6178,
+        "p_two_sided_empirical": 0.7644,
+        "n_boot": 10000,
+        "stratified": true
+      }
+    },
+    "PCA_factors_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.021723772078303012,
+        "delta_median": 0.021796719484435845,
+        "ci95": [
+          0.0004885322921390248,
+          0.04333962278568158
+        ],
+        "ci99": [
+          -0.006768876029883256,
+          0.049859042148861256
+        ],
+        "p_a_beats_b": 0.9775,
+        "p_two_sided_empirical": 0.045,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.021758697544184,
+        "delta_median": 0.021762872280684353,
+        "ci95": [
+          0.0008158296082258895,
+          0.043160622567310826
+        ],
+        "ci99": [
+          -0.007169410708526716,
+          0.0490883799006928
+        ],
+        "p_a_beats_b": 0.978,
+        "p_two_sided_empirical": 0.044,
+        "n_boot": 10000,
+        "stratified": true
+      }
+    }
+  },
+  "marginal_c_indices": {
+    "PCA_factors": 0.6587356956173142,
+    "Cox_v11_richer": 0.6537584472651166,
+    "PCA_factors_plus_v11": 0.6754480044149651
+  },
+  "verdict": "V12_ARCHITECTURAL_OPPORTUNITY",
+  "verdict_logic": {
+    "V1_factor_matches_or_beats": true,
+    "V2_combo_dominates": true,
+    "V3_factor_substantially_loses": false
+  },
+  "lift_preservation": {
+    "delta_new": 0.021723772078303012,
+    "delta_ref_mofa": 0.0214,
+    "abs_delta_diff": 0.00032377207830301333,
+    "tol_delta": 0.001,
+    "delta_within_tol": true,
+    "p_new": 0.045,
+    "p_ref_mofa": 0.0456,
+    "abs_p_diff": 0.0006000000000000033,
+    "tol_p": 0.01,
+    "p_within_tol": true,
+    "ci_lo_new": 0.0004885322921390248,
+    "ci_lo_ref_mofa": 0.0005,
+    "both_ci_lo_positive": true,
+    "LIFT_VERDICT": "PRESERVED"
+  },
+  "reference_mofa_original": {
+    "run_id": "r-2026-05-04-v12-mofa-vs-v115",
+    "factor_method": "mofapy2 K_eff=29 single-view HVG-5000 iter=50",
+    "C_factors_alone": 0.66,
+    "C_Cox_v11_richer": 0.6538,
+    "C_combo": 0.6751,
+    "delta_combo_vs_richer_mean": 0.0214,
+    "ci95_combo": [
+      0.0005,
+      0.0425
+    ],
+    "p_two_sided_empirical": 0.0456
+  },
+  "reference_audit_pca": {
+    "run_id": "r-2026-05-07-v12-refactor-data-integration-audit",
+    "factor_method": "sklearn.PCA(K=29) via data_integration_audit.py",
+    "C_factors_alone": 0.6587,
+    "C_Cox_v11_richer": 0.6538,
+    "C_combo": 0.6754,
+    "delta_combo_vs_richer_mean": 0.0217,
+    "ci95_combo": [
+      0.0005,
+      0.0433
+    ],
+    "p_two_sided_empirical": 0.045
+  },
+  "honest_caveats": [
+    "PCA and MOFA+ statistically indistinguishable on N=787 single-view: both delta~+0.021.",
+    "The +0.021 lift is attribute of any 29 expression factors + v11_richer, not mofapy2-specific.",
+    "CI lower bound ~+0.0005 (95%): borderline; one bootstrap reseed can flip sign."
+  ]
+}

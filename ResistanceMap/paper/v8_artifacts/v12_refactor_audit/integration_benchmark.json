@@ -1,0 +1,1103 @@
+{
+  "design": "V12 refactor data-integration audit. Replays the MMRF PFS (N=787, events=224, TT2L) head-to-head from r-2026-05-04-v12-mofa-vs-v115 and adds 8 comparator factor models (PCA/KernelPCA/ICA/NMF/SparsePCA/JIVE-surrogate/BlockCCA/mofapy2 reload). LOO Cox PH penalizer=0.1, B=10000 paired bootstrap stratified by 5-cyto-strata, DeLong-style z-test on the paired risk vectors.",
+  "run_id": "r-2026-05-07-v12-refactor-data-integration-audit",
+  "n_total": 787,
+  "n_events": 224,
+  "expr_sha16": "08fc7bf286413112",
+  "K_factors_per_comparator": 29,
+  "v11_richer_n_features": 23,
+  "timings_factor_extraction_s": {
+    "PCA": 0.2,
+    "KernelPCA_rbf": 0.6,
+    "ICA": 0.5,
+    "NMF": 1.7,
+    "SparsePCA": 22.9,
+    "MOFAplus_mofapy2": 77.0,
+    "JIVE_joint_surrogate": 0.0,
+    "BlockCCA_expr_v11": 0.1
+  },
+  "summary_per_set": {
+    "PCA_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7027729636048526
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6195652173913043
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6771225428690925
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5338512763596004
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.634992987377279
+        }
+      },
+      "marginal": {
+        "c_index": 0.6587356956173142
+      },
+      "n_features": 29
+    },
+    "PCA_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7196707105719238
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6285166240409207
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.7024257632789628
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5460599334073252
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.646774193548387
+        }
+      },
+      "marginal": {
+        "c_index": 0.6754480044149651
+      },
+      "n_features": 52
+    },
+    "KernelPCA_rbf_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7157712305025996
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6170076726342711
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6626934337097449
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.49944506104328523
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6345021037868163
+        }
+      },
+      "marginal": {
+        "c_index": 0.6543832064725054
+      },
+      "n_features": 29
+    },
+    "KernelPCA_rbf_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7209705372616985
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6234015345268542
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6963613550815558
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5382907880133185
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6504908835904628
+        }
+      },
+      "marginal": {
+        "c_index": 0.6737611545550153
+      },
+      "n_features": 52
+    },
+    "ICA_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7023396880415944
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6195652173913043
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6746131325805103
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5294117647058824
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6346423562412342
+        }
+      },
+      "marginal": {
+        "c_index": 0.6573404000541458
+      },
+      "n_features": 29
+    },
+    "ICA_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7214038128249567
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6278772378516624
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.7007528230865746
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5449500554938956
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.646984572230014
+        }
+      },
+      "marginal": {
+        "c_index": 0.6754167664545956
+      },
+      "n_features": 52
+    },
+    "NMF_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7049393414211439
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.592071611253197
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6666666666666666
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.49278579356270813
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6376577840112202
+        }
+      },
+      "marginal": {
+        "c_index": 0.651946645563689
+      },
+      "n_features": 29
+    },
+    "NMF_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7092720970537262
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6240409207161125
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.699289000418235
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5482796892341842
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6506311360448808
+        }
+      },
+      "marginal": {
+        "c_index": 0.6711475785374387
+      },
+      "n_features": 52
+    },
+    "SparsePCA_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.708838821490468
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5882352941176471
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6541196152237557
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5038845726970034
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6366058906030856
+        }
+      },
+      "marginal": {
+        "c_index": 0.6502597957037392
+      },
+      "n_features": 29
+    },
+    "SparsePCA_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7192374350086655
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6074168797953964
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6911334169803429
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5460599334073252
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6490182328190743
+        }
+      },
+      "marginal": {
+        "c_index": 0.6725532867540636
+      },
+      "n_features": 52
+    },
+    "MOFAplus_mofapy2_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6932409012131716
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5914322250639387
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6585110832287746
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5682574916759157
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6504207573632539
+        }
+      },
+      "marginal": {
+        "c_index": 0.6600164519924613
+      },
+      "n_features": 29
+    },
+    "MOFAplus_mofapy2_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7123050259965338
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6259590792838875
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6808866583019657
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5782463928967814
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.655890603085554
+        }
+      },
+      "marginal": {
+        "c_index": 0.6750835615439883
+      },
+      "n_features": 52
+    },
+    "JIVE_joint_surrogate_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7157712305025996
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6195652173913043
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.704935173567545
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.55826859045505
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.644039270687237
+        }
+      },
+      "marginal": {
+        "c_index": 0.6763018419983965
+      },
+      "n_features": 29
+    },
+    "JIVE_joint_surrogate_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7235701906412478
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.618925831202046
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.7070263488080301
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5638179800221975
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.640883590462833
+        }
+      },
+      "marginal": {
+        "c_index": 0.6751043868509012
+      },
+      "n_features": 52
+    },
+    "BlockCCA_expr_v11_alone": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6954072790294628
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5837595907928389
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6838143036386449
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5660377358490566
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6365357643758766
+        }
+      },
+      "marginal": {
+        "c_index": 0.6602975936357862
+      },
+      "n_features": 22
+    },
+    "BlockCCA_expr_v11_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7205372616984402
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6048593350383632
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.7143454621497282
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5682574916759157
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6401122019635344
+        }
+      },
+      "marginal": {
+        "c_index": 0.6736882659808199
+      },
+      "n_features": 45
+    },
+    "Cox_v11_richer": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6984402079722704
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5863171355498721
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6879966541196152
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5205327413984462
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.620687237026648
+        }
+      },
+      "marginal": {
+        "c_index": 0.6537584472651166
+      },
+      "n_features": 23
+    }
+  },
+  "paired_vs_v11_richer": {
+    "PCA_alone": {
+      "marginal": {
+        "delta_mean": 0.005068133407693836,
+        "ci95": [
+          -0.02763486514070993,
+          0.037910605659298435
+        ],
+        "ci99": [
+          -0.03814348183190347,
+          0.046717510892307024
+        ],
+        "p_two_sided_empirical": 0.7582,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.004945849266241628,
+        "ci95": [
+          -0.0274777204296521,
+          0.037563717238544764
+        ],
+        "ci99": [
+          -0.03788134430629783,
+          0.04806516235093206
+        ],
+        "p_two_sided_empirical": 0.7692,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.004977248352197594,
+        "se": 0.016323221670458483,
+        "z": 0.30491826017442025,
+        "p_two_sided": 0.7604284080108585,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "PCA_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.021727608869465,
+        "ci95": [
+          0.0004885322921390248,
+          0.04333962278568158
+        ],
+        "ci99": [
+          -0.006768876029883256,
+          0.049859042148861256
+        ],
+        "p_two_sided_empirical": 0.045,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.02166943953997479,
+        "ci95": [
+          0.0003181790554800197,
+          0.04352508730624617
+        ],
+        "ci99": [
+          -0.007122985422255543,
+          0.05048922529161426
+        ],
+        "p_two_sided_empirical": 0.0464,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.02168955714984855,
+        "se": 0.010629918779244142,
+        "z": 2.0404254821023966,
+        "p_two_sided": 0.04130796602778175,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "KernelPCA_rbf_alone": {
+      "marginal": {
+        "delta_mean": 0.0007423702768652739,
+        "ci95": [
+          -0.03335904935497054,
+          0.034492727351585095
+        ],
+        "ci99": [
+          -0.0451404767647738,
+          0.04444087623181775
+        ],
+        "p_two_sided_empirical": 0.9628,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.0006048607847869331,
+        "ci95": [
+          -0.03319603242759396,
+          0.03373074740952574
+        ],
+        "ci99": [
+          -0.04340970670589655,
+          0.0449946211110495
+        ],
+        "p_two_sided_empirical": 0.9698,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.0006247592073888031,
+        "se": 0.017088174512516725,
+        "z": 0.03656090982282398,
+        "p_two_sided": 0.9708351121197205,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "KernelPCA_rbf_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.02004543214839397,
+        "ci95": [
+          -0.0021600737074285122,
+          0.04269822722219593
+        ],
+        "ci99": [
+          -0.008663012567601049,
+          0.04902705690062536
+        ],
+        "p_two_sided_empirical": 0.0766,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.019996633569684317,
+        "ci95": [
+          -0.0019227717231563495,
+          0.04257160241978026
+        ],
+        "ci99": [
+          -0.00968168422574287,
+          0.04957628898659749
+        ],
+        "p_two_sided_empirical": 0.076,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.020002707289898725,
+        "se": 0.010965047092451123,
+        "z": 1.824224476306132,
+        "p_two_sided": 0.06811814269688932,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "ICA_alone": {
+      "marginal": {
+        "delta_mean": 0.003677646470391332,
+        "ci95": [
+          -0.029181653926687406,
+          0.03642602180255956
+        ],
+        "ci99": [
+          -0.039448188277666545,
+          0.0457521932500249
+        ],
+        "p_two_sided_empirical": 0.8216,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.0035506002131179557,
+        "ci95": [
+          -0.0290789034125934,
+          0.0363676217605763
+        ],
+        "ci99": [
+          -0.039148383436191744,
+          0.047010017388051946
+        ],
+        "p_two_sided_empirical": 0.836,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.0035819527890292857,
+        "se": 0.016463899977241375,
+        "z": 0.21756405189418937,
+        "p_two_sided": 0.82776879596026,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "ICA_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.021699755739792524,
+        "ci95": [
+          0.0002836527646610093,
+          0.04335851592830806
+        ],
+        "ci99": [
+          -0.006923510719060059,
+          0.049843943845163066
+        ],
+        "p_two_sided_empirical": 0.0474,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.021640947628926824,
+        "ci95": [
+          0.0001850513783485969,
+          0.04365613796554966
+        ],
+        "ci99": [
+          -0.007145658498717876,
+          0.05025120352951109
+        ],
+        "p_two_sided_empirical": 0.048,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.021658319189479025,
+        "se": 0.01064306541549463,
+        "z": 2.0349700339103354,
+        "p_two_sided": 0.04185388826145875,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "NMF_alone": {
+      "marginal": {
+        "delta_mean": -0.0015796416745531595,
+        "ci95": [
+          -0.035136248050174804,
+          0.030852235639018986
+        ],
+        "ci99": [
+          -0.045865104437776895,
+          0.04181975476639169
+        ],
+        "p_two_sided_empirical": 0.9368,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": -0.0020014246863380557,
+        "ci95": [
+          -0.035055455975463064,
+          0.030384265787850778
+        ],
+        "ci99": [
+          -0.04603787672268813,
+          0.04134969996367852
+        ],
+        "p_two_sided_empirical": 0.9072,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": -0.0018118017014275845,
+        "se": 0.016792860313324835,
+        "z": -0.10789119111471154,
+        "p_two_sided": 0.9140820048044092,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "NMF_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.017434746777995842,
+        "ci95": [
+          -0.0038990865088736116,
+          0.03906287584811274
+        ],
+        "ci99": [
+          -0.010344104925068254,
+          0.045584295925664035
+        ],
+        "p_two_sided_empirical": 0.1122,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.017316118275259036,
+        "ci95": [
+          -0.004083989732269613,
+          0.03876372123919637
+        ],
+        "ci99": [
+          -0.011659270256915724,
+          0.046407911865356845
+        ],
+        "p_two_sided_empirical": 0.111,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.01738913127232211,
+        "se": 0.010678111768869644,
+        "z": 1.6284837290257057,
+        "p_two_sided": 0.10342235655713972,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "SparsePCA_alone": {
+      "marginal": {
+        "delta_mean": -0.0033337160571694007,
+        "ci95": [
+          -0.034987688744456555,
+          0.028123905625287042
+        ],
+        "ci99": [
+          -0.045088156749128416,
+          0.03845430527171859
+        ],
+        "p_two_sided_empirical": 0.8374,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": -0.0035160197495365864,
+        "ci95": [
+          -0.03497777068732075,
+          0.027465687249103976
+        ],
+        "ci99": [
+          -0.04485720022511951,
+          0.03744536450870233
+        ],
+        "p_two_sided_empirical": 0.8294,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": -0.0034986515613774083,
+        "se": 0.015415610890149435,
+        "z": -0.2269551032591932,
+        "p_two_sided": 0.82045865360424,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "SparsePCA_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.018848229345465255,
+        "ci95": [
+          -0.0017613466098623655,
+          0.03987334300695076
+        ],
+        "ci99": [
+          -0.008470010415891148,
+          0.046104090186397786
+        ],
+        "p_two_sided_empirical": 0.0742,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.018766808919377695,
+        "ci95": [
+          -0.0018098444197238105,
+          0.039758095162627634
+        ],
+        "ci99": [
+          -0.008597053021023794,
+          0.04693257947718458
+        ],
+        "p_two_sided_empirical": 0.0736,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.018794839488947,
+        "se": 0.010047495244319566,
+        "z": 1.8705994909102164,
+        "p_two_sided": 0.061400615231427036,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "MOFAplus_mofapy2_alone": {
+      "marginal": {
+        "delta_mean": 0.006387841404367391,
+        "ci95": [
+          -0.025966025952519074,
+          0.038178513813094006
+        ],
+        "ci99": [
+          -0.03656361213606849,
+          0.049505437152420256
+        ],
+        "p_two_sided_empirical": 0.6892,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.006242053493586979,
+        "ci95": [
+          -0.025979760700104916,
+          0.03817114948136302
+        ],
+        "ci99": [
+          -0.0359641149446916,
+          0.04793181048422262
+        ],
+        "p_two_sided_empirical": 0.6926,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.006258004727344724,
+        "se": 0.015937253102680484,
+        "z": 0.3926652031580142,
+        "p_two_sided": 0.6945667743749597,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "MOFAplus_mofapy2_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.02139027776277413,
+        "ci95": [
+          0.0004871075126507678,
+          0.04253155666959254
+        ],
+        "ci99": [
+          -0.006124523822603422,
+          0.04871770492649456
+        ],
+        "p_two_sided_empirical": 0.0456,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.021324068347342497,
+        "ci95": [
+          0.0004579159361574687,
+          0.04271497353052208
+        ],
+        "ci99": [
+          -0.006455249990146216,
+          0.05003668442625939
+        ],
+        "p_two_sided_empirical": 0.0454,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.021325114278871737,
+        "se": 0.010472235049246556,
+        "z": 2.036347940873043,
+        "p_two_sided": 0.04171542900949232,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "JIVE_joint_surrogate_alone": {
+      "marginal": {
+        "delta_mean": 0.022619174020710234,
+        "ci95": [
+          -0.0012852935020292527,
+          0.047461769981684526
+        ],
+        "ci99": [
+          -0.010278977857189009,
+          0.05446557852086187
+        ],
+        "p_two_sided_empirical": 0.068,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.022507728327671957,
+        "ci95": [
+          -0.0020943027957922517,
+          0.04725488841801672
+        ],
+        "ci99": [
+          -0.009422932183114227,
+          0.05579264860429997
+        ],
+        "p_two_sided_empirical": 0.0726,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.02254339473327993,
+        "se": 0.012186275757424038,
+        "z": 1.8499002633799912,
+        "p_two_sided": 0.0643279259314471,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "JIVE_joint_surrogate_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.021373554994837285,
+        "ci95": [
+          0.0016533925506047684,
+          0.04183404717954606
+        ],
+        "ci99": [
+          -0.004890242159765335,
+          0.04732968042202151
+        ],
+        "p_two_sided_empirical": 0.0344,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.021321937332943443,
+        "ci95": [
+          0.0010835533723518977,
+          0.04145362590494491
+        ],
+        "ci99": [
+          -0.005192451792709673,
+          0.048154575929147896
+        ],
+        "p_two_sided_empirical": 0.0404,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.02134593958578468,
+        "se": 0.009823851767197108,
+        "z": 2.1728686559645634,
+        "p_two_sided": 0.029790204148229638,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "BlockCCA_expr_v11_alone": {
+      "marginal": {
+        "delta_mean": 0.006578564395370252,
+        "ci95": [
+          -0.02286308717621581,
+          0.03587455967701304
+        ],
+        "ci99": [
+          -0.03269166744944022,
+          0.04382518262723198
+        ],
+        "p_two_sided_empirical": 0.6566,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.006481508851354201,
+        "ci95": [
+          -0.022476285018439048,
+          0.035760413997889595
+        ],
+        "ci99": [
+          -0.03264130791436998,
+          0.046393790879506985
+        ],
+        "p_two_sided_empirical": 0.6644,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.006539146370669657,
+        "se": 0.014676916093775675,
+        "z": 0.445539534932876,
+        "p_two_sided": 0.6559298957284772,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    },
+    "BlockCCA_expr_v11_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.0199496879231007,
+        "ci95": [
+          0.0017238359256283977,
+          0.03882723379423026
+        ],
+        "ci99": [
+          -0.004516083712526132,
+          0.044209950378778486
+        ],
+        "p_two_sided_empirical": 0.0348,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.01992573353165698,
+        "ci95": [
+          0.0010366602016739696,
+          0.03894353123893215
+        ],
+        "ci99": [
+          -0.004945068116641146,
+          0.04548550452306801
+        ],
+        "p_two_sided_empirical": 0.0364,
+        "n_boot": 10000,
+        "stratified": true
+      },
+      "delong": {
+        "delta_obs": 0.019929818715703318,
+        "se": 0.009254296152325833,
+        "z": 2.1535747708586634,
+        "p_two_sided": 0.03127353456050508,
+        "method": "Pencina-DAgostino paired-bootstrap SE (B=200) \u2014 IPCW-DeLong unavailable in lifelines"
+      }
+    }
+  },
+  "v12_original_marginal_c": {
+    "MOFA_factors": 0.6600164519924613,
+    "Cox_v11_richer": 0.6537584472651166,
+    "MOFA_factors_plus_v11_richer": 0.6750835615439883,
+    "delta_combo_v_richer": 0.0214,
+    "ci95_combo_v_richer": [
+      0.0005,
+      0.0425
+    ],
+    "p_two_combo_v_richer": 0.0456
+  },
+  "wall_time_s": 3391.2
+}

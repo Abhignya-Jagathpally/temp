@@ -1,0 +1,241 @@
+{
+  "audit_metadata": {
+    "model_version": "ResistanceMap v12 MOFA+v11",
+    "audit_date": "2026-05-07",
+    "source_run_id": "r-2026-05-04-v12-mofa-vs-v115",
+    "auditor_role": "MD/PhD hematologic oncologist, board-certified, fellowship SCT",
+    "tool_access_status": {
+      "pubmed_mcp": "BLOCKED — no PMIDs cited",
+      "c_trials_mcp": "BLOCKED — no NCT-IDs cited",
+      "repo_read": "BLOCKED outside worktree — finding data taken from prompt specification"
+    }
+  },
+
+  "primary_metric": {
+    "marginal_c_index": 0.6751,
+    "delta_c_vs_cox_v11_richer": 0.0214,
+    "ci_lower": 0.0005,
+    "ci_upper": 0.0425,
+    "p_value": 0.046,
+    "p_value_label": "BORDERLINE",
+    "validation_method": "LOO cross-validation, MMRF N=787",
+    "validation_type": "INTERNAL ONLY"
+  },
+
+  "clinical_significance_verdict": {
+    "delta_c_mcid_threshold_mm": 0.05,
+    "clears_mcid": false,
+    "ci_lower_bound_concern": "Lower bound +0.0005 is near-zero; a single additional censored event could flip sign",
+    "multiple_comparison_concern": "p=0.046 does not survive Bonferroni correction for 5-stratum comparison (alpha_corrected=0.01)",
+    "verdict": "MARGINAL — does not cross ΔC > 0.05 clinical-meaningfulness threshold; not clinically transformative",
+    "imwg_response_calibration": "ABSENT — no mapping from PFS risk score to IMWG response tiers (sCR/CR/VGPR/PR) has been demonstrated"
+  },
+
+  "per_stratum_actionability": [
+    {
+      "stratum_id": "S1",
+      "lesion": "del(17p)",
+      "c_index_v11": 0.698,
+      "c_index_v12": 0.712,
+      "delta_c": 0.014,
+      "specialist_status": "not reported separately",
+      "clears_mcid": false,
+      "imwg_risk_band": "HIGH-RISK",
+      "clinical_use": "NOT ACTIONABLE — del(17p) already triggers high-risk designation in IMWG/ISS-R; +0.014 does not change treatment allocation",
+      "priority": "LOW"
+    },
+    {
+      "stratum_id": "S2",
+      "lesion": "t(4;14)",
+      "c_index_v11": 0.586,
+      "c_index_v12": 0.626,
+      "delta_c": 0.040,
+      "specialist_status": "PASS (no specialist FAIL reported for S2)",
+      "clears_mcid": false,
+      "imwg_risk_band": "HIGH-RISK",
+      "clinical_use": "SUBSTUDY-ELIGIBLE — strongest stable lift; MMSET expression heterogeneity within t(4;14) is a credible hypothesis for a prospective biomarker substudy; still below ΔC > 0.05",
+      "priority": "HIGH for next development step"
+    },
+    {
+      "stratum_id": "S3",
+      "lesion": "+1q21",
+      "c_index_v11": null,
+      "c_index_v12": null,
+      "delta_c": 0.0,
+      "specialist_status": "TIE — no improvement",
+      "clears_mcid": false,
+      "imwg_risk_band": "ULTRA-HIGH-RISK (R-ISS III in revised framework)",
+      "clinical_use": "CRITICAL GAP — +1q21 amp is a fast-growing ultra-high-risk designation; zero model lift in this stratum is a significant limitation",
+      "priority": "CRITICAL GAP TO ADDRESS"
+    },
+    {
+      "stratum_id": "S4",
+      "lesion": "t(11;14)",
+      "c_index_v11": 0.521,
+      "c_index_v12": 0.578,
+      "delta_c": 0.057,
+      "specialist_status": "STRICT FAIL — specialist Δ_S4=+0.0135, p=0.446",
+      "specialist_failure_implication": "S4 lift in combined model is UNSTABLE; may reflect MOFA regularization artifact or ensemble averaging, not genuine t(11;14) biology",
+      "clears_mcid_numerically": true,
+      "clears_mcid_reliably": false,
+      "imwg_risk_band": "STANDARD-TO-INTERMEDIATE (venetoclax-sensitive subset)",
+      "clinical_use": "DO NOT USE FOR CLINICAL INFERENCE — t(11;14) venetoclax-eligibility decisions require BCL2 protein quantification or scRNA-seq; bulk RNA cannot reliably stratify; false-positive stratification risk for venetoclax trial enrollment",
+      "safety_flag": "HIGH — incorrect t(11;14) risk prediction could misdirect venetoclax therapy eligibility",
+      "priority": "BLOCK from clinical use pending resolution"
+    },
+    {
+      "stratum_id": "S5",
+      "lesion": "Other/standard-risk",
+      "c_index_v11": 0.621,
+      "c_index_v12": 0.656,
+      "delta_c": 0.035,
+      "specialist_status": "not reported as failing",
+      "clears_mcid": false,
+      "imwg_risk_band": "STANDARD-RISK",
+      "clinical_use": "POPULATION-LEVEL INTEREST — standard-risk is largest MM segment (>40%); +0.035 could have aggregate value if calibrated to treatment-intensity decisions; not yet at threshold",
+      "calibration_note": "Mondrian conformal calibration (v10 Sprint 5) may not extend to v12 MOFA combined model; recalibration required",
+      "priority": "MODERATE — worth preserving in development roadmap"
+    }
+  ],
+
+  "external_validation_cohorts": [
+    {
+      "cohort": "MMRF CoMMpass",
+      "n_approx": 1000,
+      "data_access": "dbGaP phs000748, requires institutional DUA",
+      "genomics": "RNA-seq, WGS, FISH",
+      "pfs_endpoint": true,
+      "imwg_response_calls": true,
+      "ancestry_limitation": "~72% non-Hispanic white, ~14% Black — known underrepresentation",
+      "disjointness_warning": "CRITICAL: confirm v12 training set is fully disjoint from any held-out CoMMpass cases before treating as external validation",
+      "priority": "HIGHEST"
+    },
+    {
+      "cohort": "IFM2009 (IFM/DFCI)",
+      "n_approx": 700,
+      "data_access": "IFM data office collaboration agreement",
+      "genomics": "RNA-seq subset, FISH",
+      "pfs_endpoint": true,
+      "imwg_response_calls": true,
+      "ancestry_limitation": "Predominantly European (French)",
+      "value_for_v12": "Best for S1/S2 stratum validation (del17p, t(4;14))",
+      "priority": "HIGH"
+    },
+    {
+      "cohort": "HOVON-65/GMMG-HD4",
+      "n_approx": 827,
+      "data_access": "Published; Affymetrix microarray not RNA-seq",
+      "genomics": "Gene expression microarray, FISH",
+      "pfs_endpoint": true,
+      "platform_harmonization_required": true,
+      "value_for_v12": "t(4;14) bortezomib stratum; established benefit established — tests whether v12 adds within-stratum discrimination",
+      "priority": "MODERATE — requires cross-platform normalization"
+    },
+    {
+      "cohort": "MRC Myeloma XI",
+      "n_approx": 2042,
+      "data_access": "UK Data Service",
+      "genomics": "FISH, limited RNA-seq substudy",
+      "pfs_endpoint": true,
+      "value_for_v12": "Best power for S5 (standard-risk) given largest N",
+      "priority": "MODERATE for S5 only"
+    },
+    {
+      "cohort": "BELLINI trial (venetoclax + bortezomib/dex)",
+      "n_approx": 291,
+      "data_access": "AbbVie/Genentech; not publicly available",
+      "genomics": "t(11;14) FISH, BCL2 IHC",
+      "pfs_endpoint": true,
+      "value_for_v12": "CRITICAL for S4 — only published cohort with matched t(11;14) status, venetoclax exposure, and PFS outcomes",
+      "access_note": "Requires industry collaboration; not realistic for academic validation without data-sharing agreement",
+      "priority": "CRITICAL for S4 resolution, LOW feasibility"
+    }
+  ],
+
+  "clinical_trials_alignment": {
+    "status": "NOT COMPLETED — c-trials MCP blocked in this session",
+    "required_searches": [
+      "condition='multiple myeloma' AND 'biomarker stratification' AND 'progression-free survival' AND status=RECRUITING",
+      "condition='multiple myeloma' AND 'response prediction' AND 'machine learning' AND status=RECRUITING",
+      "condition='multiple myeloma' AND 't(4;14)' AND 'risk stratification' AND status=RECRUITING",
+      "condition='multiple myeloma' AND 'del(17p)' AND 'expression profiling' AND status=RECRUITING"
+    ],
+    "nct_ids_cited": "NONE — tool access blocked; no NCT-IDs fabricated per audit protocol"
+  },
+
+  "readiness_classification": {
+    "clinical_decision_support": {
+      "ready": false,
+      "reason": "ΔC below MCID threshold; S4 specialist FAIL; no IMWG calibration; internal validation only"
+    },
+    "trial_stratification_variable": {
+      "ready": false,
+      "reason": "FDA/EMA biomarker qualification requires prospective analytical validation in independent cohort; not met"
+    },
+    "exploratory_biomarker_substudy": {
+      "ready": true,
+      "conditions": "S2 (t(4;14)) and S5 (standard-risk) only; S4 explicitly excluded until specialist failure resolved; pre-specified as secondary endpoint only"
+    },
+    "methods_publication": {
+      "ready": true,
+      "conditions": "Must report: ΔC CI lower bound (+0.0005), S4 specialist FAIL, S3 zero lift, absent IMWG calibration, MMRF ancestry limitation; must NOT characterize as 'clinically validated'"
+    }
+  },
+
+  "safety_flags": [
+    {
+      "flag_id": "SF-1",
+      "stratum": "S4 t(11;14)",
+      "risk": "False-positive stratification: patient with t(11;14) predicted as 'low-risk' by ensemble S4 model could be misdirected away from venetoclax-containing therapy",
+      "severity": "HIGH",
+      "mitigation": "Exclude S4 from any clinical inference until bulk-RNA BCL2 limitation is resolved with protein-level or single-cell data"
+    },
+    {
+      "flag_id": "SF-2",
+      "stratum": "ALL",
+      "risk": "Calibration of v12 MOFA combined model not independently verified; Sprint 5 Mondrian calibration was for v10 stack",
+      "severity": "MODERATE",
+      "mitigation": "Recalibrate v12 ensemble and report coverage per stratum before any clinical use"
+    },
+    {
+      "flag_id": "SF-3",
+      "stratum": "ALL",
+      "risk": "MMRF training cohort ~72% non-Hispanic white; model predictions may not generalize to Black or Hispanic MM patients who have different disease biology (higher rates of +1q21, CRBN mutations) and different treatment access patterns",
+      "severity": "MODERATE",
+      "mitigation": "Prospective validation in diverse cohort required; ancestry breakdown of training set must be explicitly reported"
+    }
+  ],
+
+  "required_next_steps": [
+    {
+      "priority": 1,
+      "action": "Resolve S4 (t(11;14)) instability — single-cell BCL2 or protein-level validation; until resolved, remove S4 from any clinical claim"
+    },
+    {
+      "priority": 2,
+      "action": "Address +1q21 (S3) zero-lift gap — feature engineering for 1q21 copy-number dosing or MMSET-pathway surrogates"
+    },
+    {
+      "priority": 3,
+      "action": "External validation in IFM2009 or MRC Myeloma XI — confirm ΔC in disjoint cohort before any clinical claim"
+    },
+    {
+      "priority": 4,
+      "action": "IMWG response calibration study — bridge PFS risk score to IMWG response depth in a cohort with both RNA-seq and response calls"
+    },
+    {
+      "priority": 5,
+      "action": "Re-run c-trials MCP search for current enrolling competitor trials when tool access restored"
+    },
+    {
+      "priority": 6,
+      "action": "Recalibrate v12 MOFA combined model; do not carry forward Sprint 5 Mondrian calibration without re-verification"
+    },
+    {
+      "priority": 7,
+      "action": "Report ancestry breakdown of MMRF N=787 training set explicitly in any publication; plan validation in diverse cohort"
+    }
+  ],
+
+  "overall_verdict": "CONDITIONAL — marginal internal signal in S2 and S5 warrants further development and exploratory substudy design; S4 t(11;14) is actively unsafe for clinical inference; overall ΔC does not meet MCID for clinical deployment; publication-ready as methods paper with honest caveats only"
+}

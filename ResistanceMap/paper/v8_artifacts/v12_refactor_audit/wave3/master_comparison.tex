@@ -1,0 +1,31 @@
+% Master comparison table — v12 refactor audit Wave 3
+% Source: paper/v8_artifacts/v12_refactor_audit/integration_benchmark.json
+%         paper/v8_artifacts/v12_refactor_audit/metrics_recomputed.json
+% Bonferroni family m=8, alpha_bonf = 0.05/8 = 0.00625
+% MMRF N=787, 224 events, LOO Cox PH (penalizer=0.1), B=10000 stratified bootstrap
+\begin{table}[ht]
+\centering
+\caption{Wave 3 master comparison: 8 unsupervised factor methods $\times$ Cox\_v11\_richer baseline. Per-stratum and marginal C-index, paired bootstrap $\Delta$ vs Cox\_v11\_richer, DeLong z-test, Bonferroni survival at $\alpha_{\text{bonf}}=0.05/8=0.00625$.}
+\label{tab:wave3_master}
+\small
+\begin{tabular}{lcccccccccc}
+\hline
+Method & C & S1 & S2 & S3 & S4 & S5 & $\bar{\Delta}$ & 95\% CI & $p_{\text{boot}}$ & Bonf \\
+\hline
+Cox\_v11\_richer & 0.6538 & 0.698 & 0.586 & 0.688 & 0.521 & 0.621 & ref & ref & ref & ref \\
+Cox\_v11\_routed (v11.5) & 0.6955 & 0.730 & 0.667 & 0.694 & 0.643 & 0.659 & ref & ref & ref & ref \\
+mmSYGNAL routed & 0.6938 & 0.705 & 0.722 & 0.664 & 0.693 & 0.682 & ref & ref & ref & ref \\
+\hline
+PCA(K=29) + v11 & 0.6754 & 0.720 & 0.629 & 0.702 & 0.546 & 0.647 & +0.0217 & [+0.0005, +0.0433] & 0.0450 & \textbf{No} \\
+ICA(K=29) + v11 & 0.6754 & 0.721 & 0.628 & 0.701 & 0.545 & 0.647 & +0.0217 & [+0.0003, +0.0434] & 0.0474 & \textbf{No} \\
+MOFA+(K=29) + v11 & 0.6751 & 0.712 & 0.626 & 0.681 & 0.578 & 0.656 & +0.0214 & [+0.0005, +0.0425] & 0.0456 & \textbf{No} \\
+JIVE-joint(K=29) + v11 & 0.6751 & 0.724 & 0.619 & 0.707 & 0.564 & 0.641 & +0.0214 & [+0.0017, +0.0418] & 0.0344 & \textbf{No} \\
+BlockCCA + v11 & 0.6737 & 0.721 & 0.605 & 0.714 & 0.568 & 0.640 & +0.0200 & [+0.0017, +0.0388] & 0.0348 & \textbf{No} \\
+KernelPCA + v11 & 0.6738 & 0.721 & 0.623 & 0.696 & 0.538 & 0.651 & +0.0201 & [-0.0022, +0.0427] & 0.0766 & \textbf{No} \\
+NMF(K=29) + v11 & 0.6711 & 0.709 & 0.624 & 0.699 & 0.548 & 0.651 & +0.0174 & [-0.0039, +0.0391] & 0.1122 & \textbf{No} \\
+SparsePCA + v11 & 0.6726 & 0.719 & 0.607 & 0.691 & 0.546 & 0.649 & +0.0189 & [-0.0018, +0.0399] & 0.0742 & \textbf{No} \\
+\hline
+\end{tabular}
+\\[2pt]
+\footnotesize Strata: S1 del17p (n=105), S2 t(4;14) (n=97), S3 +1q21 (n=165), S4 t(11;14) (n=95), S5 other (n=325). v11.5 and mmSYGNAL routed are baselines, not part of the 8-method Bonferroni family.
+\end{table}

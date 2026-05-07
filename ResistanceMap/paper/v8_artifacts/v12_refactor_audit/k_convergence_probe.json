@@ -1,0 +1,54 @@
+{
+  "design": "K-convergence probe: short iter_cap=20 fits per K to estimate per-iter wall-cost. Validates the v12 claim that K=64 + iter=1000 cannot finish in 1hr CPU.",
+  "n_samples": 787,
+  "p_features_hvg": 5000,
+  "results_per_K": [
+    {
+      "K_requested": 16,
+      "K_effective": 15,
+      "iter_cap": 20,
+      "elapsed_s": 17.858855962753296,
+      "per_iter_s": 0.8929427981376648,
+      "elbo_first": -41939384.79659481,
+      "elbo_last": -3124654.747752778,
+      "n_elbo_recorded": 20,
+      "elbo_pct_change_last5": 0.0006889732929287408
+    },
+    {
+      "K_requested": 32,
+      "K_effective": 29,
+      "iter_cap": 20,
+      "elapsed_s": 30.6978542804718,
+      "per_iter_s": 1.5348927140235902,
+      "elbo_first": -76669158.65880772,
+      "elbo_last": -2882098.420260679,
+      "n_elbo_recorded": 20,
+      "elbo_pct_change_last5": 0.0026599291186253935
+    },
+    {
+      "K_requested": 48,
+      "K_effective": 43,
+      "iter_cap": 20,
+      "elapsed_s": 46.35257411003113,
+      "per_iter_s": 2.3176287055015563,
+      "elbo_first": -111174033.0882817,
+      "elbo_last": -2758369.4895796794,
+      "n_elbo_recorded": 20,
+      "elbo_pct_change_last5": 0.00840798225069902
+    },
+    {
+      "K_requested": 64,
+      "K_effective": 54,
+      "iter_cap": 20,
+      "elapsed_s": 60.466965198516846,
+      "per_iter_s": 3.023348259925842,
+      "elbo_first": -145569229.95293203,
+      "elbo_last": -2728510.295799989,
+      "n_elbo_recorded": 20,
+      "elbo_pct_change_last5": 0.015733971066802962
+    }
+  ],
+  "K64_projected_iter1000_minutes": 50.3891376654307,
+  "v12_claim": "K=64 + iter=1000 does not complete in 1hr CPU",
+  "verdict_on_v12_claim": "REFUTED_OR_INCONCLUSIVE"
+}

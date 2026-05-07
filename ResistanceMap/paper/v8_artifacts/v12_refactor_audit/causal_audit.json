@@ -1,0 +1,210 @@
+{
+  "audit_metadata": {
+    "date": "2026-05-07",
+    "auditor": "PhD Causal Inference (Pearl/Lange-Hansen/Robins-style sensitivity)",
+    "scope": "v12 MOFA+v11 architectural change causal re-audit",
+    "sources": [
+      "docs/V12_CAUSAL_REAUDIT.md",
+      "docs/V12_MOFA_VS_V115_VERDICT.md",
+      "scripts/v10/s4d_nie_estimation.py",
+      "paper/v8_artifacts/v10_sprint4/nie_proteasome_tt2L.json",
+      "paper/v8_artifacts/v10_sprint4/nie_tipping_point.json",
+      "paper/v8_artifacts/baselines/mofa_results.json",
+      "scripts/v12/s_v12_mofa_vs_v11_5_pfs.py",
+      "RUNS.md rows 19, 20, 23, 25, 37"
+    ]
+  },
+
+  "section1_dag": {
+    "mofa_factor_construction": "mofapy2 K_requested=32, K_effective=29 ARD-pruned, single-view Gaussian on log1p(TPM) top-5000 HVG at MMRF enrollment baseline (t=0). No treatment-time expression used. No outcome labels in factorization.",
+    "mofa_temporal_position": "PRE-TREATMENT baseline covariate. Deterministic linear function of baseline expression Z_bio at t=0. Causally upstream of treatment assignment A.",
+    "node_roles": {
+      "F_MOFA": {
+        "type": "pre-treatment covariate",
+        "causal_role": "baseline confounder / proxy for unmeasured U",
+        "is_mediator": false,
+        "is_descendant_of_treatment": false,
+        "is_collider": false
+      },
+      "C_confounders": {
+        "type": "pre-treatment covariate",
+        "members": ["iss_stage_ord", "age_at_dx_years", "gender_male", "cyto_del17p", "cyto_chr1q21_gain", "cyto_del13q", "cyto_t_4_14", "cyto_t_11_14"]
+      },
+      "A_treatment": {
+        "type": "treatment node",
+        "value": "bort_1L (Bortezomib 1st-line vs not)"
+      },
+      "M_mediator": {
+        "type": "mediator",
+        "value": "M_proteasome (PSMB5+PSMB1+PSMB2 RWR score, baseline expression)",
+        "sibling_of": "F_MOFA (both children of Z_bio baseline expression)"
+      },
+      "Y_outcome": {
+        "type": "survival outcome",
+        "value": "(tt2L_days, had_2L) right-censored TT2L"
+      },
+      "U_unmeasured": {
+        "type": "unmeasured confounder",
+        "paths": "U -> A, U -> M, U -> Y (all back-door paths not fully blocked)"
+      }
+    },
+    "key_finding": "MOFA factors are pre-treatment baseline covariates — NOT mediators, NOT descendants of treatment, NOT colliders. They are sibling summaries of the same baseline expression space that generates M_proteasome."
+  },
+
+  "section2_nie_rederivation": {
+    "structural_form_unchanged": true,
+    "nie_formula_v12": "NIE = (beta_M|C* + beta_AM|C*) * (E[M|A=1,C*] - E[M|A=0,C*])",
+    "augmented_confounder_set": "C* = C union F (MOFA factors)",
+    "identification_assumptions_v12": [
+      "A1*: No unmeasured confounding A->Y given (C, F)",
+      "A2*: No unmeasured confounding A->M given (C, F)",
+      "A3*: No unmeasured confounding M->Y given (A, C, F)",
+      "A4: No exposure-induced mediator-outcome confounder [unchanged - F pre-treatment]",
+      "A5: Cox PH holds [unchanged]"
+    ],
+    "new_backdoor_paths_opened": false,
+    "backdoor_path_reasoning": "F is upstream of A (pre-treatment). Adjusting for pre-treatment covariates never induces collider bias on the A->Y path (Robins 2003). F and M share parent Z_bio but conditioning on F while M is in the model is not a collider structure.",
+    "partial_proxy_blocking": {
+      "claim": "Conditioning on F partially proxies U via shared baseline expression",
+      "mofa_variance_explained_increment": "+0.021 marginal C-index (MOFA+v11 vs v11_richer alone)",
+      "estimated_U_proxy_fraction": "3-5% of prognostic variance beyond existing C features",
+      "sufficient_to_close_backdoor": false
+    }
+  },
+
+  "section3_f10_evalue_reestimate": {
+    "v10_f10_result": {
+      "nie_hr_point": 1.0901,
+      "nie_hr_lower_ci": 1.029,
+      "evalue_at_ci_bound": 1.20,
+      "threshold": 1.5,
+      "verdict": "FAIL"
+    },
+    "tipping_pair_that_nullifies_lower_ci": {
+      "rr_au": 1.5,
+      "rr_uy": 1.093,
+      "interpretation": "A confounder with joint (RR_AU=1.5, RR_UY=1.10) nullifies the lower-CI bound. ISS stage III, del17p, LDH routinely display these strengths in MM."
+    },
+    "hr_required_for_f10_pass": 1.13,
+    "delta_hr_required": "+0.10 on the log-hazard scale (NIE lower CI from 1.029 to 1.13)",
+    "mofa_c_gain_marginal": 0.021,
+    "mofa_variance_explained_fraction": "~3-5% beyond existing covariates",
+    "evalue_reachable_under_v12": false,
+    "reasoning": [
+      "The +0.021 ΔC from MOFA is too small to close the (1.5, 1.10) tipping gap. MOFA proxies only ~3-5% of residual prognostic variance; the tipping confounder strengths remain plausible after conditioning on F.",
+      "F10 failure confirmed STRUCTURAL across all 7 mediator panels (RUNS.md row 20). MOFA is a covariate enrichment, not a mediator re-definition.",
+      "MOFA factors and M_proteasome share parent Z_bio. Conditioning on F may attenuate beta_M|C*, potentially REDUCING the NIE point estimate rather than raising it.",
+      "No new paired (z0,z1) data is introduced. The confounding structure in U is not resolved by baseline expression summarization alone."
+    ],
+    "verdict": "F10 STRUCTURAL FAIL persists under v12. E-value threshold of 1.5 not reachable."
+  },
+
+  "section4_pearl_tier_ceiling": {
+    "current_tier": "L1-with-structural-prior",
+    "promoted_by_v12": false,
+    "conditions_for_L1_to_L2_promotion": {
+      "F8_nie_ci_excludes_zero": "PASS - preserved",
+      "F9_specificity_0_of_50_random": "PASS - preserved",
+      "F10_evalue_ge_1p5": "FAIL - structural, not resolved by v12 MOFA"
+    },
+    "conditions_for_L2_to_L3_promotion": {
+      "F8_DPS_per_patient_drift": "STRICT FAIL - 0/16 cells under both v10 single-Euler and v11 Neural-ODE operators (RUNS.md rows 23, 25). N_paired=29 < Stone(d=64)~150. MOFA does not provide new paired data.",
+      "verdict": "Not promotable"
+    },
+    "v12_mofa_causal_content": "None beyond L1. The +0.021 marginal ΔC is a concordance-statistic difference on observed (X,Y) pairs. No do-operator, no counterfactual, no identification of causal path.",
+    "load_bearing_datum_preserved": "v10 Sprint 7 F8 STRICT FAIL (0/16 cells; ED_prior~ED_const; best p_vs_const=0.432) is operator-independent and unaffected by v12 MOFA."
+  },
+
+  "section5_language_audit": {
+    "v12_mofa_verdict_doc": {
+      "flag_1": {
+        "quote": "MOFA+ shared factors carry orthogonal signal to v11's Waddington/PSMB-seed-3/cyto features at the +0.021 marginal C-index level",
+        "assessment": "SAFE at L1. 'Orthogonal signal' is statistical. No intervention claimed.",
+        "action_required": false
+      },
+      "flag_2": {
+        "quote": "V12_ARCHITECTURAL_OPPORTUNITY",
+        "assessment": "SAFE at L1 with hedge required in manuscript use.",
+        "action_required": true,
+        "required_hedge": "Add sentence: 'This is a predictive discrimination gain (L1 associational); it does not imply that MOFA factor construction is a causal mechanism or that the +0.021 DeltaC reflects identification of a new causal path.'"
+      }
+    },
+    "runs_md_row_37": {
+      "assessment": "No L2 language detected. Marginal C-index, bootstrap CI, and pre-registered verdicts stated without causal overreach.",
+      "action_required": false
+    },
+    "inherited_rc2_amplification": {
+      "risk": "RC-2 from V12_CAUSAL_REAUDIT.md is MORE urgent at v12. The v12 combo C=0.6751 brings v12 within 0.021 of mmSYGNAL C=0.6957. If M2 frames v12 as approaching mmSYGNAL's 'treatment selection' benchmark, L2 language is imported by citation.",
+      "action": "RC-2 remains mandatory: describe mmSYGNAL as 'prognostic concordance benchmark' only. Never reproduce 'individualized treatment selection' from its abstract."
+    },
+    "rc4_unchanged": {
+      "risk": "Sprint 4 NIE 'supporting directional evidence' hedge must appear in M1 Limitations regardless of v12 MOFA result. MOFA does not rescue F10.",
+      "action": "RC-4 from V12_CAUSAL_REAUDIT.md mandatory."
+    }
+  },
+
+  "section6_carveouts": {
+    "safe_to_publish_at_L1_with_structural_prior": [
+      {
+        "claim": "MOFA+v11 combo achieves marginal C=0.6751 (Delta=+0.021 vs v11_richer, 95% CI [+0.0005, +0.0425])",
+        "safe": true,
+        "required_hedge": "Report borderline p=0.046; note K=32 deviation from pre-registered K=64"
+      },
+      {
+        "claim": "MOFA factors carry orthogonal prognostic signal beyond Waddington+cyto features",
+        "safe": true,
+        "required_hedge": "'Orthogonal' is statistical, not causal"
+      },
+      {
+        "claim": "MOFA factors are pre-treatment covariates (not mediators, not colliders) in v12 DAG",
+        "safe": true,
+        "required_hedge": "State explicitly in Methods"
+      },
+      {
+        "claim": "v12 MOFA enrichment does NOT change NIE identification or robustness",
+        "safe": true,
+        "required_hedge": "Include in Limitations"
+      },
+      {
+        "claim": "Pearl-tier ceiling remains L1-with-structural-prior",
+        "safe": true,
+        "required_hedge": "State in abstract and fallback section"
+      }
+    ],
+    "not_safe_without_additional_data": [
+      {
+        "claim": "MOFA factors improve causal identification of proteasome mediation",
+        "reason": "No graph-level identification gain; U still partially open; F10 still fails",
+        "what_would_make_safe": "Re-run s4d with C*=C union F, verify E-value; expected to still fail (structural)"
+      },
+      {
+        "claim": "v12 predicts which resistance pathway a patient will transition through",
+        "reason": "Requires L2 mediation identification (F10 PASS) which is absent",
+        "what_would_make_safe": "Perturbation-response data (DepMap CRISPR screens with paired survival outcomes)"
+      },
+      {
+        "claim": "v12 closes per-patient forecasting gap",
+        "reason": "F8-DPS STRICT FAIL is sample-size-driven; MOFA does not provide new paired (z0,z1) data",
+        "what_would_make_safe": "N_paired >= 150 for d=64 (Stone bound); requires longitudinal RNA collection from MMRF or similar"
+      },
+      {
+        "claim": "Any treatment selection framing",
+        "reason": "Pearl ceiling is L1; do-calculus identification not established",
+        "what_would_make_safe": "RCT or instrumental-variable design"
+      }
+    ]
+  },
+
+  "verdict_summary": {
+    "F8_sprint4": "PASS - preserved under v12",
+    "F9_sprint4": "PASS - preserved under v12",
+    "F10_sprint4": "FAIL - STRUCTURAL - not resolved by v12 MOFA. E-value=1.20, threshold=1.5.",
+    "F8_DPS_sprint7": "STRICT FAIL - preserved under v12. Operator-independent. N_paired=29 < Stone(d=64)~150.",
+    "pearl_tier": "L1-with-structural-prior - NOT PROMOTED",
+    "mofa_dag_position": "PRE-TREATMENT COVARIATE - safe to adjust, no new collider, no new backdoor",
+    "new_backdoor_paths_from_mofa": false,
+    "rc2_urgency": "AMPLIFIED at v12 (closer approach to mmSYGNAL C-index raises citation L2-import risk)",
+    "rc4_urgency": "UNCHANGED - still required in M1 Limitations",
+    "aggregate_verdict": "CONDITIONAL PASS at L1 with structural prior. No promotion. Five required changes from V12_CAUSAL_REAUDIT.md (RC-1 through RC-5) remain mandatory. v12 MOFA adds a legitimate L1 predictive improvement but creates no causal inference gains."
+  }
+}

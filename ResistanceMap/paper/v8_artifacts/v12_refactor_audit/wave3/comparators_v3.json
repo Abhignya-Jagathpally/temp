@@ -1,0 +1,43 @@
+{
+  "sweep_date": "2026-05-07",
+  "method": "Live PubMed + bioRxiv + HuggingFace MCPs; Open Targets unavailable this session.",
+  "filters": "Published 2024-01-01 onward; cohort >=500 for direct MM-PFS competitors; no fabricated citations.",
+  "top10": [
+    {"rank": 1, "id": "Hussain_Sontag_2024", "pmid": "39075240", "doi": "10.1038/s41746-024-01189-3", "title": "Joint AI-driven event prediction NDMM/RRMM", "year": 2024, "task": "MM PFS+OS+AE+biomarker", "dataset": "TOURMALINE NDMM N=703 + RRMM N=720 external", "metric": "beats ISS p<0.001 Bonferroni; beats SOTA forecasters", "why_compare": "direct MM-PFS competitor at trial scale; transformer baseline"},
+    {"rank": 2, "id": "SurvBoard_Wissel_2025", "pmid": "41031875", "doi": "10.1093/bib/bbaf521", "title": "SurvBoard", "year": 2025, "task": "Multi-omics survival benchmarking", "dataset": "Pan-cancer TCGA", "metric": "statistical models beat deep methods on calibration", "why_compare": "tests v12 deep stack vs simple baselines (matches MEMORY floor concern)"},
+    {"rank": 3, "id": "SeNMo_Waqas_2024", "arxiv": "2405.08226", "title": "SeNMo", "year": 2024, "task": "Pan-cancer OS multi-omics", "dataset": "GDC 33 sites", "metric": "C-index 0.758 held-out", "why_compare": "high-width / low-N analogue"},
+    {"rank": 4, "id": "Qin_2025_conformal", "pmid": "40417913", "doi": "10.1093/biomtc/ujaf063", "title": "Conformal predictive intervals via resampling", "year": 2025, "task": "Conformal prediction for right-censored survival", "dataset": "simulated + breast cancer", "metric": "validity for 2-sided CIs", "why_compare": "direct upgrade for v12 Mondrian JK+"},
+    {"rank": 5, "id": "MMRF_Immune_Atlas_Pilcher_2024", "pmid": "38798338", "doi": "10.1101/2024.05.15.593193", "title": "MMRF Immune Atlas", "year": 2024, "task": "MM single-cell immune profiling for outcome", "dataset": "CoMMpass N=263, 1.15M cells", "metric": "immune+genetic improves stratification", "why_compare": "cell-state ground truth"},
+    {"rank": 6, "id": "Subtype_WGME_Yang_2024", "pmid": "38761803", "doi": "10.1016/j.crmeth.2024.100781", "title": "Subtype-WGME", "year": 2024, "task": "Whole-genome multi-task encoder", "dataset": "8 TCGA datasets", "metric": "beats baselines; 195 biomarkers", "why_compare": "adaptive amalgamation candidate vs MOFA+"},
+    {"rank": 7, "id": "Subtype_MGTP_Xie_2024", "pmid": "38857453", "doi": "10.1093/bioinformatics/btae360", "title": "Subtype-MGTP", "year": 2024, "task": "Multi-omics translation under missing modality", "dataset": "TCGA imbalanced", "metric": "beats 9 SOTA, robust to missing protein", "why_compare": "graceful single-view degradation matches v12 spec"},
+    {"rank": 8, "id": "MOSD_Duan_2024", "pmid": "38243340", "doi": "10.1186/s12967-024-04864-x", "title": "MOSD", "year": 2024, "task": "Weighted affinity + self-diffusion", "dataset": "10 TCGA cancers", "metric": "significant survival separation", "why_compare": "lightweight MOFA+ alternative"},
+    {"rank": 9, "id": "CRC_integrator_bench_Zhang_2025", "pmid": "39826483", "doi": "10.1016/j.cmpb.2025.108603", "title": "CRC integrator benchmark", "year": 2025, "task": "Benchmark of 8 integrators", "dataset": "TCGA-CRC + simulated", "metric": "SNF wins overall", "why_compare": "empirical SNF beats deep on bulk subtyping"},
+    {"rank": 10, "id": "Subtype_MVCC_Kuang_2024", "pmid": "39423914", "doi": "10.1016/j.ymeth.2024.09.016", "title": "Subtype-MVCC", "year": 2024, "task": "Weakly paired multi-omics contrastive", "dataset": "TCGA", "metric": "beats 9 baselines", "why_compare": "matches v12 paired-data limit"}
+  ],
+  "mm_pfs_direct": ["Hussain_Sontag_2024", "MMRF_Immune_Atlas_Pilcher_2024", "Shan_FHRMM_2026", "Morita_3DCNN_2024", "Faghani_WBLDCT_2024"],
+  "mm_pfs_filter": "Cohort >=500: only Hussain_Sontag_2024 passes",
+  "multi_omics_integrators": ["Subtype_WGME_Yang_2024", "Subtype_MGTP_Xie_2024", "MOSD_Duan_2024", "Subtype_MVCC_Kuang_2024", "CRC_integrator_bench_Zhang_2025"],
+  "fm_bulk_adapters": [
+    {"model": "BMFM_RNA_IBM_2025", "arxiv": "2506.14861", "pretrain_n": "CELLxGENE-scale", "f2_leak_risk": "MODERATE", "combat_protocol": "no"},
+    {"model": "TEDDY_family_2025", "arxiv": "2503.03485", "pretrain_n": "116M cells", "f2_leak_risk": "MODERATE_HIGH", "combat_protocol": "no_bulk_adapter"},
+    {"model": "GRNFormer_2025", "arxiv": "2503.01682", "pretrain_n": "inherited", "f2_leak_risk": "LOW_MODERATE", "combat_protocol": "drug_response_documented"},
+    {"model": "GeneMamba_2025", "arxiv": "2504.16956", "pretrain_n": "~30M cells", "f2_leak_risk": "LOW_MODERATE", "combat_protocol": "rank_based_naturally_batch_robust"},
+    {"model": "Nephrobase_CellPlus_2025", "pmid": "41256511", "pretrain_n": "39.5M kidney-only", "f2_leak_risk": "LOW", "combat_protocol": "MoE_template_only"}
+  ],
+  "field_wide_gap": "No public bulk-RNA + ComBat-corrected protocol for any listed FM. Confirms MEMORY r-2026-05-03-v11s1-encoder-reject.",
+  "causal_subset": ["Oldham_ILD_mediation_2026", "Loh_Ananth_2025", "Wang_acetaminophen_2025", "SurvHTE_Bench_2026", "Lambert_weighted_CP_2024"],
+  "recommended_head_to_head_top3": [
+    {"rank": 1, "target": "Hussain_Sontag_2024", "design": "Reproduce on MMRF CoMMpass; report C-index, IBS, calibrated PFS @ 12/24/36mo; v12 must match-or-beat their ISS-delta", "cost": "MEDIUM: 3-5 person-days; <100 GPU-hr"},
+    {"rank": 2, "target": "SurvBoard_Wissel_2025", "design": "Submit v12 to leaderboard; tests deep stack vs RSF/BlockForest", "cost": "LOW_MEDIUM: 2-3 person-days API wrapper"},
+    {"rank": 3, "target": "Oldham_ILD_mediation_2026", "design": "Adopt two-cohort NIE + sensitivity workflow; re-run v10 Sprint 4 NIE with E-value alongside", "cost": "LOW: 1-2 person-days"}
+  ],
+  "negative_results": {
+    "scGPT_bulk_RNA_clinical_2024_2026": 0,
+    "scFoundation_UCE_Nicheformer_transfer": 0,
+    "scFoundation_bulk_drug_response": 0,
+    "HF_Hub_multiple_myeloma_models": 0,
+    "HF_Hub_multiple_myeloma_datasets": 4,
+    "biorxiv_MM_FM_2024_06_to_2026_05": 0
+  },
+  "open_targets_status": "MCP not in active server list this session; deferred"
+}

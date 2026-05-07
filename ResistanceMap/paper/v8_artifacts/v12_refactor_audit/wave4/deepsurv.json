@@ -1,0 +1,50 @@
+{
+  "run": "r-2026-05-07-v12-wave4-deepsurv",
+  "library": "torch (custom DeepSurv impl; pycox not installed in venv)",
+  "N": 787,
+  "events": 224,
+  "v11_5_reference": {
+    "feature_set": "Cox_v11_routed_mmsygnal",
+    "marginal_C": 0.6955131876256027
+  },
+  "DeepSurv_v11_richer": {
+    "n_features": 23,
+    "eval_protocol": "5-fold CV (within-fold standardization, 10% held-out val for early-stop)",
+    "marginal_C": 0.6235305142809542,
+    "per_stratum_C": {
+      "S1_del17p": 0.6507798960138648,
+      "S2_t_4_14": 0.5415601023017903,
+      "S3_1q21": 0.6710581346716855,
+      "S4_t_11_14": 0.5482796892341842,
+      "S5_other": 0.5458625525946704
+    },
+    "paired_bootstrap_vs_v11_5": {
+      "delta_obs": -0.07198267334464847,
+      "ci_lo": -0.09792937891529559,
+      "ci_hi": -0.046459532890952164,
+      "p_two_sided": 0.0
+    },
+    "verdict": "LOSES_v11_5"
+  },
+  "DeepSurv_v11_plus_PCA29": {
+    "n_features": 52,
+    "eval_protocol": "5-fold CV",
+    "marginal_C": 0.6359840478149047,
+    "per_stratum_C": {
+      "S1_del17p": 0.6356152512998267,
+      "S2_t_4_14": 0.5786445012787724,
+      "S3_1q21": 0.6587202007528231,
+      "S4_t_11_14": 0.5771365149833518,
+      "S5_other": 0.6124123422159887
+    },
+    "paired_bootstrap_vs_v11_5": {
+      "delta_obs": -0.05952913981069796,
+      "ci_lo": -0.0927549077682578,
+      "ci_hi": -0.026834998224646994,
+      "p_two_sided": 0.0002
+    },
+    "verdict": "LOSES_v11_5"
+  },
+  "method_notes": "DeepSurv (Katzman 2018, BMC Med Res Methodology PMID 29482579) MLP architecture: 23/52 \u2192 64 \u2192 32 \u2192 1; ReLU; Dropout(0.1); Cox partial-likelihood loss (Breslow ties via logcumsumexp). Adam(lr=1e-3, wd=1e-4); full-batch GD (n_train < 700); early-stop patience=15 on 10% held-out val. 5-fold CV chosen over LOO to keep wall time bounded; 5-fold is the published DeepSurv benchmark protocol. Within-fold standardization prevents test-fold leakage. Paired bootstrap stratified by cyto, B=10000, vs Cox_v11_routed_mmsygnal log-hazards.",
+  "wall_time_s": 129.7
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Wave 3 master comparison</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:1200px;margin:2em auto;padding:0 1em;}
+table{border-collapse:collapse;font-size:13px;width:100%;}
+th,td{padding:6px 9px;text-align:right;border-bottom:1px solid #ddd;}
+th{background:#f4f4f4;text-align:center;font-weight:600;}
+td.method{text-align:left;font-family:ui-monospace,monospace;}
+tr.ref td{background:#fafbfc;color:#666;font-style:italic;}
+tr.fam td{background:#fff5f5;}
+.bonf-no{color:#a00;font-weight:600;}
+.bonf-yes{color:#080;font-weight:600;}
+caption{caption-side:top;font-weight:600;margin-bottom:8px;text-align:left;}
+.note{font-size:12px;color:#555;margin-top:1em;}
+</style>
+<table>
+<caption>Master comparison: 8 unsupervised factor methods × Cox_v11_richer (Wave 3). MMRF N=787, 224 events, LOO Cox PH, B=10000 stratified bootstrap. Bonferroni family m=8, α_bonf=0.05/8=0.00625.</caption>
+<thead>
+<tr><th>Method</th><th>C</th><th>S1 del17p</th><th>S2 t(4;14)</th><th>S3 +1q21</th><th>S4 t(11;14)</th><th>S5 other</th><th>AUROC@12mo</th><th>AUROC@24mo</th><th>Δ̄ vs richer</th><th>95% CI</th><th>p_boot</th><th>DeLong z</th><th>p_DL</th><th>Bonf</th></tr>
+</thead>
+<tbody>
+<tr class="ref"><td class="method">Cox_v11_richer (baseline)</td><td>0.6538</td><td>0.698</td><td>0.586</td><td>0.688</td><td>0.521</td><td>0.621</td><td>0.7123</td><td>0.6650</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>ref</td></tr>
+<tr class="ref"><td class="method">Cox_v11_routed_mmSYGNAL (v11.5)</td><td>0.6955</td><td>0.730</td><td>0.667</td><td>0.694</td><td>0.643</td><td>0.659</td><td>0.7505</td><td>0.7110</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>ref</td></tr>
+<tr class="ref"><td class="method">mmSYGNAL routed</td><td>0.6938</td><td>0.705</td><td>0.722</td><td>0.664</td><td>0.693</td><td>0.682</td><td>0.7153</td><td>0.7099</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>ref</td></tr>
+<tr class="fam"><td class="method">PCA(K=29) + v11</td><td>0.6754</td><td>0.720</td><td>0.629</td><td>0.702</td><td>0.546</td><td>0.647</td><td>—</td><td>—</td><td>+0.0217</td><td>[+0.0005, +0.0433]</td><td>0.0450</td><td>2.040</td><td>0.0413</td><td class="bonf-no">No</td></tr>
+<tr class="fam"><td class="method">ICA(K=29) + v11</td><td>0.6754</td><td>0.721</td><td>0.628</td><td>0.701</td><td>0.545</td><td>0.647</td><td>—</td><td>—</td><td>+0.0217</td><td>[+0.0003, +0.0434]</td><td>0.0474</td><td>2.035</td><td>0.0419</td><td class="bonf-no">No</td></tr>
+<tr class="fam"><td class="method">MOFA+(K=29) + v11</td><td>0.6751</td><td>0.712</td><td>0.626</td><td>0.681</td><td>0.578</td><td>0.656</td><td>—</td><td>—</td><td>+0.0214</td><td>[+0.0005, +0.0425]</td><td>0.0456</td><td>2.036</td><td>0.0417</td><td class="bonf-no">No</td></tr>
+<tr class="fam"><td class="method">JIVE-joint(K=29) + v11</td><td>0.6751</td><td>0.724</td><td>0.619</td><td>0.707</td><td>0.564</td><td>0.641</td><td>—</td><td>—</td><td>+0.0214</td><td>[+0.0017, +0.0418]</td><td>0.0344</td><td>2.173</td><td>0.0298</td><td class="bonf-no">No</td></tr>
+<tr class="fam"><td class="method">BlockCCA + v11</td><td>0.6737</td><td>0.721</td><td>0.605</td><td>0.714</td><td>0.568</td><td>0.640</td><td>—</td><td>—</td><td>+0.0200</td><td>[+0.0017, +0.0388]</td><td>0.0348</td><td>2.154</td><td>0.0313</td><td class="bonf-no">No</td></tr>
+<tr class="fam"><td class="method">KernelPCA(rbf) + v11</td><td>0.6738</td><td>0.721</td><td>0.623</td><td>0.696</td><td>0.538</td><td>0.651</td><td>—</td><td>—</td><td>+0.0201</td><td>[−0.0022, +0.0427]</td><td>0.0766</td><td>1.824</td><td>0.0681</td><td class="bonf-no">No</td></tr>
+<tr class="fam"><td class="method">NMF(K=29) + v11</td><td>0.6711</td><td>0.709</td><td>0.624</td><td>0.699</td><td>0.548</td><td>0.651</td><td>—</td><td>—</td><td>+0.0174</td><td>[−0.0039, +0.0391]</td><td>0.1122</td><td>1.628</td><td>0.1034</td><td class="bonf-no">No</td></tr>
+<tr class="fam"><td class="method">SparsePCA + v11</td><td>0.6726</td><td>0.719</td><td>0.607</td><td>0.691</td><td>0.546</td><td>0.649</td><td>—</td><td>—</td><td>+0.0189</td><td>[−0.0018, +0.0399]</td><td>0.0742</td><td>1.871</td><td>0.0614</td><td class="bonf-no">No</td></tr>
+</tbody>
+</table>
+<p class="note">Strata: S1 del17p (n=105), S2 t(4;14) (n=97), S3 +1q21 (n=165), S4 t(11;14) (n=95), S5 other (n=325). The first three rows are reference baselines, not part of the 8-method Bonferroni family. <strong>Zero of 8 methods survive Bonferroni at α=0.00625.</strong> Source: <code>integration_benchmark.json</code> (run r-2026-05-07-v12-refactor-data-integration-audit) + <code>metrics_recomputed.json</code>.</p>

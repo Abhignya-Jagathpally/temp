@@ -1,0 +1,15 @@
+model,c_index,s1_del17p,s2_t414,s3_1q21,s4_t1114,s5_other,delta_vs_v11p5_mean,delta_ci_lo,delta_ci_hi,p_two_sided,verdict_vs_v11p5,bonferroni_m6_alpha_0p0083,source
+DModel,0.6955,0.730,0.667,0.694,0.643,0.659,REFERENCE,REFERENCE,REFERENCE,REFERENCE,reference,REFERENCE,paper/v8_artifacts/v11_sprint5/cox_per_patient_log_hazards.npz
+mmSYGNAL_routed_6submodel,0.6938,0.705,0.722,0.664,0.693,0.682,-0.0017,-0.0265,+0.0267,0.989,TIES_v11_5,no_correction_needed,paper/v8_artifacts/v11_sprint5/mmsygnal_complete_routing.json
+RSF_v11_richer,0.6223,0.675,0.514,0.636,0.512,0.588,-0.0732,-0.1040,-0.0424,0.0000,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/rsf_blockforest.json
+RSF_v11_plus_PCA29,0.6359,0.714,0.589,0.633,0.518,0.578,-0.0596,-0.0875,-0.0315,0.0000,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/rsf_blockforest.json
+DeepSurv_v11_richer,0.6235,0.651,0.542,0.671,0.548,0.546,-0.0720,-0.0979,-0.0465,0.0000,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/deepsurv.json
+DeepSurv_v11_plus_PCA29,0.6360,0.636,0.579,0.659,0.577,0.612,-0.0595,-0.0928,-0.0268,0.0002,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/deepsurv.json
+SCOPE_HussainSontag_v11_richer,0.6325,0.646,0.535,0.618,0.493,0.649,-0.0631,-0.0997,-0.0273,0.0004,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/hussain_sontag.json
+SCOPE_HussainSontag_v11_plus_PCA29,0.6141,0.654,0.558,0.607,0.494,0.614,-0.0814,-0.1281,-0.0358,0.0010,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/hussain_sontag.json
+Cox_v11_richer_baseline,0.6538,0.698,0.586,0.688,0.521,0.621,-0.0417,WAVE3_INTEGRATION_BENCHMARK,WAVE3_INTEGRATION_BENCHMARK,WAVE3,LOSES_v11_5,WAVE3,paper/v8_artifacts/v12_refactor_audit/integration_benchmark.json
+v12_PCA29_plus_v11,0.6754,0.720,0.629,0.702,0.546,0.647,-0.0201,WAVE3_INTEGRATION_BENCHMARK,WAVE3_INTEGRATION_BENCHMARK,WAVE3,LOSES_v11_5,WAVE3,paper/v8_artifacts/v12_refactor_audit/wave3/pca_substitution.json
+v12_MOFAplus_v11,0.6751,0.712,0.626,0.681,0.578,0.656,-0.0204,WAVE3_INTEGRATION_BENCHMARK,WAVE3_INTEGRATION_BENCHMARK,WAVE3,LOSES_v11_5,WAVE3,paper/v8_artifacts/v12_refactor_audit/integration_benchmark.json
+TrajectoryNet_flow_alone_66feat,0.6232,,,,,,-0.0724,-0.1051,-0.0398,0.0002,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/trajectorynet.json
+TrajectoryNet_v11_richer_plus_flow_89feat,0.6513,,,,,,-0.0443,-0.0691,-0.0201,0.0004,LOSES_v11_5,survives,paper/v8_artifacts/v12_refactor_audit/wave4/trajectorynet.json
+BlockForest,NOT_RUN,,,,,,,,,,,Documented_R_unavailable,paper/v8_artifacts/v12_refactor_audit/wave4/rsf_blockforest.json

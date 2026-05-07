@@ -1,0 +1,78 @@
+{
+  "n_patients": 787,
+  "n_events": 224,
+  "panel_genes": [
+    "BCL2",
+    "BCL2L11",
+    "BAX",
+    "MCL1",
+    "BCL2L1"
+  ],
+  "panel_genes_missing": [],
+  "panel_direction": {
+    "BCL2": 1,
+    "BCL2L11": 1,
+    "BAX": 1,
+    "MCL1": -1,
+    "BCL2L1": -1
+  },
+  "panel_pmid": "23860449 (DOI 10.1038/leu.2013.216, Leukemia 28:210-212, 2014)",
+  "panel_source_note": "Literature-reconstructed: Touzeau 2014 has no discrete 5-gene supplement; markers from main text fig.3 + discussion. Sprint-plan Sprint C R1 fallback panel.",
+  "f_gates": {
+    "F_S4_PANEL_PRESENT": {
+      "n_s4_strict": 95,
+      "n_rest": 692,
+      "threshold_cohen_d": 0.5,
+      "min_genes_required": 3,
+      "n_genes_passing": 1,
+      "n_genes_total": 5,
+      "per_gene": {
+        "BCL2": {
+          "cohen_d": 0.1326568414018853,
+          "abs_d": 0.1326568414018853,
+          "abs_d_gt_0_5": false,
+          "mean_s4": 0.11668292380314088,
+          "mean_rest": -0.016018609481645147,
+          "expected_direction": 1
+        },
+        "BCL2L11": {
+          "cohen_d": -0.03567261429890662,
+          "abs_d": 0.03567261429890662,
+          "abs_d_gt_0_5": false,
+          "mean_s4": -0.031404323022624595,
+          "mean_rest": 0.004311287120158125,
+          "expected_direction": 1
+        },
+        "BAX": {
+          "cohen_d": -0.3221046247736276,
+          "abs_d": 0.3221046247736276,
+          "abs_d_gt_0_5": false,
+          "mean_s4": -0.28203086269728966,
+          "mean_rest": 0.03871810976335599,
+          "expected_direction": 1
+        },
+        "MCL1": {
+          "cohen_d": -0.07303914081354661,
+          "abs_d": 0.07303914081354661,
+          "abs_d_gt_0_5": false,
+          "mean_s4": -0.0642859879429497,
+          "mean_rest": 0.008825388518179439,
+          "expected_direction": -1
+        },
+        "BCL2L1": {
+          "cohen_d": -0.5832939622531564,
+          "abs_d": 0.5832939622531564,
+          "abs_d_gt_0_5": true,
+          "mean_s4": -0.5044854948508869,
+          "mean_rest": 0.06925740174976054,
+          "expected_direction": -1
+        }
+      },
+      "verdict": "REFUTE_TOUZEAU_ON_BULK_RNA"
+    }
+  },
+  "n_boot": 10000,
+  "stopped_at": "F_S4_PANEL_PRESENT",
+  "overall_verdict": "PUBLISHABLE NEGATIVE RESULT: Touzeau-on-bulk-RNA refuted at biological-sanity stage; Cox not run.",
+  "wall_time_s": 2.704509973526001
+}

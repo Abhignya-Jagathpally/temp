@@ -1,0 +1,68 @@
+{
+  "run": "r-2026-05-07-v12-wave4-hussain-sontag",
+  "paper_pmid": "39075240",
+  "paper_doi": "10.1038/s41746-024-01189-3",
+  "adaptation_caveat": "Original SCOPE designed for longitudinal monthly inputs (TOURMALINE trial cohort N=703 NDMM + N=720 RRMM). MMRF baseline-only RNA-seq lacks the longitudinal forecasting pre-training regime. Implementation: feature-group tokenization (4 tokens v11; 7 tokens v11+PCA), 2-layer transformer encoder d_model=32 n_heads=4 d_ff=64, Cox partial-likelihood head. Transfer test of architecture, NOT exact reproduction of TOURMALINE results.",
+  "N": 787,
+  "events": 224,
+  "v11_5_reference": {
+    "feature_set": "Cox_v11_routed_mmsygnal",
+    "marginal_C": 0.6955131876256027
+  },
+  "SCOPE_v11_richer": {
+    "n_tokens": 4,
+    "max_token_dim": 8,
+    "token_groups": [
+      "clinical",
+      "cyto",
+      "wadd",
+      "z_pc"
+    ],
+    "eval_protocol": "5-fold CV (LOO too slow for transformer \u00d7 787 fits)",
+    "marginal_C": 0.6324541582931579,
+    "per_stratum_C": {
+      "S1_del17p": 0.645580589254766,
+      "S2_t_4_14": 0.5351662404092071,
+      "S3_1q21": 0.6183605186114597,
+      "S4_t_11_14": 0.49278579356270813,
+      "S5_other": 0.6492987377279102
+    },
+    "paired_bootstrap_vs_v11_5": {
+      "delta_obs": -0.06305902933244478,
+      "ci_lo": -0.09969550011092258,
+      "ci_hi": -0.02729208714601931,
+      "p_two_sided": 0.0004
+    },
+    "verdict": "LOSES_v11_5"
+  },
+  "SCOPE_v11_plus_PCA29": {
+    "n_tokens": 7,
+    "max_token_dim": 10,
+    "token_groups": [
+      "clinical",
+      "cyto",
+      "wadd",
+      "z_pc",
+      "pca_lo",
+      "pca_md",
+      "pca_hi"
+    ],
+    "eval_protocol": "5-fold CV",
+    "marginal_C": 0.6140654122890136,
+    "per_stratum_C": {
+      "S1_del17p": 0.6538128249566725,
+      "S2_t_4_14": 0.5575447570332481,
+      "S3_1q21": 0.6072772898368883,
+      "S4_t_11_14": 0.4938956714761376,
+      "S5_other": 0.6143758765778401
+    },
+    "paired_bootstrap_vs_v11_5": {
+      "delta_obs": -0.08144777533658909,
+      "ci_lo": -0.12814389040341545,
+      "ci_hi": -0.0358279542031301,
+      "p_two_sided": 0.001
+    },
+    "verdict": "LOSES_v11_5"
+  },
+  "wall_time_s": 132.2
+}

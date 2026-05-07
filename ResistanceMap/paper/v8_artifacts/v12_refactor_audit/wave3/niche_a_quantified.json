@@ -1,0 +1,32 @@
+{
+  "audit_date": "2026-05-07",
+  "claim_under_test": "ResistanceMap is, to our knowledge, the only multi-omics MM survival model that pre-registers falsification gates with numerical thresholds AND publishes the gates it fails.",
+  "method": "Live PubMed/bioRxiv MCP; abstract-level audit of 7 named comparators + targeted category query.",
+  "comparators": [
+    {"id": "mmSYGNAL_Wall2021", "pmid": "34183722", "doi": "10.1038/s41698-021-00185-0", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "abstract reports validation only; no pass/fail threshold"},
+    {"id": "mmSYGNAL_Murie2025", "pmid": "40169765", "doi": "10.1038/s41416-025-02987-6", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "abstract: significantly outperformed baselines on 5 cohorts; PMC body empty (INSUFFICIENT_DATA on full text)"},
+    {"id": "MOFA_2018", "pmid": "29925568", "doi": "10.15252/msb.20178124", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "method paper, CLL+single-cell demos, no numeric gate"},
+    {"id": "MOFAplus_2020", "pmid": "32393329", "doi": "10.1186/s13059-020-02015-1", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "method paper, no numeric gate"},
+    {"id": "TRACERx_Lung_2023", "pmid": "37046093", "doi": "10.1038/s41586-023-05706-4", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "PARTIAL", "evidence": "trial recruitment registered NCT01888601; ML hypothesis test is not pre-registered"},
+    {"id": "CPTAC_panImmunity_2024", "pmid": "38359819", "doi": "10.1016/j.cell.2024.01.027", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "discovery characterization, 7 immune subtypes, no numeric gate"},
+    {"id": "Melanoma_ML_ICI_PMID40200221", "pmid": "40200221", "doi": "10.1186/s12885-025-14012-3", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "TCGA-SKCM signature, C-index reported, no pre-set gate"},
+    {"id": "Melanoma_ML_ICI_PMID39872516", "pmid": "39872516", "doi": "10.3389/fimmu.2024.1478904", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "ATC stratification signature, no pre-set gate"},
+    {"id": "Melanoma_ML_ICI_PMID39835132", "pmid": "39835132", "doi": "10.3389/fimmu.2024.1519345", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "AhR-related signature, no pre-set gate"},
+    {"id": "iMLGAM_2025", "pmid": "40236779", "doi": "10.1002/imt2.70011", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "abstract: superior predictive performance, no numeric gate"},
+    {"id": "TrajectoryNet_2020", "pmid": "34337419", "doi": "n/a (Proc ML Res / ICML)", "Q1_threshold": "N", "Q2_published_failure": "N", "Q3_pre_registered": "N", "evidence": "ICML method paper, no clinical registration"}
+  ],
+  "tally": {"Q1_yes": 0, "Q2_yes": 0, "Q3_yes": 0, "Q3_partial": 1, "total_papers_audited": 11, "category_pubmed_query_hits": 0},
+  "rm_published_failures": [
+    {"gate": "F2", "verdict": "REFUTED", "row": "r-2026-05-03-v10s2", "sprint": "v10s2"},
+    {"gate": "F5_paired", "verdict": "REFUTED", "row": "r-2026-05-03-v10s2", "sprint": "v10s2"},
+    {"gate": "F8", "verdict": "STRICT_FAIL", "row": "r-2026-05-03-v10s7", "sprint": "v10s7"},
+    {"gate": "F10", "verdict": "STRUCTURAL_FAIL", "row": "r-2026-05-03-v10s4", "sprint": "v10s4"},
+    {"gate": "F3_cross_disease_AML", "verdict": "REFUTED", "row": "Sprint6_row", "sprint": "v10s6"},
+    {"gate": "Geneformer_encoder_F2_leak", "verdict": "REJECTED_PRE_DEPLOY", "row": "r-2026-05-03-v11s1-encoder-reject", "sprint": "v11s1"},
+    {"gate": "v12_t1114_specialist_dS4", "verdict": "STRICT_FAIL", "row": "r-2026-05-04-v12-t1114-specialist", "sprint": "v12"}
+  ],
+  "rm_failure_count": 7,
+  "verdict": {"N_competitors_in_category": 0, "RM_position": "1_of_1", "claim_status": "DEFENSIBLE_WITH_to_our_knowledge_HEDGE"},
+  "caveats": ["mmSYGNAL Murie 2025 PMC full-text body empty", "iMLGAM/TrajectoryNet/TRACERx/CPTAC abstract-only audit", "ML melanoma ICI signature 2024 unresolved (3 closest matches audited)", "Audit confined to 7-paper SOTA set + targeted category query"],
+  "recommended_hedge": "to_our_knowledge_sufficient; insert §5-stronger variant in Methods Falsification-framework"
+}

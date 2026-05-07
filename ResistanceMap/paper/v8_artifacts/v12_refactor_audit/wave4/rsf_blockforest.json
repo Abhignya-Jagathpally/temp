@@ -1,0 +1,60 @@
+{
+  "run": "r-2026-05-07-v12-wave4-rsf",
+  "N": 787,
+  "events": 224,
+  "v11_5_reference": {
+    "feature_set": "Cox_v11_routed_mmsygnal",
+    "marginal_C": 0.6955131876256027
+  },
+  "RSF_v11_richer": {
+    "n_features": 23,
+    "n_estimators": 300,
+    "eval_protocol": "LOO N=787 (matched to v12 Cox protocol)",
+    "loo_wall_time_s": 323.7,
+    "oob_score_full_cohort_diagnostic": 0.6160646417526578,
+    "marginal_C": 0.6222809958661766,
+    "per_stratum_C": {
+      "S1_del17p": 0.675476603119584,
+      "S2_t_4_14": 0.5140664961636828,
+      "S3_1q21": 0.6359263906315349,
+      "S4_t_11_14": 0.51165371809101,
+      "S5_other": 0.5884992987377279
+    },
+    "paired_bootstrap_vs_v11_5": {
+      "delta_obs": -0.07323219175942608,
+      "ci_lo": -0.10398622910812938,
+      "ci_hi": -0.042401908582109064,
+      "p_two_sided": 0.0
+    },
+    "verdict": "LOSES_v11_5"
+  },
+  "RSF_v11_plus_PCA29": {
+    "n_features": 52,
+    "n_estimators": 300,
+    "eval_protocol": "LOO N=787 (matched to v12 Cox protocol)",
+    "loo_wall_time_s": 594.9,
+    "oob_score_full_cohort_diagnostic": 0.6279246540395889,
+    "marginal_C": 0.6358695086268834,
+    "per_stratum_C": {
+      "S1_del17p": 0.7144714038128249,
+      "S2_t_4_14": 0.5888746803069054,
+      "S3_1q21": 0.6329987452948557,
+      "S4_t_11_14": 0.5183129855715871,
+      "S5_other": 0.5777699859747546
+    },
+    "paired_bootstrap_vs_v11_5": {
+      "delta_obs": -0.05964367899871925,
+      "ci_lo": -0.0874597427284464,
+      "ci_hi": -0.03148668344884632,
+      "p_two_sided": 0.0
+    },
+    "verdict": "LOSES_v11_5"
+  },
+  "BlockForest": {
+    "status": "NOT_RUN",
+    "reason": "R / Rscript not installed in this environment; rpy2 not installable without R. blockForest is an R-only package (Hornung & Wright 2019). Documented honestly per task spec instead of silently skipped.",
+    "to_run": "install R + blockForest R package, install rpy2, wrap blockForest::blockfor() with cv.error.frac=0.5 + classification=FALSE for survival, OOB risk score per patient, then re-run paired bootstrap."
+  },
+  "method_notes": "RSF (sksurv RandomSurvivalForest; n_estimators=300, min_samples_split=10, max_features='sqrt'). EVAL = LOO N=787 (matched to v12 Cox protocol exactly): one full RSF refit per held-out patient. Full-cohort OOB score reported as a sanity-check diagnostic ('oob_score_full_cohort_diagnostic') and matches LOO C-index within 0.01 in both variants. Paired bootstrap stratified by cyto stratum, B=10000. NOTE: an earlier version of this script reported in-sample (training-set) C-index by calling rsf.predict on the same data the model was fit on; that produced overfit C ~0.93 and is corrected by the LOO protocol used here.",
+  "wall_time_s": 1035.5
+}

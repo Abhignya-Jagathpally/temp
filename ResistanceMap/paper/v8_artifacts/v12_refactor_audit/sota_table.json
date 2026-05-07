@@ -1,0 +1,178 @@
+{
+  "audit_date": "2026-05-07",
+  "branch": "v6",
+  "worktree": "tier1-refactor",
+  "rm_state": {
+    "v11_5_marginal_cindex_mmrf_loo_pfs": 0.6955,
+    "v11_5_split": "MMRF CoMMpass IA, N=787, LOO PFS",
+    "v12_mofa_combo_cindex": 0.6751,
+    "v12_combo_delta_vs_cox_v11_richer": 0.0214,
+    "v12_combo_delta_ci95": [0.0005, 0.0425],
+    "v12_combo_p_value": 0.046,
+    "v12_combo_verdict": "borderline_architectural_opportunity",
+    "per_stratum_strengths": {
+      "S1_del17p_cindex": 0.711,
+      "S3_plus1q21_cindex": 0.685,
+      "S4_t11_14_cindex": "chance_level_specialist_head_failed"
+    },
+    "causal_status": {
+      "F8_strict": "FAIL_0_of_16_cells_at_N_paired_29",
+      "F10_e_value": 1.21,
+      "F10_threshold": 1.5,
+      "F10_strict": "FAIL"
+    },
+    "conformal_F_S5_strict": "PASS_5_of_5_strata_within_3pct_of_nominal_90",
+    "cross_disease_F3_to_AML": "REFUTED_MM_proteasome_is_MM_specific"
+  },
+  "access_notes": {
+    "pubmed_mcp": "denied_this_session",
+    "biorxiv_mcp": "denied_this_session",
+    "huggingface_paper_search_mcp": "denied_this_session",
+    "read_on_runs_md": "denied_this_session",
+    "consequence": "all SOTA-side metric/N/PMID values marked UNVERIFIED; rule-based comparability judgments only"
+  },
+  "comparators": [
+    {
+      "id": 1,
+      "short_name": "mmSYGNAL_routed",
+      "year": null,
+      "year_unverified": true,
+      "task": "MM PFS risk prediction from transcriptional regulatory network",
+      "dataset": "MMRF CoMMpass IA",
+      "primary_metric": "C-index (PFS)",
+      "reported_value_on_rm_split": 0.694,
+      "reported_value_source": "user_prompt_paired_bootstrap",
+      "comparable_to_rm": true,
+      "comparison_axis": ["task", "dataset", "metric", "endpoint", "disease"],
+      "head_to_head_delta_vs_rm_v11_5": -0.0015,
+      "head_to_head_verdict": "TIE_99pct_CI_excludes_abs_delta_above_0_036"
+    },
+    {
+      "id": 2,
+      "short_name": "TRACERx_lung_Frankell_2023",
+      "year": 2023,
+      "year_unverified": true,
+      "task": "multi-region clonal trajectory and metastatic seeding in NSCLC",
+      "dataset": "TRACERx 421 NSCLC multi-region WES+RNA",
+      "primary_metric": "clonality_seeding_statistics",
+      "reported_value": "UNVERIFIED",
+      "comparable_to_rm": false,
+      "non_comparability_reason": "wrong_disease_lung_not_MM_and_no_PFS_C_index_endpoint_and_intra_patient_multi_region_unit"
+    },
+    {
+      "id": 3,
+      "short_name": "CPTAC_pan_cancer_proteogenomics_immunity_2024",
+      "year": 2024,
+      "year_unverified": true,
+      "task": "immune subtype clustering and proteogenomic signature discovery",
+      "dataset": "CPTAC pan-cancer (no MM track)",
+      "primary_metric": "cluster_purity_or_signature_AUROC",
+      "reported_value": "UNVERIFIED",
+      "comparable_to_rm": false,
+      "non_comparability_reason": "no_MM_cohort_in_CPTAC_and_unsupervised_subtype_task_not_supervised_survival"
+    },
+    {
+      "id": 4,
+      "short_name": "ML_melanoma_immunotherapy_signature_2024",
+      "year": 2024,
+      "year_unverified": true,
+      "task": "binary ICI response classification",
+      "dataset": "public melanoma ICI cohorts",
+      "primary_metric": "AUROC",
+      "reported_value": "UNVERIFIED",
+      "comparable_to_rm": false,
+      "non_comparability_reason": "wrong_disease_and_binary_response_not_PFS_regression"
+    },
+    {
+      "id": 5,
+      "short_name": "iMLGAM_2025",
+      "year": 2025,
+      "year_unverified": true,
+      "task": "multi-omics fusion classification with attention",
+      "dataset": "UNVERIFIED",
+      "primary_metric": "UNVERIFIED",
+      "reported_value": "UNVERIFIED",
+      "comparable_to_rm": "unknown_pending_mcp_access"
+    },
+    {
+      "id": 6,
+      "short_name": "TrajectoryNet_Tong_Krishnaswamy",
+      "year": "2020_revised_2023",
+      "year_unverified": true,
+      "task": "continuous-time single-cell trajectory inference via dynamic OT on a neural ODE",
+      "dataset": "embryoid body scRNA-seq, EMT scRNA-seq",
+      "primary_metric": "EMD_to_held_out_timepoint",
+      "reported_value": "UNVERIFIED",
+      "comparable_to_rm": false,
+      "non_comparability_reason": "single_cell_unsupervised_dynamics_vs_bulk_patient_survival_partial_overlap_with_retired_RM_v8_v9_trajectory_module"
+    },
+    {
+      "id": 7,
+      "short_name": "MOFA_plus_Argelaguet_2020",
+      "year": 2020,
+      "year_unverified": true,
+      "task": "unsupervised multi-view factor model for multi-omics integration",
+      "dataset": "CLL multi-omics, scNMT-seq",
+      "primary_metric": "factor_variance_explained_or_downstream_classifier_accuracy",
+      "reported_value": "UNVERIFIED",
+      "comparable_to_rm": true,
+      "comparison_axis": ["used_inside_RM_v12_combo"],
+      "rm_v12_combo_delta_vs_cox_v11_richer": 0.0214,
+      "rm_v12_combo_p": 0.046,
+      "verdict": "borderline_architectural_opportunity_NOT_SOTA_beating",
+      "missing_baseline": "MOFA_plus_standalone_to_Cox_PH_on_same_LOO_split"
+    },
+    {
+      "id": 8,
+      "short_name": "UKBB_MMRF_HF_MM_deep_models",
+      "year": "varies",
+      "task": "MM survival or diagnosis",
+      "dataset": "UKBB or MMRF",
+      "primary_metric": "C_index_or_AUROC",
+      "reported_value": "UNVERIFIED",
+      "comparable_to_rm": "unknown_HF_MCP_denied"
+    }
+  ],
+  "head_to_head_table": [
+    {"model": "RM_v11_5_routed_mmsygnal", "cindex": 0.6955, "n": 787, "split": "MMRF_LOO_PFS"},
+    {"model": "mmSYGNAL_routed", "cindex": 0.694, "n": 787, "split": "MMRF_LOO_PFS"},
+    {"model": "RM_v12_MOFA_combo", "cindex": 0.6751, "n": 787, "split": "MMRF_LOO_PFS"},
+    {"model": "Cox_v11_richer_implied_baseline", "cindex_implied": 0.6537, "n": 787, "split": "MMRF_LOO_PFS"}
+  ],
+  "uniqueness_niches": [
+    {
+      "id": "A",
+      "name": "pre_registered_falsification_gates_with_published_strict_fails",
+      "evidence": "F8_strict_fail_F10_fail_F5_paired_refuted_AML_cross_disease_refuted_documented_in_sprints_1_through_7",
+      "comparator_coverage": "none_of_the_8_comparators_publishes_a_gate_it_is_allowed_to_fail"
+    },
+    {
+      "id": "B",
+      "name": "per_stratum_conformal_coverage_at_cytogenetic_subgroup_level",
+      "evidence": "F_S5_strict_pass_5_of_5_strata_within_3pct_of_nominal_90_pct_LOO_coverage",
+      "comparator_coverage": "mmSYGNAL_routes_by_subtype_but_not_documented_to_publish_stratum_conditional_conformal_coverage_at_this_tolerance"
+    },
+    {
+      "id": "C",
+      "name": "MM_specific_causal_audit_with_correctly_reported_non_transfer",
+      "evidence": "F3_6_of_10_strict_in_MM_F6_30sigma_pass_F3_correctly_refuted_in_AML",
+      "strength": "weaker_conditional_on_external_replication"
+    }
+  ],
+  "non_differentiators_to_deflate": [
+    "marginal_cindex_TIE_with_mmSYGNAL",
+    "MOFA_combo_improvement_borderline_p_046_lower_CI_0_0005",
+    "multi_omics_breadth_MOFA_iMLGAM_CPTAC_integrate_more",
+    "trajectory_inference_TrajectoryNet_CellRank2_PRESCIENT_stronger"
+  ],
+  "submission_readiness": {
+    "biorxiv": "READY",
+    "clinical_genomics_journal": "READY (Briefings in Bioinformatics or Cell Reports Methods)",
+    "nature_methods": "NOT_READY_needs_external_cohort_F_S5_replication_and_non_MM_strict_pass_and_F8_F10_resolution",
+    "icml_neurips_main": "NOT_READY_workshop_AI4Science_or_LMRL_fit_for_purpose_now"
+  },
+  "benchmarking_recommendation": [
+    "mmSYGNAL_routed_keep_with_byte_identical_split_and_unified_concordance_implementation",
+    "MOFA_plus_standalone_to_Cox_PH_on_same_LOO_split_to_replace_RM_internal_ablation_baseline"
+  ]
+}
