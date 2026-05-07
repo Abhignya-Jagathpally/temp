@@ -1,0 +1,92 @@
+{
+  "n_patients": 716,
+  "latent_dim": 64,
+  "n_strata": 5,
+  "n_ppc_samples": 1000,
+  "n_svi_steps": 2000,
+  "elbo_init": 253157.21875,
+  "elbo_final": 160339.359375,
+  "stratum_n_pos": {
+    "del17p": 105,
+    "chr1q21_gain": 242,
+    "del13q": 375,
+    "t_4_14": 103,
+    "t_11_14": 123
+  },
+  "centroid_norm_T1": {
+    "del17p": {
+      "obs": 15.455394744873047,
+      "rep_mean": 13.137080220222472,
+      "rep_sd": 0.9556610056789294,
+      "p_bayes": 0.014,
+      "verdict": "FAIL"
+    },
+    "chr1q21_gain": {
+      "obs": 14.723665237426758,
+      "rep_mean": 10.69172371673584,
+      "rep_sd": 0.7288078935817561,
+      "p_bayes": 0.0,
+      "verdict": "FAIL"
+    },
+    "del13q": {
+      "obs": 7.909849643707275,
+      "rep_mean": 8.53980089187622,
+      "rep_sd": 0.6218496763933162,
+      "p_bayes": 0.839,
+      "verdict": "CAVEAT"
+    },
+    "t_4_14": {
+      "obs": 24.551292419433594,
+      "rep_mean": 15.31608835029602,
+      "rep_sd": 1.018144882429638,
+      "p_bayes": 0.0,
+      "verdict": "FAIL"
+    },
+    "t_11_14": {
+      "obs": 22.77931785583496,
+      "rep_mean": 14.115812203407287,
+      "rep_sd": 0.8998232309988083,
+      "p_bayes": 0.0,
+      "verdict": "FAIL"
+    }
+  },
+  "dispersion_T2": {
+    "del17p": {
+      "obs": 69.23204040527344,
+      "rep_mean": 65.24536348342896,
+      "rep_sd": 5.256712625222028,
+      "p_bayes": 0.221,
+      "verdict": "CAVEAT"
+    },
+    "chr1q21_gain": {
+      "obs": 63.75890350341797,
+      "rep_mean": 65.10773671722413,
+      "rep_sd": 5.141073216855392,
+      "p_bayes": 0.583,
+      "verdict": "PASS"
+    },
+    "del13q": {
+      "obs": 66.95060729980469,
+      "rep_mean": 65.37030837631225,
+      "rep_sd": 5.153376219634978,
+      "p_bayes": 0.366,
+      "verdict": "PASS"
+    },
+    "t_4_14": {
+      "obs": 62.07252502441406,
+      "rep_mean": 64.6537480583191,
+      "rep_sd": 5.247478703470265,
+      "p_bayes": 0.667,
+      "verdict": "PASS"
+    },
+    "t_11_14": {
+      "obs": 55.640281677246094,
+      "rep_mean": 64.61991878128052,
+      "rep_sd": 5.200568826295953,
+      "p_bayes": 0.966,
+      "verdict": "FAIL"
+    }
+  },
+  "verdict_rule": "Bayesian p_B = P(T(z_rep) >= T(z_obs)). PASS if |0.5 - p_B| <= 0.20; CAVEAT 0.20-0.40; FAIL > 0.40.",
+  "wall_time_s": 9.5622878074646
+}

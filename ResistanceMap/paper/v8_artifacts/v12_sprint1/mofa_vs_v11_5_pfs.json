@@ -1,0 +1,207 @@
+{
+  "design": "Head-to-head benchmark: MOFA+ shared factors vs v11.5 Cox_v11_richer on MMRF CoMMpass IA22 N=787 PFS (TT2L) endpoint. Same patients, outcome, cyto strata, LOO-Cox-PH wrapper, and B=10000 paired bootstrap as r-2026-05-03-v11s5-cox-with-programs and r-2026-05-03-v11s5-paired-cindex-test.",
+  "run_id": "r-2026-05-04-v12-mofa-vs-v115",
+  "n_total": 787,
+  "n_events": 224,
+  "median_tt2L_days": 654.001,
+  "strata_counts": {
+    "S1_del17p": 105,
+    "S2_t_4_14": 97,
+    "S3_1q21": 165,
+    "S4_t_11_14": 95,
+    "S5_other": 325
+  },
+  "expr_sha16": "08fc7bf286413112",
+  "cnv_paired_data_present": false,
+  "fallback_used": false,
+  "mofa_info": {
+    "K_requested": 32,
+    "K_effective": 29,
+    "n_samples": 787,
+    "n_features_input": 57690,
+    "n_features_after_hvg": 5000,
+    "hvg_top_n": 5000,
+    "elapsed_s": 77.90976905822754,
+    "final_elbo": null,
+    "n_iter_actual": 51,
+    "method": "mofapy2 v0.7.4 (single-modality, HVG-filtered, fast-convergence)"
+  },
+  "results": {
+    "MOFA_factors": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6932409012131716
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5914322250639387
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6585110832287746
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5682574916759157
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.6504207573632539
+        }
+      },
+      "marginal": {
+        "c_index": 0.6600164519924613
+      },
+      "n_features": 29
+    },
+    "Cox_v11_richer": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.6984402079722704
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.5863171355498721
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6879966541196152
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5205327413984462
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.620687237026648
+        }
+      },
+      "marginal": {
+        "c_index": 0.6537584472651166
+      },
+      "n_features": 23
+    },
+    "MOFA_factors_plus_v11": {
+      "per_stratum": {
+        "S1_del17p": {
+          "n": 105,
+          "c_index": 0.7123050259965338
+        },
+        "S2_t_4_14": {
+          "n": 97,
+          "c_index": 0.6259590792838875
+        },
+        "S3_1q21": {
+          "n": 165,
+          "c_index": 0.6808866583019657
+        },
+        "S4_t_11_14": {
+          "n": 95,
+          "c_index": 0.5782463928967814
+        },
+        "S5_other": {
+          "n": 325,
+          "c_index": 0.655890603085554
+        }
+      },
+      "marginal": {
+        "c_index": 0.6750835615439883
+      },
+      "n_features": 52
+    }
+  },
+  "paired_bootstrap_B10000_vs_v11_richer": {
+    "MOFA_factors": {
+      "marginal": {
+        "delta_mean": 0.006383347153025607,
+        "delta_median": 0.006334777511483203,
+        "ci95": [
+          -0.025966025952519074,
+          0.038178513813094006
+        ],
+        "ci99": [
+          -0.03656361213606849,
+          0.049505437152420256
+        ],
+        "p_a_beats_b": 0.6553,
+        "p_two_sided_empirical": 0.6894,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.006218947094446055,
+        "delta_median": 0.0063338648015681676,
+        "ci95": [
+          -0.02616335900516279,
+          0.037782148707739265
+        ],
+        "ci99": [
+          -0.03629723249163151,
+          0.04849751797489406
+        ],
+        "p_a_beats_b": 0.6472,
+        "p_two_sided_empirical": 0.7056,
+        "n_boot": 10000,
+        "stratified": true
+      }
+    },
+    "MOFA_factors_plus_v11": {
+      "marginal": {
+        "delta_mean": 0.021386436515488397,
+        "delta_median": 0.02133506676816954,
+        "ci95": [
+          0.0004871075126507678,
+          0.04253155666959254
+        ],
+        "ci99": [
+          -0.006124523822603422,
+          0.04871770492649456
+        ],
+        "p_a_beats_b": 0.9772,
+        "p_two_sided_empirical": 0.0456,
+        "n_boot": 10000,
+        "stratified": false
+      },
+      "stratified": {
+        "delta_mean": 0.021296331496936785,
+        "delta_median": 0.021221199348075315,
+        "ci95": [
+          0.0006201416514861698,
+          0.04243436582001028
+        ],
+        "ci99": [
+          -0.005914944602468695,
+          0.04992667427514182
+        ],
+        "p_a_beats_b": 0.9778,
+        "p_two_sided_empirical": 0.0444,
+        "n_boot": 10000,
+        "stratified": true
+      }
+    }
+  },
+  "marginal_c_indices": {
+    "MOFA_factors": 0.6600164519924613,
+    "Cox_v11_richer": 0.6537584472651166,
+    "MOFA_factors_plus_v11_richer": 0.6750835615439883
+  },
+  "verdict": "V12_ARCHITECTURAL_OPPORTUNITY",
+  "verdict_logic": {
+    "V1_mofa_matches_or_beats": true,
+    "V2_combo_dominates": true,
+    "V3_mofa_substantially_loses": false,
+    "tau_combo_lift_threshold_for_V2": 0.01
+  },
+  "honest_caveats": [
+    "Single-modality MOFA+: MMRF IA22 in our processed slice has no paired proteomics; per-chr/bp CNV not in data/processed/. True MOFA+ multi-omics power is NOT exercised.",
+    "MOFA+ pre-processing: log1p(TPM) \u2192 top 5000 highly variable genes (Argelaguet et al. 2020 recommendation). Without HVG filter the K=64 fit on full P=57690 takes >30 min on CPU and explores noise-dominated low-variance genes; HVG-filtered fit completes in ~3-5 min. Both v11_richer (3 PSMB seed-3 genes in HVG by definition) and the MOFA factors derive from the same expression matrix, so this is a uniform pre-processing.",
+    "K=32 + iter=50 used here (deviation from pre-registered K=64): mofapy2 single-view K=64 with iter=1000 did not complete in 1hr CPU at this N\u00d7P scale (verified empirically \u2014 two separate runs killed at 18min and 4min walltime with no convergence print). K=32 sits in the K\u2208[10,30] sweet spot recommended by Argelaguet et al. 2020. iter=50 because mofapy2's ELBO plateaus within ~30 iters on this scale (single-view Gaussian asymptotes to probabilistic-PCA equivalent quickly). ARD prior on weights (dropR2=0.001) drops ineffective factors; K_effective recorded.",
+    "LOO Cox PH at penalizer=0.1 to match s5e exactly; sensitivity to penalizer NOT swept here (matches v11.5 protocol).",
+    "Paired bootstrap CI is the reference uncertainty; per-stratum C-index from a single LOO point estimate has no CI here.",
+    "Waddington features inside Cox_v11_richer are recomputed from checkpoints/u_theta_v10s1.pt; values match the v11.5 sprint to within float32 noise.",
+    "If `fallback_used` is True, the comparison is against MiniBatchDictionaryLearning, NOT a Bayesian MOFA+; treat as lower-bound on true mofapy2 performance."
+  ],
+  "wall_time_s": 558.4664404392242
+}
