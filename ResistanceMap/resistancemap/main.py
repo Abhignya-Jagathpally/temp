@@ -445,16 +445,24 @@ def calibrate_trajectory(config: ResistanceMapConfig, ckpt_mgr: CheckpointManage
 def train_trajectory_forecaster(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Path:
     """Train the trajectory forecaster on top of the calibrated ODE.
 
-    Builds a TrajectoryForecaster that predicts chromatin state evolution at
-    3/6/12 month horizons via the ChromatinODE. Supervised by drug sensitivity
-    as a proxy: samples with high resistance (high IC50 z-score) should show
-    trajectories that converge toward the resistant (high-r) basin, while
-    sensitive samples should remain in the active (high-a) basin.
+    Builds a TrajectoryForecaster that regresses basin-depth at three
+    learned pseudotime horizons against snapshot IC50. Supervised by drug
+    sensitivity as a proxy: samples with high resistance (high IC50
+    z-score) should show trajectories whose basin-depth at every nominal
+    horizon is consistent with the resistant attractor, while sensitive
+    samples should remain in the active (high-a) basin.
 
     The forecaster's learnable parameters (latent_to_params, horizon_scale)
-    are trained so that future stability scores correlate with observed drug
-    response.  This makes the trajectory modality genuinely distinct from
-    the static MemoryStabilityScorer used earlier.
+    are trained so that pseudotime-rollout stability scores correlate with
+    the observed snapshot drug-response label.
+
+    LIMITATION: supervision is contemporaneous (proteomics_t, IC50_t). The
+    forecaster is fitted such that snapshot stability at any nominal
+    horizon matches a time-invariant label. This calibrates ODE geometry
+    around the current state; it does NOT calibrate calendar-time
+    evolution. The "3/6/12-month" horizon labels are nominal indices, not
+    months. See docs/CAUSAL_VALIDITY_AUDIT.md and the v8 scope-back in
+    README.md.
 
     Checkpoint saved: "trajectory_forecaster_trained"
     """
@@ -750,38 +758,101 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
     esm2_bottleneck_dim = getattr(config.protein_net, "esm2_bottleneck_dim", 256)
     protein_sequences = getattr(dataset, "protein_sequences", None)
 
-    if protein_sequences and len(protein_sequences) == n_proteins:
-        logger.info(f"Computing ESM-2 embeddings for {n_proteins} proteins...")
+    # Per-row None values are masked (zero-padded after bottleneck); any
+    # protein with no resolvable UniProt sequence falls back to zeros so
+    # the GNN still gets a valid 256-d row. NO synthetic sequences are
+    # ever fabricated to fill misses (project policy).
+    valid_seq_idx = (
+        [i for i, s in enumerate(protein_sequences) if s]
+        if protein_sequences is not None
+        else []
+    )
+    have_min_coverage = (
+        protein_sequences is not None
+        and len(protein_sequences) == n_proteins
+        and len(valid_seq_idx) >= max(1, int(0.5 * n_proteins))
+    )
+
+    if have_min_coverage:
+        logger.info(
+            f"Computing ESM-2 embeddings for {len(valid_seq_idx)}/{n_proteins} "
+            "proteins (others get zero-padded rows)..."
+        )
         try:
-            esm2_model_name = getattr(config.protein_net, "esm2_model", "facebook/esm2_t33_650M_UR50D")
-            embedder = ESM2Embedder(
-                model_name=esm2_model_name,
-                cache_size=n_proteins,
-                device=str(device),
+            esm2_model_name = getattr(
+                config.protein_net, "esm2_model", "facebook/esm2_t33_650M_UR50D"
             )
+            # Use cached embeddings if the same protein-name vector was
+            # already embedded by a previous run (one-time ~15-35 min cost).
+            import hashlib
+            cache_key = hashlib.sha256(
+                ("\n".join(protein_names) + "::" + esm2_model_name).encode()
+            ).hexdigest()[:16]
+            cache_path = Path("checkpoints") / f"esm2_raw_{cache_key}.pt"
+            if cache_path.exists():
+                logger.info(f"Loading cached ESM-2 raw embeddings from {cache_path}")
+                esm2_raw = torch.load(cache_path, map_location="cpu", weights_only=False)
+            else:
+                embedder = ESM2Embedder(
+                    model_name=esm2_model_name,
+                    cache_size=n_proteins,
+                    device=str(device),
+                )
+                # batch_size=8 + fp16 keeps fp32-OOM at L=1024 from biting
+                # while still fitting on a 16GB GPU (R2 audit correction
+                # to the R1 batch=64 default).
+                esm2_batch_size = getattr(config.protein_net, "esm2_batch_size", 8)
+                esm2_raw = torch.zeros(n_proteins, 1280, dtype=torch.float32)
+                for bi in range(0, n_proteins, esm2_batch_size):
+                    batch_end = min(bi + esm2_batch_size, n_proteins)
+                    batch_pairs = [
+                        (i, protein_sequences[i])
+                        for i in range(bi, batch_end)
+                        if protein_sequences[i]
+                    ]
+                    if not batch_pairs:
+                        continue   # leave zero rows for None-sequence entries
+                    present_idx, present_seqs = zip(*batch_pairs)
+                    raw_present = embedder.embed_proteins(list(present_seqs))  # (k, 1280)
+                    for k, gi in enumerate(present_idx):
+                        esm2_raw[gi] = raw_present[k].detach().cpu()
+                cache_path.parent.mkdir(parents=True, exist_ok=True)
+                torch.save(esm2_raw, cache_path)
+                logger.info(f"Cached ESM-2 raw embeddings to {cache_path}")
+                # Free the large ESM-2 model from GPU memory
+                del embedder
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
             bottleneck = ESM2Bottleneck(
                 input_dim=1280,
                 output_dim=esm2_bottleneck_dim,
             ).to(device)
-            # Compute in batches to avoid OOM on large proteomes
-            esm2_batch_size = 64
-            esm2_raw = []
-            for bi in range(0, n_proteins, esm2_batch_size):
-                batch_seqs = protein_sequences[bi:bi + esm2_batch_size]
-                raw_emb = embedder.embed_proteins(batch_seqs)  # (batch, 1280)
-                esm2_raw.append(raw_emb.cpu())
-            esm2_raw = torch.cat(esm2_raw, dim=0)  # (n_proteins, 1280)
             with torch.no_grad():
-                esm2_embeddings = bottleneck(esm2_raw.to(device)).cpu()  # (n_proteins, 256)
-            logger.info(f"ESM-2 embeddings: {esm2_embeddings.shape}")
-            # Free the large ESM-2 model from GPU memory
-            del embedder
-            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+                esm2_embeddings = bottleneck(esm2_raw.to(device)).cpu()
+            logger.info(f"ESM-2 embeddings (bottlenecked): {esm2_embeddings.shape}")
         except Exception as e:
-            logger.warning(f"ESM-2 embedding failed ({e}); falling back to abundance features")
+            logger.warning(
+                f"ESM-2 embedding failed ({e}); falling back to abundance features. "
+                "This is the honest fallback path; no random sequences are fabricated."
+            )
             esm2_embeddings = None
     else:
-        logger.info("No protein sequences available; using abundance-only node features")
+        if protein_sequences is None:
+            logger.info(
+                "No protein sequences available (dataset.protein_sequences is None); "
+                "using abundance-only node features. To enable real ESM-2 forward "
+                "pass, populate protein sequences via "
+                "resistancemap.data.uniprot_loader.load_protein_sequences "
+                "in harmonize_omics (P3.1)."
+            )
+        else:
+            logger.info(
+                f"Insufficient UniProt sequence coverage "
+                f"({len(valid_seq_idx)}/{n_proteins} < 50%); "
+                "using abundance-only node features. Improve coverage via the "
+                "bulk Swiss-Prot FASTA (scripts/download_uniprot.sh) or set "
+                "config.data.uniprot_allow_network=True for REST fallback."
+            )
 
     use_esm2 = esm2_embeddings is not None
 
@@ -820,17 +891,25 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
         dropout=config.protein_net.gnn_dropout, edge_dim=1,
     ).to(device)
     n_drugs = dataset.drug_sensitivity.shape[1]
-    pred_head = torch.nn.Sequential(
-        torch.nn.Linear(config.protein_net.gnn_hidden, 64),
-        torch.nn.ReLU(),
-        torch.nn.Linear(64, n_drugs),
+    # Per-drug head + inverse-variance weighting replaces the shared
+    # Linear(gnn_hidden, n_drugs) tail for the same HDAC-gradient
+    # rationale as the fusion drug_head (see resistancemap/models/per_drug_head.py).
+    from resistancemap.models.per_drug_head import PerDrugHead, variance_weights
+    splits = data_ckpt["splits"]
+    train_idx = splits["train"]
+    val_idx = splits["val"]
+    train_targets = dataset.drug_sensitivity[train_idx]
+    loss_w = variance_weights(train_targets)
+    pred_head = PerDrugHead(
+        fusion_dim=config.protein_net.gnn_hidden,
+        n_drugs=n_drugs,
+        hidden=64,
+        dropout=0.1,
+        loss_weights=loss_w,
     ).to(device)
 
     params = list(gnn.parameters()) + list(pred_head.parameters())
     optimizer = torch.optim.Adam(params, lr=5e-4, weight_decay=1e-4)
-    splits = data_ckpt["splits"]
-    train_idx = splits["train"]
-    val_idx = splits["val"]
 
     # ── 6. Training loop ─────────────────────────────────────────────────
     from torch_geometric.data import Data as PyGData
@@ -868,12 +947,13 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
                 ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
                 node_emb = gnn(ppi_data)  # (P, hidden)
                 global_repr = node_emb.mean(dim=0, keepdim=True)  # (1, hidden)
-                pred = pred_head(global_repr).squeeze(0)  # (n_drugs,)
+                pred = pred_head(global_repr)  # (1, n_drugs)
 
-                target = dataset.drug_sensitivity[idx].to(device)
+                target = dataset.drug_sensitivity[idx].to(device).unsqueeze(0)  # (1, n_drugs)
                 mask = ~torch.isnan(target)
                 if mask.any():
-                    loss = torch.nn.functional.mse_loss(pred[mask], target[mask])
+                    # Per-drug variance-weighted MSE — equalizes HDAC gradients.
+                    loss = pred_head.masked_weighted_mse(pred, target)
                     batch_loss = batch_loss + loss
                     count += 1
 
@@ -898,11 +978,11 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
                 ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
                 node_emb = gnn(ppi_data)
                 global_repr = node_emb.mean(dim=0, keepdim=True)
-                pred = pred_head(global_repr).squeeze(0)
-                target = dataset.drug_sensitivity[idx].to(device)
+                pred = pred_head(global_repr)  # (1, n_drugs)
+                target = dataset.drug_sensitivity[idx].to(device).unsqueeze(0)
                 mask = ~torch.isnan(target)
                 if mask.any():
-                    val_losses.append(torch.nn.functional.mse_loss(pred[mask], target[mask]).item())
+                    val_losses.append(pred_head.masked_weighted_mse(pred, target).item())
 
         val_loss = sum(val_losses) / max(len(val_losses), 1)
         train_loss = sum(epoch_losses) / max(len(epoch_losses), 1)
@@ -910,6 +990,75 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             patience_counter = 0
+
+            # P2.2: Per-(protein, drug) input-gradient saliency for pathway
+            # validation. R2 architectural finding: pred = pred_head(mean(node_emb))
+            # — the mean-pool gives ∂pred[d]/∂node_emb[i] = (1/P) * W_d (uniform
+            # across proteins for any single drug). To get PROTEIN-specific
+            # attribution per drug, compute ∂pred[d]/∂proteomics_input[i, :],
+            # L2-normed over the feature axis. This IS protein-specific because
+            # the GNN aggregates differently across nodes given different
+            # proteomics inputs.
+            #
+            # We accumulate gradient magnitudes over up to 64 val samples per
+            # drug-with-valid-label, then top-K rank. Disk cost: ~400 KB on
+            # 19,174 proteins × 11 drugs.
+            K_ATTR = 20
+            n_drugs_attr = dataset.drug_sensitivity.shape[1]
+            drug_names_attr = list(getattr(dataset, "drug_names", []) or
+                                   [f"drug_{i}" for i in range(n_drugs_attr)])
+            gate_accum = torch.zeros(n_drugs_attr, n_proteins)
+            gate_count = torch.zeros(n_drugs_attr)
+            gate_sample_ids: list[str] = []
+
+            gnn.eval(); pred_head.eval()
+            attr_budget = min(len(val_idx), 64)
+            for vi in range(attr_budget):
+                idx = val_idx[vi]
+                if use_esm2:
+                    prot_feat_var = esm2_embeddings.to(device).clone()
+                else:
+                    prot_feat_var = dataset.proteomics[idx].to(device).unsqueeze(-1).clone()
+                prot_feat_var.requires_grad_(True)
+                latent_b = all_latents[idx].to(device).unsqueeze(0).expand(n_proteins, -1)
+                stab_b = all_stability[idx].to(device).unsqueeze(0).expand(n_proteins).unsqueeze(-1)
+                node_feat = torch.cat([prot_feat_var, latent_b, stab_b], dim=-1)
+                ppi_data = PyGData(x=node_feat, edge_index=edge_index, edge_attr=edge_attr)
+                node_emb = gnn(ppi_data)
+                global_repr = node_emb.mean(dim=0, keepdim=True)
+                pred = pred_head(global_repr).squeeze(0)  # (n_drugs,)
+                target = dataset.drug_sensitivity[idx].to(device)
+                mask = ~torch.isnan(target)
+                if not mask.any():
+                    continue
+                sid = (dataset.sample_ids[idx]
+                       if hasattr(dataset, "sample_ids") else str(idx))
+                gate_sample_ids.append(str(sid))
+                for d_idx in mask.nonzero(as_tuple=True)[0].tolist():
+                    if prot_feat_var.grad is not None:
+                        prot_feat_var.grad.zero_()
+                    # retain_graph so we can backprop again for other drugs
+                    pred[d_idx].backward(retain_graph=True)
+                    if prot_feat_var.grad is not None:
+                        # (P, F) -> (P,) L2 norm over feature axis
+                        sal = prot_feat_var.grad.detach().norm(dim=-1).cpu()
+                        gate_accum[d_idx] += sal
+                        gate_count[d_idx] += 1
+                # Drop the graph between samples
+                del node_emb, global_repr, pred, prot_feat_var
+
+            # Average accumulated saliency per drug
+            per_drug_node_attn = torch.zeros(n_drugs_attr, n_proteins, dtype=torch.float32)
+            for d in range(n_drugs_attr):
+                if gate_count[d].item() > 0:
+                    per_drug_node_attn[d] = gate_accum[d] / gate_count[d].item()
+            topk_vals, topk_idx = per_drug_node_attn.topk(
+                min(K_ATTR, n_proteins), dim=1
+            )
+
+            # Restore train mode for any later epochs
+            gnn.train(); pred_head.train()
+
             ckpt_mgr.save("protein_net_trained", {
                 "gnn_state_dict": gnn.state_dict(),
                 "pred_head_state_dict": pred_head.state_dict(),
@@ -919,6 +1068,17 @@ def train_protein_network(config: ResistanceMapConfig, ckpt_mgr: CheckpointManag
                 "node_feat_dim": node_feat_dim,
                 "use_esm2": use_esm2,
                 "esm2_embeddings": esm2_embeddings if use_esm2 else None,
+                # ── P2.2 attribution schema (v1) ──────────────────────
+                "attribution_schema_version": 1,
+                "attribution_K": int(min(K_ATTR, n_proteins)),
+                "attribution_method": "input_gradient_l2_norm",
+                "protein_names": list(protein_names),
+                "drug_names": drug_names_attr,
+                "per_drug_node_attn": per_drug_node_attn.to(torch.float32),
+                "top_k_per_drug": topk_idx.to(torch.int64),
+                "top_k_values_per_drug": topk_vals.to(torch.float32),
+                "attn_collection_epoch": epoch,
+                "attn_sample_ids": gate_sample_ids,
             })
         else:
             patience_counter += 1
@@ -1094,10 +1254,23 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
     ).to(device)
 
     n_drugs = dataset.drug_sensitivity.shape[1]
-    drug_head = torch.nn.Sequential(
-        torch.nn.Linear(fusion_output_dim, 64),
-        torch.nn.ReLU(),
-        torch.nn.Linear(64, n_drugs),
+    # Per-drug head + inverse-variance loss weighting replaces the shared
+    # Linear(64, n_drugs) tail. Each drug owns its final Linear(64, 1) so
+    # HDAC-class gradients can't poison Bortezomib/Venetoclax columns via
+    # Adam normalization. Inverse-variance weights are computed on the
+    # TRAIN split only to avoid leakage. See resistancemap/models/per_drug_head.py.
+    from resistancemap.models.per_drug_head import PerDrugHead, variance_weights
+    splits = data_ckpt["splits"]
+    train_idx = splits["train"]
+    val_idx = splits["val"]
+    train_targets = dataset.drug_sensitivity[train_idx]
+    loss_w = variance_weights(train_targets)
+    drug_head = PerDrugHead(
+        fusion_dim=fusion_output_dim,
+        n_drugs=n_drugs,
+        hidden=64,
+        dropout=0.1,
+        loss_weights=loss_w,
     ).to(device)
 
     # Include traj_projector in trainable params so it learns alongside fusion
@@ -1107,9 +1280,6 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
         + list(traj_projector.parameters())
     )
     optimizer = torch.optim.Adam(params, lr=config.fusion.fusion_lr, weight_decay=config.fusion.weight_decay)
-    splits = data_ckpt["splits"]
-    train_idx = splits["train"]
-    val_idx = splits["val"]
 
     # ── 4. Training loop ─────────────────────────────────────────────────
     best_val_loss = float("inf")
@@ -1143,7 +1313,9 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
             pred = drug_head(fused)
             mask = ~torch.isnan(target_b)
             if mask.any():
-                loss = torch.nn.functional.mse_loss(pred[mask], target_b[mask])
+                # Per-drug variance-weighted MSE; equivalent to mse_loss on
+                # masked entries when loss_weights are uniform.
+                loss = drug_head.masked_weighted_mse(pred, target_b)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(params, 1.0)
                 optimizer.step()
@@ -1171,7 +1343,7 @@ def train_fusion(config: ResistanceMapConfig, ckpt_mgr: CheckpointManager) -> Pa
                 pred = drug_head(fused)
                 mask = ~torch.isnan(target_b)
                 if mask.any():
-                    val_losses.append(torch.nn.functional.mse_loss(pred[mask], target_b[mask]).item())
+                    val_losses.append(drug_head.masked_weighted_mse(pred, target_b).item())
 
         val_loss = sum(val_losses) / max(len(val_losses), 1)
         train_loss = sum(epoch_losses) / max(len(epoch_losses), 1)

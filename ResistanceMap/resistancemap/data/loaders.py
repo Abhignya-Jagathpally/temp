@@ -59,6 +59,8 @@ class MultiOmicsDataset(Dataset):
         scrna_gene_names: Optional[list[str]] = None,
         crispr_effect: Optional[torch.Tensor] = None,
         crispr_gene_names: Optional[list[str]] = None,
+        protein_sequences: Optional[list[Optional[str]]] = None,
+        mmrf: Optional[dict] = None,
     ) -> None:
         """Initialize MultiOmicsDataset.
 
@@ -134,6 +136,25 @@ class MultiOmicsDataset(Dataset):
         # without perturbation data, attribution scores are association-only.
         self.crispr_effect = crispr_effect
         self.crispr_gene_names = crispr_gene_names
+        # Optional per-protein canonical AA sequences aligned to
+        # ``protein_names`` (length P). Populated by ``harmonize_omics``
+        # via ``resistancemap.data.uniprot_loader.load_protein_sequences``.
+        # ``None`` entries are valid and mean "no UniProt match — ESM-2
+        # will zero-pad that row". The pipeline NEVER fabricates a
+        # synthetic sequence to fill a miss.
+        if protein_sequences is not None:
+            assert len(protein_sequences) == len(protein_names), (
+                f"protein_sequences length {len(protein_sequences)} != "
+                f"protein_names length {len(protein_names)}"
+            )
+        self.protein_sequences = protein_sequences
+        # MMRF clinical block (patient-level — NOT row-aligned with the
+        # cell-line tensors above). Dict with keys:
+        #   patient_ids, os_time, os_event, pfs_time, pfs_event,
+        #   iss_stage, cytogenetics, response_label (may be NaN on GDC).
+        # Populated by ``harmonize_omics`` when the MMRF data dir is
+        # present. None when MMRF wiring is disabled or files absent.
+        self.mmrf = mmrf
 
     def __len__(self) -> int:
         return self.proteomics.shape[0]
@@ -179,6 +200,8 @@ class MultiOmicsDataset(Dataset):
             scrna_gene_names=self.scrna_gene_names,
             crispr_effect=crispr_subset,
             crispr_gene_names=self.crispr_gene_names,
+            protein_sequences=self.protein_sequences,
+            mmrf=self.mmrf,
         )
 
 
@@ -845,88 +868,221 @@ def load_depmap_crispr(config: DataConfig) -> Optional[dict[str, Any]]:
     }
 
 
+def _compute_pfs_from_treatments(
+    treatments_path: Path,
+    patient_ids: list[str],
+    os_time: np.ndarray,
+    os_event: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """PFS proxy from GDC treatments.tsv.
+
+    True IMWG PFS requires per-visit response timing not in the GDC
+    public release. We approximate with: time-to-first-line-2 if a
+    second line of therapy is recorded; otherwise fall back to OS.
+    PFS event = 1 if (any second line exists OR death).
+    """
+    n = len(patient_ids)
+    pfs_time = np.array(os_time, copy=True)
+    pfs_event = np.array(os_event, copy=True)
+
+    if not treatments_path.exists():
+        return pfs_time, pfs_event
+
+    try:
+        tx = pd.read_csv(treatments_path, sep="\t", low_memory=False)
+    except Exception as e:
+        logger.warning(f"PFS proxy: failed to read {treatments_path}: {e}")
+        return pfs_time, pfs_event
+
+    pid_to_idx = {pid: i for i, pid in enumerate(patient_ids)}
+    line_col = "regimen_or_line_of_therapy"
+    start_col = "days_to_treatment_start"
+    if line_col not in tx.columns or start_col not in tx.columns:
+        return pfs_time, pfs_event
+
+    # Group: earliest start day for "Second line of therapy" or later
+    later_lines = tx[tx[line_col].astype(str).str.contains(
+        "Second|Third|Fourth|Fifth|Sixth|Seventh|Eighth|Ninth",
+        case=False, na=False
+    )]
+    if later_lines.empty:
+        return pfs_time, pfs_event
+
+    earliest = later_lines.groupby("submitter_id")[start_col].min()
+    for pid, day in earliest.items():
+        i = pid_to_idx.get(str(pid))
+        if i is None or pd.isna(day):
+            continue
+        day_f = float(day)
+        if 0.0 <= day_f < pfs_time[i]:
+            pfs_time[i] = day_f
+            pfs_event[i] = 1
+    return pfs_time, pfs_event
+
+
+def _load_gdc_cytogenetics(cyto_path: Path) -> Optional[pd.DataFrame]:
+    """Load GDC cytogenetics.tsv keyed by submitter_id; return None if absent."""
+    if not cyto_path.exists():
+        return None
+    try:
+        df = pd.read_csv(cyto_path, sep="\t", low_memory=False)
+        if "submitter_id" in df.columns:
+            df = df.set_index("submitter_id")
+        return df
+    except Exception as e:
+        logger.warning(f"cytogenetics load failed for {cyto_path}: {e}")
+        return None
+
+
 def load_mmrf_data(config: DataConfig) -> dict[str, Any]:
-    """Load MMRF CoMMpass clinical and genomic data.
+    """Load MMRF CoMMpass clinical/cytogenetic/treatment block from the
+    on-disk GDC IA22 release.
 
-    Loads clinical.txt, gene_expression.tsv, and optionally mutation data from
-    the CoMMpass directory. Extracts patient IDs, treatment info, and ISS staging
-    from clinical data. Returns empty dict if directory doesn't exist (graceful degradation).
+    Schema is the GDC TSV layout (verified columns from clinical.tsv:
+    submitter_id, vital_status, days_to_death, days_to_last_follow_up,
+    iss_stage, therapeutic_agents_all). This replaces the previous
+    ``clinical.txt`` MMRF-Researcher-Gateway lookup which never found a
+    file on the public release.
 
-    Args:
-        config: DataConfig with MMRF CoMMpass directory path.
+    Returns a structured dict for harmonize_omics to attach to
+    MultiOmicsDataset.mmrf (NOT row-aligned with the cell-line tensors):
 
-    Returns:
-        Dict with keys: 'clinical', 'expression', 'patient_ids', 'treatment_data'.
-        Returns empty dict if directory missing or no data files found.
+        {
+            "clinical":       pd.DataFrame   (raw rows for reference),
+            "patient_ids":    list[str],
+            "os_time":        np.ndarray     (days; days_to_death | days_to_last_follow_up),
+            "os_event":       np.ndarray     (1 if vital_status == "Dead"),
+            "pfs_time":       np.ndarray     (PFS proxy from treatments.tsv lines),
+            "pfs_event":      np.ndarray     (1 if line>=2 OR death),
+            "iss_stage":      np.ndarray     (int 1/2/3 or NaN),
+            "cytogenetics":   pd.DataFrame   (indexed by submitter_id; del17p, t_4_14, ...),
+            "response_label": np.ndarray     (NaN — IMWG BOR not in GDC schema),
+            "expression":     pd.DataFrame   (optional gene_expression.tsv),
+            "mutations":      pd.DataFrame   (optional mutations.tsv),
+        }
+
+    Returns ``{}`` if the directory is missing (graceful degradation).
+    Never fabricates clinical labels — missing values stay as NaN.
     """
     mmrf_dir = config.mmrf_commpass_dir
-    result = {}
+    result: dict[str, Any] = {}
 
     if not mmrf_dir.exists():
-        logger.info(f"MMRF CoMMpass directory not found at {mmrf_dir} (graceful degradation)")
+        logger.info(
+            f"MMRF CoMMpass directory not found at {mmrf_dir} "
+            "(graceful degradation; MMRF block will be absent from data_ready.pt)"
+        )
         return result
 
     logger.info(f"Loading MMRF CoMMpass data from {mmrf_dir}")
 
-    # Load clinical data
-    clinical_path = mmrf_dir / "clinical.txt"
-    clinical_df = None
-    if clinical_path.exists():
-        try:
-            clinical_df = pd.read_csv(clinical_path, sep="\t", low_memory=False)
-            result["clinical"] = clinical_df
-            logger.info(f"Loaded MMRF clinical: {len(clinical_df)} patients, {len(clinical_df.columns)} features")
+    # 1. Clinical (GDC schema) — REQUIRED to populate the rest
+    clinical_path = mmrf_dir / "clinical.tsv"
+    if not clinical_path.exists():
+        # Fall back to legacy MMRF-RG name only if the GDC file is absent
+        legacy_path = mmrf_dir / "clinical.txt"
+        if legacy_path.exists():
+            clinical_path = legacy_path
+        else:
+            logger.warning(f"MMRF clinical file not found at {clinical_path}")
+            return result
 
-            # Extract patient IDs
-            patient_id_col = None
-            for col in ("patient_id", "PATIENT_ID", "Patient_ID", "patientID"):
-                if col in clinical_df.columns:
-                    patient_id_col = col
-                    break
-            if patient_id_col:
-                result["patient_ids"] = clinical_df[patient_id_col].tolist()
-                logger.info(f"Extracted {len(result['patient_ids'])} patient IDs")
+    try:
+        clinical_df = pd.read_csv(clinical_path, sep="\t", low_memory=False)
+    except Exception as e:
+        logger.error(f"Failed to read {clinical_path}: {e}")
+        return result
 
-            # Extract treatment data if available
-            treatment_data = {}
-            treatment_cols = [c for c in clinical_df.columns if "treatment" in c.lower() or "drug" in c.lower()]
-            if treatment_cols:
-                for col in treatment_cols:
-                    treatment_data[col] = clinical_df[col].tolist()
-                result["treatment_data"] = treatment_data
-                logger.info(f"Extracted treatment data: {len(treatment_cols)} treatment columns")
+    if "submitter_id" not in clinical_df.columns:
+        logger.warning(
+            f"MMRF clinical schema mismatch (no submitter_id in {clinical_path}). "
+            "Expected GDC TSV layout."
+        )
+        return result
 
-            # Extract ISS staging if available
-            iss_cols = [c for c in clinical_df.columns if "iss" in c.lower()]
-            if iss_cols:
-                result["iss_staging"] = {col: clinical_df[col].tolist() for col in iss_cols}
-                logger.info(f"Extracted ISS staging from {len(iss_cols)} columns")
-        except Exception as e:
-            logger.error(f"Failed to load MMRF clinical data from {clinical_path}: {e}")
+    # Drop fully-empty submitter rows and de-dup
+    clinical_df = clinical_df.dropna(subset=["submitter_id"]).drop_duplicates(
+        subset="submitter_id", keep="first"
+    ).reset_index(drop=True)
+    patient_ids = clinical_df["submitter_id"].astype(str).tolist()
+    n = len(patient_ids)
+    logger.info(f"Loaded MMRF clinical: {n} patients (GDC schema)")
 
-    # Load gene expression data
+    # 2. OS time/event: prefer days_to_death; else days_to_last_follow_up
+    days_to_death = pd.to_numeric(
+        clinical_df.get("days_to_death", pd.Series([np.nan] * n)),
+        errors="coerce",
+    )
+    days_to_fu = pd.to_numeric(
+        clinical_df.get("days_to_last_follow_up", pd.Series([np.nan] * n)),
+        errors="coerce",
+    )
+    os_time = days_to_death.fillna(days_to_fu).to_numpy(dtype=float)
+    vital = clinical_df.get("vital_status", pd.Series([""] * n)).astype(str).str.lower()
+    os_event = (vital == "dead").astype(int).to_numpy()
+
+    # 3. PFS proxy from treatments.tsv
+    pfs_time, pfs_event = _compute_pfs_from_treatments(
+        mmrf_dir / "treatments.tsv", patient_ids, os_time, os_event
+    )
+
+    # 4. ISS stage (Roman → int, NaN otherwise)
+    iss_map = {"I": 1, "II": 2, "III": 3}
+    iss_stage = clinical_df.get("iss_stage", pd.Series([""] * n)).astype(str)
+    iss_int = np.array(
+        [iss_map.get(s.strip(), np.nan) for s in iss_stage], dtype=float
+    )
+
+    # 5. Cytogenetics (optional)
+    cyto = _load_gdc_cytogenetics(mmrf_dir / "cytogenetics.tsv")
+
+    # 6. Therapeutic agents per patient (string, pipe-delimited in GDC)
+    therapeutics = clinical_df.get(
+        "therapeutic_agents_all", pd.Series([""] * n)
+    ).astype(str).tolist()
+
+    result.update({
+        "clinical": clinical_df,
+        "patient_ids": patient_ids,
+        "os_time": os_time,
+        "os_event": os_event,
+        "pfs_time": pfs_time,
+        "pfs_event": pfs_event,
+        "iss_stage": iss_int,
+        "cytogenetics": cyto,
+        "therapeutic_agents_all": therapeutics,
+        # IMWG best-of-response is not in the GDC public schema; downstream
+        # callers should treat as NaN-only and not derive an IMWG metric.
+        "response_label": np.full(n, np.nan, dtype=float),
+    })
+    logger.info(
+        f"  OS events: {int(os_event.sum())}/{n}; "
+        f"median follow-up days: {np.nanmedian(os_time):.0f}; "
+        f"PFS events (line>=2 or death): {int(pfs_event.sum())}/{n}"
+    )
+
+    # 7. Optional bulk expression and mutations (not row-aligned to clinical
+    # in general; loaded for downstream consumers that join on submitter_id)
     expr_path = mmrf_dir / "gene_expression.tsv"
     if expr_path.exists():
         try:
             expr_df = pd.read_csv(expr_path, sep="\t", index_col=0, low_memory=False)
             result["expression"] = expr_df
-            logger.info(f"Loaded MMRF gene expression: {expr_df.shape[0]} genes × {expr_df.shape[1]} samples")
+            logger.info(
+                f"  Bulk expression: {expr_df.shape[0]} genes × {expr_df.shape[1]} samples"
+            )
         except Exception as e:
-            logger.error(f"Failed to load MMRF expression data from {expr_path}: {e}")
+            logger.error(f"Failed to load MMRF expression: {e}")
 
-    # Load mutation data if available
     mutation_path = mmrf_dir / "mutations.tsv"
     if mutation_path.exists():
         try:
             mut_df = pd.read_csv(mutation_path, sep="\t", low_memory=False)
             result["mutations"] = mut_df
-            logger.info(f"Loaded MMRF mutations: {len(mut_df)} records")
+            logger.info(f"  Mutations: {len(mut_df)} records")
         except Exception as e:
-            logger.warning(f"Failed to load MMRF mutation data from {mutation_path}: {e}")
+            logger.warning(f"Failed to load MMRF mutations: {e}")
 
-    if not result:
-        logger.warning(f"No MMRF data files found in {mmrf_dir}")
-    else:
-        logger.info(f"MMRF data loading complete: {len(result)} data types loaded")
+    logger.info(f"MMRF data loading complete: {len(patient_ids)} patients keyed")
 
     return result

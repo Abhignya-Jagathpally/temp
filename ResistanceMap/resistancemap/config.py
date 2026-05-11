@@ -43,6 +43,33 @@ class DataConfig:
     hmcl_keats_dir: Path = Path("data/raw/hmcl_keats/")
     prism_path: Path = Path("data/raw/prism/secondary-screen-dose-response-curve-parameters.csv")
 
+    # P3.1: Real ESM-2 forward pass. When use_esm2_sequences=True,
+    # harmonize_omics resolves protein column names to UniProt canonical
+    # sequences (Swiss-Prot human reference proteome UP000005640), and
+    # train_protein_network runs the actual 1280-d ESM-2 forward pass
+    # instead of falling back to abundance-only node features. The
+    # one-time embed cost is ~15-35 min on a single GPU; cached results
+    # land at checkpoints/esm2_raw_<hash>.pt.
+    use_esm2_sequences: bool = False
+    uniprot_cache_dir: Path = Path("data/external/uniprot")
+    # Optional explicit path to the bulk FASTA. None → cache_dir / "uniprot_human_canonical.fasta.gz"
+    uniprot_bulk_fasta: Optional[Path] = None
+    # REST fallback is OFF by default to keep prepare_data offline-safe.
+    # Turn on only when the bulk FASTA is unavailable AND running with
+    # network access. Rate-limited to ~10 req/s inside the loader.
+    uniprot_allow_network: bool = False
+
+    # P3.2: CCLE 24Q4 expansion (optional). When ccle_24q4_rna_path is
+    # populated, harmonize_omics adds an RNA-TPM modality and relaxes the
+    # cohort join from "all-of-(proteomics, epigenomics, drug, RNA)" to
+    # "(proteomics OR RNA) + (drug + epigenomics)". Expected lift:
+    # N=886 → ~1,250-1,400 (per R2 audit; not the 1.9× R1 had claimed —
+    # ProCan 2024 proteomics actually shrinks the protein-only join).
+    ccle_24q4_rna_path: Optional[Path] = None
+    ccle_24q4_proteomics_path: Optional[Path] = None
+    depmap_model_path: Optional[Path] = None  # 24Q4 Model.csv replaces sample_info.csv
+    prism_24q2_path: Optional[Path] = None    # PRISM Repurposing 24Q2 secondary screen
+
     # Preprocessing
     min_coverage: float = 0.7  # Drop proteins missing in >30% of samples
     imputation: str = "knn"  # knn | median | zero

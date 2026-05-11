@@ -1,17 +1,30 @@
 """
-Temporal explanations for ResistanceMap v6 Neural ODE predictions.
+Geometric characterization of ResistanceMap's learned latent ODE.
 
 This module implements:
-1. CriticalWindowDetector: Identifies temporal windows where resistance transitions
-   are most malleable to intervention.
-2. TrajectoryDecomposer: Decomposes patient trajectories into contributions from
-   each biological program (stemness, drug efflux, DNA damage response, etc.).
-3. PhaseTransitionAnalyzer: Detects bifurcations and phase transitions in the
-   learned dynamics using Jacobian eigenvalue analysis.
+1. CriticalWindowDetector: Characterizes temporal windows where the learned
+   ODE exhibits high Jacobian sensitivity in latent space.
+2. TrajectoryDecomposer: Decomposes integrated latent trajectories into
+   per-program velocity contributions.
+3. PhaseTransitionAnalyzer: Detects mathematical bifurcations in the learned
+   dynamics using Jacobian eigenvalue analysis.
 
-The central insight is that resistance is not a binary switch but a continuous
-dynamical process with critical windows, tipping points, and program handoffs.
-These temporal explanations help clinicians understand *when* to intervene.
+IMPORTANT CAUSAL SCOPE
+======================
+All quantities here are properties of the *learned model* U_θ — they are
+mathematical sensitivities of a function fitted on cross-sectional cell-line
+IC50 associations. The training data contains no time-ordered (X_t, X_{t+Δ})
+pairs, no randomized drug assignment, and no gene-knockout perturbations.
+
+Consequently these outputs are **associative descriptors** (Pearl L1), not
+causal estimates (L2/L3). In particular:
+  - A high latent sensitivity S(t) = ∂(model_output)/∂z(t) is a Jacobian of
+    the learned function, NOT an estimate of d E[Y]/d(do(intervention at t)).
+  - "Bifurcations" of the learned ODE are mathematical saddle crossings of
+    U_θ; whether they correspond to biological phase transitions requires
+    perturbation validation (e.g., DepMap CRISPR knock-out) not in scope here.
+  - Use as clinical intervention-timing guidance is NOT supported by the
+    training data design.
 
 References:
     Strogatz, S. H. (2015). Nonlinear Dynamics and Chaos. Westview Press.
@@ -19,6 +32,8 @@ References:
     Moris, N. et al. (2016). Transition states and cell fate decisions. Genome Biology, 17, 73.
     Saelens, W. et al. (2019). A comparison of single-cell trajectory inference methods.
         Nature Biotechnology, 37, 547-554.
+    Pearl, J. (2009). Causality (2nd ed.). Cambridge University Press. (For the
+        do-calculus distinction between conditional and interventional quantities.)
 """
 
 from __future__ import annotations
@@ -126,20 +141,21 @@ class PhaseTransitionResult:
 # ---------------------------------------------------------------------------
 
 class CriticalWindowDetector:
-    """Find temporal windows where resistance transitions are most malleable.
+    """Characterize temporal windows in the learned latent trajectory by
+    model sensitivity.
 
-    The key quantity is the time-dependent sensitivity:
-        S(t) = d(outcome) / d(intervention at time t)
+    The key quantity is the latent sensitivity:
+        S(t) = ∂(model_output) / ∂z(t)
 
-    This measures how much the final resistance outcome changes if we apply
-    a small perturbation at time t. High S(t) indicates a critical window
-    where the trajectory is sensitive to intervention.
+    a Jacobian of the model's output with respect to the latent state at
+    time t. This is a **geometric property of U_θ** — not a causal estimate
+    of d E[Y]/d(do(intervention at t)). Without perturbation training data,
+    no claim about real-world intervention windows can be drawn from S(t).
 
-    Tipping points are identified where the trajectory crosses from one
-    basin of attraction to another (sensitivity diverges).
-
-    Following Scheffer et al. (2009) "Early-warning signals for critical
-    transitions" (Nature).
+    Following the mathematical framework in Scheffer et al. (2009)
+    "Early-warning signals for critical transitions" (Nature), but applied
+    here to a learned ODE on cross-sectional cell-line latents rather than
+    to a longitudinal biological system.
 
     Args:
         model: ResistanceMap Neural ODE model.
@@ -488,27 +504,37 @@ class TrajectoryDecomposer:
 # ---------------------------------------------------------------------------
 
 class PhaseTransitionAnalyzer:
-    """Detect and characterize phase transitions in the Neural ODE dynamics.
+    """Detect mathematical bifurcations in the *learned* Neural ODE.
 
-    The learned dynamics define a vector field dx/dt = f(x). The Jacobian
-    J = df/dx at each point determines local stability. We track:
+    The learned dynamics define a vector field dx/dt = f_θ(x). The Jacobian
+    J = df_θ/dx at each point determines local stability of the trained
+    model. We track:
 
-    1. Eigenvalue crossings: when the real part of a Jacobian eigenvalue
-       crosses zero, the system undergoes a bifurcation (e.g., a stable
-       sensitive state becomes unstable, and the system transitions to
-       the resistant attractor).
+    1. Eigenvalue crossings: when the real part of a Jacobian eigenvalue of
+       the learned U_θ crosses zero, the trained model's vector field
+       undergoes a saddle-node-type change. Whether this corresponds to a
+       biological phase transition requires experimental perturbation
+       validation (e.g., DepMap CRISPR knock-out) and is not supported by
+       the observational training data used here.
 
     2. Order parameter: the program/eigenmode whose eigenvalue crossing
-       triggers the transition. This is the biological "switch."
+       coincides with the mathematical bifurcation in U_θ. This is a
+       property of the trained function, NOT an identified biological
+       switch — interpreting it as such is an L2 do-calculus claim that
+       requires perturbation data the pipeline does not consume during
+       training.
 
-    3. Critical slowing down: near a bifurcation, the system's relaxation
-       time diverges. This manifests as increased autocorrelation in the
-       trajectory and serves as an early warning signal for the transition.
+    3. Critical slowing down: near a bifurcation of U_θ, the learned
+       relaxation time diverges. This is a mathematical early-warning
+       signal of the trained model's geometric structure, not a clinically
+       validated biomarker of patient-state transitions.
 
     Following:
     - Strogatz (2015) Nonlinear Dynamics and Chaos.
     - Scheffer et al. (2009) Early-warning signals for critical transitions.
     - Moris et al. (2016) Transition states and cell fate decisions.
+    - Pearl (2009) Causality (for the distinction between learned-function
+      properties and identified causal effects).
 
     Args:
         model: ResistanceMap Neural ODE.

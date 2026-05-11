@@ -44,7 +44,7 @@ Layer 4 (Parallel)
 ┌──────────────────┐                ┌──────────────────┐
 │  Trajectory      │                │  ProteinNet      │
 │     Agent        │                │     Agent        │
-│  ODE Forecasting │                │   GNN Training   │
+│  ODE Latent Geom │                │   GNN Training   │
 │                  │                │  Parallel        │
 └────────┬─────────┘                └────────┬─────────┘
          └──────────────────┬────────────────┘

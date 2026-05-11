@@ -4,7 +4,7 @@ A reproducibility-first multi-omics machine-learning pipeline for **compound-pri
 
 > **What ResistanceMap is.** A trained, calibrated, benchmarked tool that *ranks* cell lines by predicted drug resistance for **9 of 11 GDSC drugs** (82%), with documented failure modes on 2 HDAC-class drugs (Panobinostat, Romidepsin). All claims in this README are anchored to on-disk checkpoints and reproducible from `python main.py --config configs/default.yaml`.
 
-> **What ResistanceMap is *not*.** It is **not** a patient-level treatment-response predictor (no patient training data has been ingested), **not** a longitudinal forecaster ("predicts when" / "before it happens" requires multi-snapshot training pairs we don't have), and **not** a substitute for the IMWG response criteria in MM clinical decision-making. Earlier README versions overstated the scope; this v8-corrected README reports only what the actual code produces.
+> **What ResistanceMap is *not*.** It is **not** a patient-level treatment-response predictor (no patient training data has been ingested), **not** a longitudinal forecaster — training data consists of single-time-point cell-line snapshots; no time-ordered `(X_{t=0}, X_{t=Δ})` training pairs exist, so time-to-event and temporal-state claims are outside the model's training scope — and **not** a substitute for the IMWG response criteria in MM clinical decision-making. Earlier README versions overstated the scope; this v8-corrected README reports only what the actual code produces.
 
 ## Headline result (from `checkpoints/pipeline_validated.pt`, last run 2026-05-02)
 

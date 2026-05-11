@@ -121,16 +121,24 @@ class DynamicalSystemsTheory:
         return max(0, float(depth))
 
     @staticmethod
-    def transition_rate_kramers(
+    def model_escape_rate_from_potential_well(
         basin_depth: float,
         noise_level: float,
         barrier_height: float = 1.0,
         temperature: float = 1.0,
         barrier_curvature: Optional[float] = None,
     ) -> Dict[str, float]:
-        """Compute Kramers escape rate from bistable potential.
+        """Mathematical Kramers-analog escape rate for the *learned* potential U_θ.
 
-        Kramers Escape Rate:
+        IMPORTANT: This is a property of the trained model's potential
+        landscape, not an estimate of any biological transition rate. Whether
+        the learned U_θ corresponds to a thermodynamic free-energy surface
+        is an empirical question; ResistanceMap's F8-DPS strict-gate
+        evaluation refutes this dynamic interpretability at the current data
+        scale (N_paired = 29). Use this function as a learned-landscape
+        descriptor, not as a biological-kinetic estimate.
+
+        Kramers Escape Rate (formal analog):
             k(T) = (omega_a * omega_b) / (2*pi) * exp(-DeltaV / kT)
 
         where:

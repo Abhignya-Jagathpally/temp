@@ -176,99 +176,124 @@ class ExternalCohort:
 
 
 class ExternalCohortLoader:
-    """Stub loaders for external validation cohorts."""
+    """Real external validation cohort loader.
 
-    COHORTS = {
-        "MMRF_CoMMpass": {"n": 1143, "description": "MMRF CoMMpass myeloma"},
-        "GMMG_MM5": {"n": 604, "description": "GMMG-MM5 myeloma"},
-        "IFM_DFCI_2009": {"n": 323, "description": "IFM/DFCI 2009 trial"},
-        "PETHEMA_GEM": {"n": 1265, "description": "PETHEMA/GEM registry"},
-        "HOVON_65": {"n": 290, "description": "HOVON-65 trial"},
+    Only MMRF CoMMpass has a working data connector in this build; the other
+    four cohorts require consortium DUAs/IRB and are documented but not
+    callable. Calling their loaders raises NotImplementedError with
+    actionable next steps. ResistanceMap never fabricates external cohort
+    data; the previous synthetic-fallback path was removed in v7.
+
+    Note on sample sizes: AVAILABLE_COHORTS records the on-disk N for
+    cohorts with a real connector; UNAVAILABLE_COHORTS records the
+    published consortium N (for documentation only). The previous
+    `COHORTS` dict listed MMRF_CoMMpass at n=1143; the on-disk GDC IA22
+    dump under data/raw/mmrf_commpass/clinical.tsv actually contains 996
+    submitter_ids — the 1143 figure was the consortium publication N, not
+    the public GDC release N.
+    """
+
+    AVAILABLE_COHORTS = {
+        "MMRF_CoMMpass": {
+            "n": 996,  # actual on-disk GDC IA22 patient count
+            "description": "MMRF CoMMpass myeloma (GDC IA22 public release)",
+            "loader": "load_mmrf_compass",
+        },
     }
+    UNAVAILABLE_COHORTS = {
+        "GMMG_MM5": {
+            "n": 604,
+            "reason": "Requires GMMG consortium DUA; contact study PI.",
+        },
+        "IFM_DFCI_2009": {
+            "n": 323,
+            "reason": "Requires IFM consortium access; contact study PI.",
+        },
+        "PETHEMA_GEM": {
+            "n": 1265,
+            "reason": "Requires PETHEMA/GEM registry access; contact registry committee.",
+        },
+        "HOVON_65": {
+            "n": 290,
+            "reason": "Requires HOVON consortium access; contact study PI.",
+        },
+    }
+    # Legacy attribute kept for backward compatibility with any caller still
+    # referencing COHORTS. Reads as union of available + unavailable.
+    COHORTS = {**AVAILABLE_COHORTS, **{k: {"n": v["n"], "description": v["reason"]}
+                                       for k, v in UNAVAILABLE_COHORTS.items()}}
 
     def __init__(self, seed: int = 42):
-        """Initialize loader with random seed."""
-        np.random.seed(seed)
+        """Initialize loader. `seed` is retained only for API back-compat;
+        no random sampling is performed (all loaders return real on-disk
+        data or refuse)."""
         self.seed = seed
 
-    def load_mmrf_compass(self) -> ExternalCohort:
-        """Load MMRF CoMMpass cohort (n=1143)."""
-        n = self.COHORTS["MMRF_CoMMpass"]["n"]
-        return self._generate_synthetic_cohort(
+    def load_mmrf_compass(
+        self,
+        data_ready_path: str = "checkpoints/data_ready.pt",
+    ) -> ExternalCohort:
+        """Load MMRF CoMMpass cohort from on-disk data_ready.pt.
+
+        Requires that the MMRF block has been written into data_ready.pt
+        by harmonize_omics (see P2.1 MMRF wiring). If the block is absent,
+        raises a directive error telling the user how to populate it.
+        """
+        import torch  # local import to keep module import light
+        try:
+            ckpt = torch.load(data_ready_path, map_location="cpu", weights_only=False)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"data_ready.pt not found at {data_ready_path}. "
+                "Run `python -m resistancemap.main --config configs/default.yaml` "
+                "to build it from data/raw/."
+            ) from e
+        ds = ckpt.get("dataset", None)
+        mmrf = getattr(ds, "mmrf", None) if ds is not None else None
+        if not mmrf or "patient_ids" not in mmrf:
+            raise RuntimeError(
+                "MMRF block missing from data_ready.pt. The harmonize_omics "
+                "hook in resistancemap/data/preprocessors.py is responsible "
+                "for attaching ds.mmrf when data/raw/mmrf_commpass/clinical.tsv "
+                "is present (see P2.1 wiring). Re-run prepare_data after "
+                "wiring resistancemap/data/mmrf_loader.parse_gdc_clinical "
+                "into the harmonization step."
+            )
+        n = len(mmrf["patient_ids"])
+        return ExternalCohort(
             name="MMRF_CoMMpass",
-            n=n,
-            seed=self.seed + 1
+            n_samples=n,
+            features=np.full((n, 1), np.nan),  # to be filled by the predict step
+            risk_scores=np.full(n, np.nan),    # to be filled by the predict step
+            times=np.asarray(mmrf["pfs_time"], dtype=float),
+            events=np.asarray(mmrf["pfs_event"], dtype=int),
+            metadata={
+                "cohort": "MMRF_CoMMpass_IA22_GDC",
+                "patient_ids": list(mmrf["patient_ids"]),
+                "source": "data/raw/mmrf_commpass/clinical.tsv",
+            },
         )
 
-    def load_gmmg_mm5(self) -> ExternalCohort:
-        """Load GMMG-MM5 cohort (n=604)."""
-        n = self.COHORTS["GMMG_MM5"]["n"]
-        return self._generate_synthetic_cohort(
-            name="GMMG_MM5",
-            n=n,
-            seed=self.seed + 2
+    def _unavailable(self, name: str) -> ExternalCohort:
+        reason = self.UNAVAILABLE_COHORTS[name]["reason"]
+        raise NotImplementedError(
+            f"External cohort '{name}' has no real data connector wired in. "
+            f"{reason} ResistanceMap does not fabricate external cohort data; "
+            "either obtain consortium access or remove the cohort from your "
+            "evaluation manifest."
         )
+
+    def load_gmmg_mm5(self) -> ExternalCohort:  # noqa: D401 - thin wrapper
+        return self._unavailable("GMMG_MM5")
 
     def load_ifm_dfci_2009(self) -> ExternalCohort:
-        """Load IFM/DFCI 2009 cohort (n=323)."""
-        n = self.COHORTS["IFM_DFCI_2009"]["n"]
-        return self._generate_synthetic_cohort(
-            name="IFM_DFCI_2009",
-            n=n,
-            seed=self.seed + 3
-        )
+        return self._unavailable("IFM_DFCI_2009")
 
     def load_pethema_gem(self) -> ExternalCohort:
-        """Load PETHEMA/GEM cohort (n=1265)."""
-        n = self.COHORTS["PETHEMA_GEM"]["n"]
-        return self._generate_synthetic_cohort(
-            name="PETHEMA_GEM",
-            n=n,
-            seed=self.seed + 4
-        )
+        return self._unavailable("PETHEMA_GEM")
 
     def load_hovon_65(self) -> ExternalCohort:
-        """Load HOVON-65 cohort (n=290)."""
-        n = self.COHORTS["HOVON_65"]["n"]
-        return self._generate_synthetic_cohort(
-            name="HOVON_65",
-            n=n,
-            seed=self.seed + 5
-        )
-
-    def _generate_synthetic_cohort(
-        self,
-        name: str,
-        n: int,
-        seed: int
-    ) -> ExternalCohort:
-        """
-        Generate synthetic cohort with realistic structure.
-
-        DEPRECATED: This method previously returned synthetic random data which
-        invalidates external validation results. Real data connectors are required.
-
-        Args:
-            name: Cohort name
-            n: Sample size
-            seed: Random seed
-
-        Returns:
-            ExternalCohort with synthetic data
-
-        Raises:
-            NotImplementedError: Always, to prevent accidental misuse
-        """
-        raise NotImplementedError(
-            f"External cohort '{name}' has no real data connector wired in.\n"
-            "  - For MMRF CoMMpass: use resistancemap.data.mmrf_loader.MMRFLoader "
-            "with the path in config.data.mmrf_commpass_dir (requires IRB).\n"
-            "  - For GMMG/IFM/PETHEMA/HOVON: no public connector exists; "
-            "request access via the respective consortium or remove the cohort "
-            "from your evaluation manifest.\n"
-            "Previous synthetic-fallback path was removed in v7 because random "
-            "data invalidates external validation."
-        )
+        return self._unavailable("HOVON_65")
 
 
 class ValidationMetricsCalculator:
@@ -735,6 +760,16 @@ class ExternalValidationOrchestrator:
         """
         Tier 3: Multi-center validation (≥2 sites) with fairness audit.
 
+        NOTE (v12-audit-reports): Only 1 of 5 advertised external cohorts
+        (MMRF_CoMMpass) currently has a real data connector wired in
+        (see ExternalCohortLoader.AVAILABLE_COHORTS). Tier-3 therefore
+        cannot succeed on real data with the current connectors —
+        the other 4 cohorts raise NotImplementedError per the no-
+        synthetic-data project policy. To enable Tier-3, wire data
+        ingestion for at least one additional cohort from
+        ExternalCohortLoader.UNAVAILABLE_COHORTS (requires consortium
+        DUAs/IRB), then add it to AVAILABLE_COHORTS.
+
         Args:
             internal_c_index: C-index from internal validation
             cohorts: List of ≥2 ExternalCohorts
@@ -743,7 +778,13 @@ class ExternalValidationOrchestrator:
             Tier 3 validation result
         """
         if len(cohorts) < 2:
-            raise ValueError("Tier 3 requires ≥2 cohorts")
+            raise ValueError(
+                "Tier 3 requires ≥2 cohorts, but only 1 (MMRF_CoMMpass) has a "
+                "real data connector in the current build. Either obtain "
+                "consortium access for GMMG-MM5 / IFM-DFCI / PETHEMA-GEM / "
+                "HOVON-65 and add to ExternalCohortLoader.AVAILABLE_COHORTS, "
+                "or skip Tier 3 in your evaluation manifest."
+            )
 
         tier2_results = []
         for cohort in cohorts:

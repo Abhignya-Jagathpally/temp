@@ -8,9 +8,13 @@ Adapts the Sneppen & Ringrose chromatin bistability framework:
     - Computes basin-of-attraction depth as a stability score
     - Score ranges from 0 (transient adaptation) to 1 (locked-in memory)
 
-The new TrajectoryForecaster extends this ODE system to predict temporal
-evolution of the epigenetic state over time horizons (3, 6, 12 months),
-mapping the resistance landscape over time.
+TrajectoryForecaster integrates the calibrated ChromatinODE forward in
+nominal-time units calibrated from a contemporaneous (X_cell-line, IC50)
+snapshot loss. It is NOT a longitudinal forecaster: no (X_t, X_{t+Δ})
+training pairs are used. The "3/6/12-month" horizons are scaled ODE-time
+labels with no calendar-time ground-truth supervision. Treat outputs as
+snapshot stability geometry extrapolated under the assumption of
+stationary parameters.
 
 The ODE system models two competing chromatin states (active vs. repressed)
 with auto-catalytic and cross-inhibitory feedback. The depth of the potential
@@ -790,18 +794,26 @@ class MemoryStabilityScorer(nn.Module):
 
 
 class TrajectoryForecaster(nn.Module):
-    """Predicts the temporal evolution of epigenetic state over future time horizons.
+    """Snapshot-resistance ODE rollout.
 
-    Takes a current VAE latent state (64-dim) and integrates the chromatin ODE
-    forward in time to predict future epigenetic memory states at specified
-    horizons (3, 6, 12 months).
+    Given a current VAE latent (64-d) and chromatin reader/writer
+    abundances, integrates the ChromatinODE forward in nominal ODE-time
+    to expose basin-of-attraction geometry around the current state.
+    Training supervision is a SINGLE contemporaneous drug-sensitivity
+    label per cell line; therefore the rollout is calibrated as a
+    fixed-point estimator, not as a calendar-time forecaster. Horizon
+    labels (3/6/12) are nominal indices; do not interpret as months
+    without external calibration against longitudinal data we do not
+    currently train on.
 
-    Key innovation over MemoryStabilityScorer:
-        - MyeloMemory ODE only finds steady states (equilibrium points)
-        - TrajectoryForecaster predicts the TEMPORAL PATH to those states,
-          mapping the resistance landscape over time
-        - Computes transition probabilities between basins of attraction
-        - Provides stability scores at each horizon
+    Relation to MemoryStabilityScorer:
+        - MemoryStabilityScorer reports a single basin-depth scalar per
+          input from the ChromatinODE steady-state geometry.
+        - TrajectoryForecaster integrates the same ODE from a fixed
+          neutral state (a=r=0.5) for a sequence of nominal time
+          indices and reports basin depth at each. The two outputs use
+          the same training supervision; the forecaster does NOT
+          observe future cell-line states.
 
     Args:
         config: StabilityConfig with ODE parameters.
@@ -1089,13 +1101,22 @@ class TrajectoryForecaster(nn.Module):
         horizons: list[int] | None = None,
         n_samples: int = 1,
     ) -> dict[str, Any]:
-        """Forecast future epigenetic states and stability at multiple horizons.
+        """Roll out the ODE from a balanced (0.5, 0.5) initial state for a
+        sequence of nominal time indices and report basin depth at each.
+
+        Returns the same snapshot-stability quantity computed at multiple
+        ODE-time points, not multiple calendar-time forecasts. The
+        ``horizons`` argument is a labeling convenience; training data
+        contains no time-ordered pairs that would calibrate these
+        indices to wall-clock months.
 
         Args:
             initial_state: (B, 64) VAE latent memory state.
             protein_abundances: (B, N_rw) chromatin reader/writer protein levels.
-            horizons: Time horizons in months (e.g., [3, 6, 12]). Defaults to [3, 6, 12].
-            n_samples: Number of Monte Carlo samples for SDE (default 1, ignored if use_sde=False).
+            horizons: Nominal time-index labels (e.g., [3, 6, 12]).
+                Defaults to [3, 6, 12]. These are NOT calibrated to months.
+            n_samples: Number of Monte Carlo samples for SDE (default 1,
+                ignored if use_sde=False).
 
         Returns:
             Dictionary with keys:

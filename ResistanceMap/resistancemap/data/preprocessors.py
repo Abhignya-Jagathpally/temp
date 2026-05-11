@@ -502,6 +502,45 @@ def harmonize_omics(
             crispr_gene_names=crispr_df.columns.tolist(),
         )
 
+    # P3.1: Optionally resolve UniProt sequences for the protein columns.
+    # Gated by config.data.use_esm2_sequences (default False to preserve
+    # backward compat). When enabled, populate dataset.protein_sequences
+    # so train_protein_network can run the real ESM-2 forward pass; misses
+    # propagate as None (no synthetic fill).
+    protein_sequences = None
+    if getattr(config, "use_esm2_sequences", False):
+        try:
+            from pathlib import Path as _P
+            from resistancemap.data.uniprot_loader import load_protein_sequences
+            cache_dir = _P(getattr(config, "uniprot_cache_dir",
+                                   "data/external/uniprot"))
+            bulk_fasta = getattr(config, "uniprot_bulk_fasta", None)
+            allow_network = bool(getattr(config, "uniprot_allow_network", False))
+            protein_sequences = load_protein_sequences(
+                prot_df.columns.tolist(),
+                cache_dir=cache_dir,
+                bulk_fasta=_P(bulk_fasta) if bulk_fasta else None,
+                allow_network=allow_network,
+            )
+            n_hit = sum(1 for s in protein_sequences if s)
+            logger.info(
+                f"UniProt sequences resolved: {n_hit}/{len(protein_sequences)} "
+                f"(allow_network={allow_network})"
+            )
+        except Exception as e:
+            logger.warning(
+                f"UniProt sequence loading failed ({e}); ESM-2 will be skipped "
+                "and node features fall back to abundance-only. No synthetic "
+                "sequences are fabricated."
+            )
+            protein_sequences = None
+
+    # P2.1: Pass through the real MMRF clinical block (patient-level —
+    # not row-aligned with the cell-line proteomics tensor). harmonize_omics
+    # used to log mmrf_data and silently drop it; we now attach it so
+    # validate_pipeline can compute real survival metrics.
+    mmrf_block = mmrf_data if mmrf_data else None
+
     # Build dataset
     dataset = MultiOmicsDataset(
         proteomics=torch.tensor(prot_df.values, dtype=torch.float32),
@@ -517,6 +556,8 @@ def harmonize_omics(
         drug_names=drug_names,
         drug_target_mean=drug_target_mean,
         drug_target_std=drug_target_std,
+        protein_sequences=protein_sequences,
+        mmrf=mmrf_block,
         **scrna_kwargs,
         **crispr_kwargs,
     )
