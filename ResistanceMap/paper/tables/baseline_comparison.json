@@ -36,7 +36,7 @@
     },
     {
       "model": "ResistanceMap (10-agent DAG)",
-      "test_mse": 2.836390733718872,
+      "test_mse": 2.820091962814331,
       "val_mse": null,
       "wall_seconds": null,
       "notes": "from checkpoints/pipeline_validated.pt"
@@ -45,14 +45,14 @@
       "model": "RandomForest (PCA-256)",
       "test_mse": 2.8608771653908525,
       "val_mse": 2.12080003865747,
-      "wall_seconds": 7.94,
+      "wall_seconds": 8.11,
       "notes": ""
     },
     {
       "model": "GradientBoosting (PCA-256)",
       "test_mse": 2.864913753795941,
       "val_mse": 2.270182360168323,
-      "wall_seconds": 107.32,
+      "wall_seconds": 107.72,
       "notes": ""
     },
     {
@@ -73,7 +73,7 @@
       "model": "Ridge (full proteomics+epi)",
       "test_mse": 2.972266912460327,
       "val_mse": 2.11865496635437,
-      "wall_seconds": 0.83,
+      "wall_seconds": 0.87,
       "notes": ""
     },
     {
@@ -87,14 +87,14 @@
       "model": "XGBoost (PCA-256)",
       "test_mse": 3.5786044597625732,
       "val_mse": 2.2583673000335693,
-      "wall_seconds": 12.37,
+      "wall_seconds": 12.31,
       "notes": ""
     },
     {
       "model": "MLP-256-128 (PCA-256)",
       "test_mse": 4.697566986083984,
       "val_mse": 4.3402252197265625,
-      "wall_seconds": 2.1,
+      "wall_seconds": 2.2,
       "notes": ""
     }
   ]

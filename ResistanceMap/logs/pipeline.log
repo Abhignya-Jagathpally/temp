@@ -6399,3 +6399,728 @@ AttributeError: 'TrajectoryForecaster' object has no attribute 'latent_to_params
 2026-05-03 05:22:50 | INFO    | resistancemap.agents.base | principal_integrator_agent: Execution complete (status=completed)
 2026-05-03 05:22:50 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: principal_integrator_agent -> conditional (score=0.333, hash=037e78cb)
 2026-05-03 05:22:50 | INFO    | resistancemap.evaluation.orchestrator | EvalOrchestrator: wrote audit trail to logs/evaluation/20260503T102240Z
+2026-05-11 07:49:34 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-11 07:49:34 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-11 07:49:34 | INFO    | resistancemap | === Sequential stage: data_validate ===
+2026-05-11 07:49:34 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-11 07:49:34 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-11 07:49:34 | INFO    | resistancemap | === Sequential stage: data_prep ===
+2026-05-11 07:49:34 | INFO    | resistancemap | >>> STAGE START: data_prep
+2026-05-11 07:49:34 | INFO    | resistancemap.data.loaders | Loading CCLE proteomics from data/raw/ccle_proteomics.csv
+2026-05-11 07:49:42 | INFO    | resistancemap.data.loaders | Loaded proteomics: 1393 cell lines, 19177 proteins
+2026-05-11 07:49:42 | INFO    | resistancemap.data.loaders | After coverage filter (70%): 19177 proteins retained
+2026-05-11 07:49:42 | INFO    | resistancemap.data.loaders | Stripped '(entrez_id)' decoration from 19177/19177 protein names
+2026-05-11 07:49:42 | INFO    | resistancemap.data.loaders | Loading CCLE epigenomics from data/raw/ccle_epigenomics
+2026-05-11 07:49:42 | INFO    | resistancemap.data.loaders |   chromatin_profiling: 897 lines, 42 features
+2026-05-11 07:49:42 | INFO    | resistancemap.data.loaders | Loading STRING PPI network from data/raw/string_ppi.txt
+2026-05-11 07:50:21 | INFO    | resistancemap.data.loaders |   STRING scores on 0-1000 scale — normalizing to 0-1
+2026-05-11 07:50:21 | INFO    | resistancemap.data.loaders | PPI edges after confidence filter (>=0.7): 473860
+2026-05-11 07:50:21 | INFO    | resistancemap.data.loaders |   Loaded STRING protein info from 9606.protein.info.v12.0.txt.gz: 19699 ENSP -> gene_symbol entries
+2026-05-11 07:50:21 | INFO    | resistancemap.data.loaders | Translated STRING ENSP -> gene symbols: 473860/473860 edges retained after mapping
+2026-05-11 07:50:22 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse124310.h5ad
+2026-05-11 07:50:22 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 27796 cells, 33694 genes
+2026-05-11 07:50:22 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE124310: 27796 cells
+2026-05-11 07:50:22 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse271107.h5ad
+2026-05-11 07:50:24 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 143748 cells, 36601 genes
+2026-05-11 07:50:24 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE271107: 143748 cells
+2026-05-11 07:50:24 | INFO    | resistancemap.data.loaders | Loading MMRF CoMMpass data from data/raw/mmrf_commpass
+2026-05-11 07:50:24 | INFO    | resistancemap.data.loaders | Loaded MMRF clinical: 995 patients (GDC schema)
+2026-05-11 07:50:24 | INFO    | resistancemap.data.loaders |   OS events: 191/995; median follow-up days: 778; PFS events (line>=2 or death): 351/995
+2026-05-11 07:50:28 | INFO    | resistancemap.data.loaders |   Bulk expression: 60616 genes × 859 samples
+2026-05-11 07:50:28 | INFO    | resistancemap.data.loaders |   Mutations: 154588 records
+2026-05-11 07:50:28 | INFO    | resistancemap.data.loaders | MMRF data loading complete: 995 patients keyed
+2026-05-11 07:50:28 | INFO    | resistancemap.data.loaders | Loading DepMap CRISPR gene-effect from data/raw/depmap/CRISPRGeneEffect.csv
+2026-05-11 07:50:33 | INFO    | resistancemap.data.loaders |   CRISPR matrix: 1208 cell lines × 18531 genes
+2026-05-11 07:50:33 | INFO    | resistancemap.data.loaders |   Stripped '(entrez_id)' decoration from 18531/18531 CRISPR genes
+2026-05-11 07:50:33 | INFO    | resistancemap.data.preprocessors | Harmonizing multi-omics data
+2026-05-11 07:50:33 | INFO    | resistancemap.data.preprocessors |   Additional scRNA-seq datasets: ['GSE124310', 'GSE271107']
+2026-05-11 07:50:33 | INFO    | resistancemap.data.preprocessors |   Additional MMRF data: ['clinical', 'patient_ids', 'os_time', 'os_event', 'pfs_time', 'pfs_event', 'iss_stage', 'cytogenetics', 'therapeutic_agents_all', 'response_label', 'expression', 'mutations']
+2026-05-11 07:50:33 | INFO    | resistancemap.data.preprocessors |   DepMap CRISPR: 1208 cell lines × 18531 genes
+2026-05-11 07:50:33 | INFO    | resistancemap.data.preprocessors |   ID mapping: 0 CCLEName → ModelID entries
+2026-05-11 07:50:33 | INFO    | resistancemap.data.preprocessors | Cell lines in common across modalities: 886
+2026-05-11 07:50:54 | INFO    | resistancemap.data.loaders | Loading drug sensitivity data
+2026-05-11 07:50:55 | INFO    | resistancemap.data.loaders |   GDSC: 575197 records
+2026-05-11 07:50:55 | INFO    | resistancemap.data.loaders |   GDSC: standardized columns
+2026-05-11 07:50:55 | WARNING | resistancemap.data.loaders |   CTRPv2: not found at data/raw/ctrpv2_drug_sensitivity.csv, skipping
+2026-05-11 07:50:57 | INFO    | resistancemap.data.loaders |   PRISM: 701004 records
+2026-05-11 07:50:57 | INFO    | resistancemap.data.loaders |   PRISM: standardized columns
+2026-05-11 07:50:58 | INFO    | resistancemap.data.loaders |   Sample-ID canonicalization via 'cell_line_name': 7485 already-DepMap rows + 11551/14179 newly mapped (2628 unmappable rows kept verbatim and will be filtered by the downstream reindex)
+2026-05-11 07:50:58 | INFO    | resistancemap.data.loaders | Drug sensitivity matrix: 1183 samples × 11 drugs
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors | Drug-sensitivity targets z-scored: 11/11 drugs with usable variance
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors |   Lineage labels: 886/886 matched
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors | PPI-proteomics overlap: 15904 proteins
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors | scRNA pseudobulk attached: 51 (sample, stage) groups × 21934 shared genes (stages: ['HD', 'MGUS', 'MM', 'SMM'])
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors | CRISPR coverage: 629/886 common cell lines have a CRISPR screen
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors | MultiOmicsDataset: 886 samples, 19177 proteins, 42 epigenomic features, 473860 PPI edges
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors | Re-normalized drug targets using training statistics only
+2026-05-11 07:50:58 | INFO    | resistancemap.data.preprocessors | Splits: train=622, val=132, test=132
+2026-05-11 07:51:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/data_ready.pt
+2026-05-11 07:51:02 | INFO    | resistancemap | <<< STAGE END: data_prep (1.5 min)
+2026-05-11 07:51:02 | INFO    | resistancemap | === Sequential stage: vae_pretrain ===
+2026-05-11 07:51:02 | INFO    | resistancemap | >>> STAGE START: vae_pretrain
+2026-05-11 07:51:05 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 07:51:46 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-11 07:51:47 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-11 07:51:47 | INFO    | resistancemap | === Sequential stage: data_validate ===
+2026-05-11 07:51:47 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-11 07:51:47 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-11 07:51:47 | INFO    | resistancemap | === Sequential stage: data_prep ===
+2026-05-11 07:51:47 | INFO    | resistancemap | === Sequential stage: vae_pretrain ===
+2026-05-11 07:51:47 | INFO    | resistancemap | >>> STAGE START: vae_pretrain
+2026-05-11 07:51:50 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:00:19 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-11 13:00:19 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-11 13:00:19 | INFO    | resistancemap | === Sequential stage: data_validate ===
+2026-05-11 13:00:19 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-11 13:00:19 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-11 13:00:19 | INFO    | resistancemap | === Sequential stage: data_prep ===
+2026-05-11 13:00:19 | INFO    | resistancemap | === Sequential stage: vae_pretrain ===
+2026-05-11 13:00:19 | INFO    | resistancemap | >>> STAGE START: vae_pretrain
+2026-05-11 13:00:22 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:01:09 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-11 13:01:10 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-11 13:01:10 | INFO    | resistancemap | === Sequential stage: data_validate ===
+2026-05-11 13:01:10 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-11 13:01:10 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-11 13:01:10 | INFO    | resistancemap | === Sequential stage: data_prep ===
+2026-05-11 13:01:10 | INFO    | resistancemap | === Sequential stage: vae_pretrain ===
+2026-05-11 13:01:10 | INFO    | resistancemap | >>> STAGE START: vae_pretrain
+2026-05-11 13:01:13 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:01:20 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 1/200 — train_loss=1.9640 val_loss=353.0373 recon=1.9640 kl=0.6483 kl_weight=0.0000
+2026-05-11 13:01:21 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:22 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 2/200 — train_loss=1.6986 val_loss=1324.7850 recon=1.6594 kl=0.9793 kl_weight=0.0400
+2026-05-11 13:01:22 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 3/200 — train_loss=2.2441 val_loss=25.0009 recon=1.6103 kl=7.9230 kl_weight=0.0800
+2026-05-11 13:01:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:24 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 4/200 — train_loss=1.9127 val_loss=9.9594 recon=1.7888 kl=1.0330 kl_weight=0.1200
+2026-05-11 13:01:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:25 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 5/200 — train_loss=1.7352 val_loss=5.7825 recon=1.5953 kl=0.8749 kl_weight=0.1600
+2026-05-11 13:01:26 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:27 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 6/200 — train_loss=1.6202 val_loss=5.1690 recon=1.4523 kl=0.8396 kl_weight=0.2000
+2026-05-11 13:01:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 7/200 — train_loss=1.5840 val_loss=3.1419 recon=1.3967 kl=0.7806 kl_weight=0.2400
+2026-05-11 13:01:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:29 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 8/200 — train_loss=1.4838 val_loss=3.7223 recon=1.2888 kl=0.6964 kl_weight=0.2800
+2026-05-11 13:01:30 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 9/200 — train_loss=1.4878 val_loss=5.5992 recon=1.2767 kl=0.6598 kl_weight=0.3200
+2026-05-11 13:01:30 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 10/200 — train_loss=118.5273 val_loss=2.0716 recon=1.2065 kl=325.8909 kl_weight=0.3600
+2026-05-11 13:01:31 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:32 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 11/200 — train_loss=1.4820 val_loss=1.8233 recon=1.2530 kl=0.5725 kl_weight=0.4000
+2026-05-11 13:01:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:33 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 12/200 — train_loss=1.4426 val_loss=1.6521 recon=1.2224 kl=0.5004 kl_weight=0.4400
+2026-05-11 13:01:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:34 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 13/200 — train_loss=1.3964 val_loss=1.5722 recon=1.1714 kl=0.4688 kl_weight=0.4800
+2026-05-11 13:01:35 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:36 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 14/200 — train_loss=1.3405 val_loss=1.5182 recon=1.1085 kl=0.4462 kl_weight=0.5200
+2026-05-11 13:01:37 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:37 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 15/200 — train_loss=1.3045 val_loss=1.4772 recon=1.0647 kl=0.4282 kl_weight=0.5600
+2026-05-11 13:01:38 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:38 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 16/200 — train_loss=1.2677 val_loss=1.4299 recon=1.0211 kl=0.4110 kl_weight=0.6000
+2026-05-11 13:01:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:40 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 17/200 — train_loss=1.2435 val_loss=1.3707 recon=0.9884 kl=0.3986 kl_weight=0.6400
+2026-05-11 13:01:41 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:41 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 18/200 — train_loss=1.2099 val_loss=1.3201 recon=0.9445 kl=0.3902 kl_weight=0.6800
+2026-05-11 13:01:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:42 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 19/200 — train_loss=1.1875 val_loss=1.3043 recon=0.9165 kl=0.3764 kl_weight=0.7200
+2026-05-11 13:01:43 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:44 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 20/200 — train_loss=1.1885 val_loss=1.2854 recon=0.9079 kl=0.3693 kl_weight=0.7600
+2026-05-11 13:01:45 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:45 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 21/200 — train_loss=1.1428 val_loss=1.2701 recon=0.8625 kl=0.3504 kl_weight=0.8000
+2026-05-11 13:01:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:47 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 22/200 — train_loss=1.1573 val_loss=1.2476 recon=0.8682 kl=0.3441 kl_weight=0.8400
+2026-05-11 13:01:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:48 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 23/200 — train_loss=1.1337 val_loss=1.2328 recon=0.8241 kl=0.3518 kl_weight=0.8800
+2026-05-11 13:01:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:49 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 24/200 — train_loss=1.1169 val_loss=1.1969 recon=0.8032 kl=0.3410 kl_weight=0.9200
+2026-05-11 13:01:50 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:51 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 25/200 — train_loss=1.0815 val_loss=1.1769 recon=0.7909 kl=0.3027 kl_weight=0.9600
+2026-05-11 13:01:52 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:52 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 26/200 — train_loss=1.0697 val_loss=1.1739 recon=0.7768 kl=0.2930 kl_weight=1.0000
+2026-05-11 13:01:53 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:53 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 27/200 — train_loss=1.0463 val_loss=1.1515 recon=0.7604 kl=0.2859 kl_weight=1.0000
+2026-05-11 13:01:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:55 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 28/200 — train_loss=1.0252 val_loss=1.1298 recon=0.7597 kl=0.2655 kl_weight=1.0000
+2026-05-11 13:01:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:56 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 29/200 — train_loss=0.9985 val_loss=1.1303 recon=0.7451 kl=0.2534 kl_weight=1.0000
+2026-05-11 13:01:57 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 30/200 — train_loss=1.0043 val_loss=1.1380 recon=0.7613 kl=0.2430 kl_weight=1.0000
+2026-05-11 13:01:57 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 31/200 — train_loss=0.9740 val_loss=1.1402 recon=0.7331 kl=0.2409 kl_weight=1.0000
+2026-05-11 13:01:58 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 32/200 — train_loss=0.9668 val_loss=1.1299 recon=0.7341 kl=0.2328 kl_weight=1.0000
+2026-05-11 13:01:58 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 33/200 — train_loss=0.9514 val_loss=1.1274 recon=0.7127 kl=0.2387 kl_weight=1.0000
+2026-05-11 13:01:59 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:01:59 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 34/200 — train_loss=0.9522 val_loss=1.1283 recon=0.7187 kl=0.2335 kl_weight=1.0000
+2026-05-11 13:02:00 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 35/200 — train_loss=0.9377 val_loss=1.1051 recon=0.7194 kl=0.2183 kl_weight=1.0000
+2026-05-11 13:02:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:01 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 36/200 — train_loss=0.9193 val_loss=1.0874 recon=0.6967 kl=0.2227 kl_weight=1.0000
+2026-05-11 13:02:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:03 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 37/200 — train_loss=0.8969 val_loss=1.0730 recon=0.6814 kl=0.2156 kl_weight=1.0000
+2026-05-11 13:02:03 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:04 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 38/200 — train_loss=0.8955 val_loss=1.0612 recon=0.6905 kl=0.2051 kl_weight=1.0000
+2026-05-11 13:02:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:05 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 39/200 — train_loss=0.8854 val_loss=1.0556 recon=0.6604 kl=0.2250 kl_weight=1.0000
+2026-05-11 13:02:06 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:07 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 40/200 — train_loss=0.8663 val_loss=1.0511 recon=0.6606 kl=0.2057 kl_weight=1.0000
+2026-05-11 13:02:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:08 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 41/200 — train_loss=0.8662 val_loss=1.0446 recon=0.6654 kl=0.2008 kl_weight=1.0000
+2026-05-11 13:02:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:09 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 42/200 — train_loss=0.8473 val_loss=1.0399 recon=0.6420 kl=0.2053 kl_weight=1.0000
+2026-05-11 13:02:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:11 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 43/200 — train_loss=0.8496 val_loss=1.0334 recon=0.6516 kl=0.1980 kl_weight=1.0000
+2026-05-11 13:02:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:12 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 44/200 — train_loss=0.8510 val_loss=1.0326 recon=0.6643 kl=0.1867 kl_weight=1.0000
+2026-05-11 13:02:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:13 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 45/200 — train_loss=0.8396 val_loss=1.0349 recon=0.6525 kl=0.1871 kl_weight=1.0000
+2026-05-11 13:02:14 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 46/200 — train_loss=0.8371 val_loss=1.0352 recon=0.6458 kl=0.1913 kl_weight=1.0000
+2026-05-11 13:02:14 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 47/200 — train_loss=0.8401 val_loss=1.0312 recon=0.6463 kl=0.1939 kl_weight=1.0000
+2026-05-11 13:02:15 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:16 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 48/200 — train_loss=0.8239 val_loss=1.0237 recon=0.6316 kl=0.1923 kl_weight=1.0000
+2026-05-11 13:02:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:17 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 49/200 — train_loss=0.8219 val_loss=1.0215 recon=0.6305 kl=0.1914 kl_weight=1.0000
+2026-05-11 13:02:18 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:18 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 50/200 — train_loss=0.8199 val_loss=1.0141 recon=0.6187 kl=0.2012 kl_weight=1.0000
+2026-05-11 13:02:19 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-11 13:02:20 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 51/200 — train_loss=0.6083 val_loss=1.0249 recon=0.6083 kl=0.1985 kl_weight=0.0000
+2026-05-11 13:02:20 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 52/200 — train_loss=0.6247 val_loss=1.0337 recon=0.6168 kl=0.1968 kl_weight=0.0400
+2026-05-11 13:02:21 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 53/200 — train_loss=0.5962 val_loss=1.0497 recon=0.5782 kl=0.2257 kl_weight=0.0800
+2026-05-11 13:02:21 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 54/200 — train_loss=0.5982 val_loss=1.0616 recon=0.5669 kl=0.2605 kl_weight=0.1200
+2026-05-11 13:02:22 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 55/200 — train_loss=0.6038 val_loss=1.0683 recon=0.5597 kl=0.2757 kl_weight=0.1600
+2026-05-11 13:02:22 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 56/200 — train_loss=0.5975 val_loss=1.0782 recon=0.5345 kl=0.3152 kl_weight=0.2000
+2026-05-11 13:02:23 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 57/200 — train_loss=0.6080 val_loss=1.0816 recon=0.5227 kl=0.3555 kl_weight=0.2400
+2026-05-11 13:02:23 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 58/200 — train_loss=0.6070 val_loss=1.0912 recon=0.4958 kl=0.3972 kl_weight=0.2800
+2026-05-11 13:02:23 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 59/200 — train_loss=0.6333 val_loss=1.0928 recon=0.4943 kl=0.4345 kl_weight=0.3200
+2026-05-11 13:02:24 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 60/200 — train_loss=0.6537 val_loss=1.0933 recon=0.4892 kl=0.4571 kl_weight=0.3600
+2026-05-11 13:02:24 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 61/200 — train_loss=0.6573 val_loss=1.0937 recon=0.4710 kl=0.4658 kl_weight=0.4000
+2026-05-11 13:02:25 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 62/200 — train_loss=0.6780 val_loss=1.0971 recon=0.4715 kl=0.4695 kl_weight=0.4400
+2026-05-11 13:02:25 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 63/200 — train_loss=0.6971 val_loss=1.1020 recon=0.4825 kl=0.4471 kl_weight=0.4800
+2026-05-11 13:02:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 64/200 — train_loss=0.6911 val_loss=1.1054 recon=0.4676 kl=0.4298 kl_weight=0.5200
+2026-05-11 13:02:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 65/200 — train_loss=0.6893 val_loss=1.1039 recon=0.4635 kl=0.4032 kl_weight=0.5600
+2026-05-11 13:02:27 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 66/200 — train_loss=0.7111 val_loss=1.0996 recon=0.4756 kl=0.3925 kl_weight=0.6000
+2026-05-11 13:02:27 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 67/200 — train_loss=0.7100 val_loss=1.0927 recon=0.4990 kl=0.3297 kl_weight=0.6400
+2026-05-11 13:02:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 68/200 — train_loss=0.7087 val_loss=1.0886 recon=0.5026 kl=0.3031 kl_weight=0.6800
+2026-05-11 13:02:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 69/200 — train_loss=0.7148 val_loss=1.0846 recon=0.5032 kl=0.2939 kl_weight=0.7200
+2026-05-11 13:02:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 70/200 — train_loss=0.7204 val_loss=1.0692 recon=0.5300 kl=0.2506 kl_weight=0.7600
+2026-05-11 13:02:28 | INFO    | resistancemap.models.vae | Early stopping at epoch 70
+2026-05-11 13:02:28 | INFO    | resistancemap | <<< STAGE END: vae_pretrain (1.3 min) | best_val_loss=1.0141 final_epoch=70 total_steps=70
+2026-05-11 13:02:28 | INFO    | resistancemap | === Sequential stage: vae_finetune ===
+2026-05-11 13:02:28 | INFO    | resistancemap | >>> STAGE START: vae_finetune
+2026-05-11 13:02:31 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:02:32 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-11T18:02:18.932761+00:00)
+2026-05-11 13:02:37 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 1/100 — train_loss=0.8569 val_loss=1.1882 recon=0.8569 kl=0.3080 kl_weight=0.0000
+2026-05-11 13:02:38 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_finetuned.pt
+2026-05-11 13:02:40 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 2/100 — train_loss=0.7926 val_loss=1.2045 recon=0.7664 kl=0.3148 kl_weight=0.0833
+2026-05-11 13:02:40 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 3/100 — train_loss=0.7224 val_loss=1.2169 recon=0.6678 kl=0.3277 kl_weight=0.1667
+2026-05-11 13:02:41 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 4/100 — train_loss=0.7227 val_loss=1.2306 recon=0.6374 kl=0.3412 kl_weight=0.2500
+2026-05-11 13:02:41 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 5/100 — train_loss=0.7313 val_loss=1.2475 recon=0.6121 kl=0.3578 kl_weight=0.3333
+2026-05-11 13:02:41 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 6/100 — train_loss=0.7525 val_loss=1.2682 recon=0.5965 kl=0.3743 kl_weight=0.4167
+2026-05-11 13:02:42 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 7/100 — train_loss=0.7709 val_loss=1.2913 recon=0.5826 kl=0.3767 kl_weight=0.5000
+2026-05-11 13:02:42 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 8/100 — train_loss=0.8133 val_loss=1.3059 recon=0.5860 kl=0.3897 kl_weight=0.5833
+2026-05-11 13:02:43 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 9/100 — train_loss=0.8194 val_loss=1.3160 recon=0.5582 kl=0.3918 kl_weight=0.6667
+2026-05-11 13:02:43 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 10/100 — train_loss=0.8187 val_loss=1.3288 recon=0.5225 kl=0.3950 kl_weight=0.7500
+2026-05-11 13:02:44 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 11/100 — train_loss=0.8475 val_loss=1.3351 recon=0.5165 kl=0.3971 kl_weight=0.8333
+2026-05-11 13:02:44 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 12/100 — train_loss=0.9094 val_loss=1.3343 recon=0.5525 kl=0.3894 kl_weight=0.9167
+2026-05-11 13:02:45 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 13/100 — train_loss=0.8959 val_loss=1.3341 recon=0.5263 kl=0.3695 kl_weight=1.0000
+2026-05-11 13:02:45 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 14/100 — train_loss=0.8832 val_loss=1.3358 recon=0.5346 kl=0.3485 kl_weight=1.0000
+2026-05-11 13:02:46 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 15/100 — train_loss=0.8645 val_loss=1.3269 recon=0.5240 kl=0.3404 kl_weight=1.0000
+2026-05-11 13:02:46 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 16/100 — train_loss=0.8469 val_loss=1.3185 recon=0.5155 kl=0.3314 kl_weight=1.0000
+2026-05-11 13:02:47 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 17/100 — train_loss=0.8349 val_loss=1.3072 recon=0.5254 kl=0.3094 kl_weight=1.0000
+2026-05-11 13:02:47 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 18/100 — train_loss=0.8254 val_loss=1.2956 recon=0.5304 kl=0.2950 kl_weight=1.0000
+2026-05-11 13:02:48 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 19/100 — train_loss=0.8049 val_loss=1.2807 recon=0.5219 kl=0.2830 kl_weight=1.0000
+2026-05-11 13:02:48 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 20/100 — train_loss=0.7889 val_loss=1.2694 recon=0.5187 kl=0.2702 kl_weight=1.0000
+2026-05-11 13:02:48 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 21/100 — train_loss=0.8130 val_loss=1.2611 recon=0.5517 kl=0.2613 kl_weight=1.0000
+2026-05-11 13:02:48 | INFO    | resistancemap.models.vae | Early stopping at epoch 21
+2026-05-11 13:02:48 | INFO    | resistancemap | <<< STAGE END: vae_finetune (0.3 min) | best_val_loss=1.1882 final_epoch=21 total_steps=21
+2026-05-11 13:02:49 | INFO    | resistancemap | === Sequential stage: trajectory_calibrate ===
+2026-05-11 13:02:49 | INFO    | resistancemap | >>> STAGE START: trajectory_calibrate
+2026-05-11 13:02:52 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:02:52 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-11T18:02:37.515296+00:00)
+2026-05-11 13:02:52 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:55 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:55 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:58 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:02:59 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:00 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:03 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:03 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:06 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:07 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:15 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:15 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:16 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:18 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:19 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:19 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 50/500 loss=0.3224 basin_center=1.4794 basin_scale=1.5139
+2026-05-11 13:03:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:21 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:24 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:31 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:38 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:41 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:45 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:46 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 100/500 loss=0.0099 basin_center=1.4551 basin_scale=1.5073
+2026-05-11 13:03:47 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:50 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:53 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:03:58 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:04:14 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 150/500 loss=0.0028 basin_center=1.4525 basin_scale=1.5094
+2026-05-11 13:04:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:04:19 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:04:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:04:41 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 200/500 loss=0.0025 basin_center=1.4515 basin_scale=1.5107
+2026-05-11 13:04:58 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:05:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:05:08 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 250/500 loss=0.0026 basin_center=1.4510 basin_scale=1.5117
+2026-05-11 13:05:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:05:33 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:05:35 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 300/500 loss=0.0011 basin_center=1.4506 basin_scale=1.5125
+2026-05-11 13:05:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:06:02 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 350/500 loss=0.0007 basin_center=1.4503 basin_scale=1.5132
+2026-05-11 13:06:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:06:30 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 400/500 loss=0.0003 basin_center=1.4499 basin_scale=1.5141
+2026-05-11 13:06:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:06:41 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:06:57 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 450/500 loss=0.0096 basin_center=1.4496 basin_scale=1.5147
+2026-05-11 13:07:16 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-11 13:07:24 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 500/500 loss=0.0003 basin_center=1.4495 basin_scale=1.5153
+2026-05-11 13:07:24 | INFO    | resistancemap | <<< STAGE END: trajectory_calibrate (4.6 min) | best_calibration_loss=0.0001 n_valid_samples=692
+2026-05-11 13:07:24 | INFO    | resistancemap | === Sequential stage: trajectory_forecast ===
+2026-05-11 13:07:24 | INFO    | resistancemap | >>> STAGE START: trajectory_forecast
+2026-05-11 13:07:27 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:07:27 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-11T18:02:37.515296+00:00)
+2026-05-11 13:07:27 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-11T18:07:16.617358+00:00)
+2026-05-11 13:07:28 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-05-11 13:07:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/trajectory_forecaster_trained.pt
+2026-05-11 13:08:27 | INFO    | resistancemap | <<< STAGE END: trajectory_forecast (1.0 min) | trajectory_forecast_val_loss=0.0078
+2026-05-11 13:08:27 | INFO    | resistancemap | === Sequential stage: protein_net_train ===
+2026-05-11 13:08:28 | INFO    | resistancemap | >>> STAGE START: protein_net_train
+2026-05-11 13:08:31 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:08:31 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-11T18:02:37.515296+00:00)
+2026-05-11 13:08:31 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-11T18:07:16.617358+00:00)
+2026-05-11 13:14:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-05-11 13:15:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-05-11 13:16:33 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-05-11 13:23:16 | INFO    | resistancemap | <<< STAGE END: protein_net_train (14.8 min) | protein_net_val_loss=1.7728
+2026-05-11 13:23:16 | INFO    | resistancemap | === Sequential stage: fusion_train ===
+2026-05-11 13:23:16 | INFO    | resistancemap | >>> STAGE START: fusion_train
+2026-05-11 13:23:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:23:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-11T18:02:37.515296+00:00)
+2026-05-11 13:23:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-11T18:07:16.617358+00:00)
+2026-05-11 13:23:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-11T18:07:32.823535+00:00)
+2026-05-11 13:23:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-11T18:16:33.226305+00:00)
+2026-05-11 13:23:20 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-05-11 13:31:03 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-11 13:31:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/fusion_trained.pt
+2026-05-11 13:31:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/fusion_trained.pt
+2026-05-11 13:31:06 | INFO    | resistancemap | <<< STAGE END: fusion_train (7.8 min) | fusion_val_loss=1.2681
+2026-05-11 13:31:06 | INFO    | resistancemap | === Sequential stage: landscape_train ===
+2026-05-11 13:31:06 | INFO    | resistancemap | >>> STAGE START: landscape_train
+2026-05-11 13:31:09 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:31:09 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-11T18:31:04.295336+00:00)
+2026-05-11 13:31:09 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-11 13:31:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-11 13:31:11 | INFO    | resistancemap | <<< STAGE END: landscape_train (0.1 min) | landscape_val_loss=1.3346
+2026-05-11 13:31:11 | INFO    | resistancemap | === Sequential stage: validate ===
+2026-05-11 13:31:11 | INFO    | resistancemap | >>> STAGE START: validate
+2026-05-11 13:31:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-11T12:50:58.545776+00:00)
+2026-05-11 13:31:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-11T18:31:04.295336+00:00)
+2026-05-11 13:31:14 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-11T18:31:11.396429+00:00)
+2026-05-11 13:31:14 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-11 13:31:15 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-11 13:33:35 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-11 13:33:35 | INFO    | resistancemap | <<< STAGE END: validate (2.4 min) | test_mse=2.8323 n_test_samples=132 n_drugs=11 split=test per_drug_metrics=[{'drug': 'Bortezomib', 'n_obs': 102, 'mse': 0.8706653118133545, 'mae': 0.5981693267822266, 'spearman': 0.31170307207762465, 'reliable': True, 'drug_class': 'Proteasome', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Cyclophosphamide', 'n_obs': 76, 'mse': 0.3221365511417389, 'mae': 0.3926868736743927, 'spearman': 0.3544497607655503, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Dinaciclib', 'n_obs': 100, 'mse': 0.12350739538669586, 'mae': 0.15252122282981873, 'spearman': 0.42595859585958595, 'reliable': True, 'drug_class': 'CDK', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Doxorubicin', 'n_obs': 100, 'mse': 1.9818081855773926, 'mae': 0.5455208420753479, 'spearman': 0.16271227122712267, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Etoposide', 'n_obs': 93, 'mse': 0.3379502296447754, 'mae': 0.4089648425579071, 'spearman': 0.2567216734803497, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Lenalidomide', 'n_obs': 95, 'mse': 0.7789762616157532, 'mae': 0.5450904965400696, 'spearman': 0.1340565509518477, 'reliable': True, 'drug_class': 'IMiD', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Palbociclib', 'n_obs': 81, 'mse': 0.19163787364959717, 'mae': 0.35367918014526367, 'spearman': 0.06887985546522131, 'reliable': True, 'drug_class': 'CDK', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Panobinostat', 'n_obs': 101, 'mse': 22.66990089416504, 'mae': 0.8093653917312622, 'spearman': -0.07046010483401281, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Romidepsin', 'n_obs': 93, 'mse': 1.258748173713684, 'mae': 0.5628654956817627, 'spearman': 0.2701500999671749, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': True, 'well_calibrated': False, 'failure_mode': False}, {'drug': 'Venetoclax', 'n_obs': 74, 'mse': 0.01832018420100212, 'mae': 0.11100427806377411, 'spearman': 0.16291743798593109, 'reliable': True, 'drug_class': 'BCL2', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Vorinostat', 'n_obs': 100, 'mse': 0.21943046152591705, 'mae': 0.34262004494667053, 'spearman': -0.035007500750075, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}] baseline_summary={'n_models': 11, 'best_model': 'Zero (z-scored target floor)', 'best_test_mse': 2.81059193611145, 'resistancemap_rank': 3, 'comparison_path': '/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/tables/baseline_comparison.json'} actionability_summary={'n_drugs_total': 11, 'n_actionable_for_screening': 5, 'n_well_calibrated': 4, 'n_failure_modes': 6, 'actionable_drugs': ['Bortezomib', 'Cyclophosphamide', 'Dinaciclib', 'Etoposide', 'Romidepsin'], 'well_calibrated_drugs': ['Bortezomib', 'Cyclophosphamide', 'Dinaciclib', 'Etoposide'], 'failure_drugs': ['Doxorubicin', 'Lenalidomide', 'Palbociclib', 'Panobinostat', 'Venetoclax', 'Vorinostat'], 'by_class': {'Proteasome': {'n_drugs': 1, 'mean_mse': 0.8706653118133545, 'mean_spearman': 0.31170307207762465, 'n_actionable': 1, 'drugs': ['Bortezomib']}, 'DNA-damage': {'n_drugs': 3, 'mean_mse': 0.8806316554546356, 'mean_spearman': 0.2579612351576742, 'n_actionable': 2, 'drugs': ['Cyclophosphamide', 'Doxorubicin', 'Etoposide']}, 'CDK': {'n_drugs': 2, 'mean_mse': 0.15757263451814651, 'mean_spearman': 0.24741922566240362, 'n_actionable': 1, 'drugs': ['Dinaciclib', 'Palbociclib']}, 'IMiD': {'n_drugs': 1, 'mean_mse': 0.7789762616157532, 'mean_spearman': 0.1340565509518477, 'n_actionable': 0, 'drugs': ['Lenalidomide']}, 'HDAC': {'n_drugs': 3, 'mean_mse': 8.04935984313488, 'mean_spearman': 0.05489416479436235, 'n_actionable': 1, 'drugs': ['Panobinostat', 'Romidepsin', 'Vorinostat']}, 'BCL2': {'n_drugs': 1, 'mean_mse': 0.01832018420100212, 'mean_spearman': 0.16291743798593109, 'n_actionable': 0, 'drugs': ['Venetoclax']}}, 'thresholds': {'actionable_min_spearman': 0.25, 'actionable_min_n_obs': 30, 'well_calibrated_max_mse': 1.0}, 'interpretation': "ResistanceMap rank-prioritizes compounds for 5/11 drugs (45%). 4/11 are also well-calibrated for absolute IC50 prediction. Known failure modes: ['Doxorubicin', 'Lenalidomide', 'Palbociclib', 'Panobinostat', 'Venetoclax', 'Vorinostat']."}
+2026-05-11 13:33:35 | INFO    | resistancemap | === Sequential stage: serve ===
+2026-05-11 13:33:35 | INFO    | resistancemap | >>> STAGE START: serve
+2026-05-12 17:53:22 | INFO    | resistancemap | Logging to logs/pipeline.log
+2026-05-12 17:53:22 | WARNING | resistancemap | W&B init failed (continuing without): No API key configured. Use `wandb login` to log in.
+2026-05-12 17:53:22 | INFO    | resistancemap | === Sequential stage: data_validate ===
+2026-05-12 17:53:22 | INFO    | resistancemap | >>> STAGE START: data_validate
+2026-05-12 17:53:22 | INFO    | resistancemap | <<< STAGE END: data_validate (0.0 min)
+2026-05-12 17:53:22 | INFO    | resistancemap | === Sequential stage: data_prep ===
+2026-05-12 17:53:22 | INFO    | resistancemap | >>> STAGE START: data_prep
+2026-05-12 17:53:22 | INFO    | resistancemap.data.loaders | Loading CCLE proteomics from data/raw/ccle_proteomics.csv
+2026-05-12 17:53:30 | INFO    | resistancemap.data.loaders | Loaded proteomics: 1393 cell lines, 19177 proteins
+2026-05-12 17:53:30 | INFO    | resistancemap.data.loaders | After coverage filter (70%): 19177 proteins retained
+2026-05-12 17:53:30 | INFO    | resistancemap.data.loaders | Stripped '(entrez_id)' decoration from 19177/19177 protein names
+2026-05-12 17:53:30 | INFO    | resistancemap.data.loaders | Loading CCLE epigenomics from data/raw/ccle_epigenomics
+2026-05-12 17:53:30 | INFO    | resistancemap.data.loaders |   chromatin_profiling: 897 lines, 42 features
+2026-05-12 17:53:30 | INFO    | resistancemap.data.loaders | Loading STRING PPI network from data/raw/string_ppi.txt
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders |   STRING scores on 0-1000 scale — normalizing to 0-1
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders | PPI edges after confidence filter (>=0.7): 473860
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders |   Loaded STRING protein info from 9606.protein.info.v12.0.txt.gz: 19699 ENSP -> gene_symbol entries
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders | Translated STRING ENSP -> gene symbols: 473860/473860 edges retained after mapping
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse124310.h5ad
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 27796 cells, 33694 genes
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE124310: 27796 cells
+2026-05-12 17:54:10 | INFO    | resistancemap.data.loaders | Loading scRNA-seq from data/raw/gse271107.h5ad
+2026-05-12 17:54:12 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq: 143748 cells, 36601 genes
+2026-05-12 17:54:12 | INFO    | resistancemap.data.loaders | Loaded scRNA-seq GSE271107: 143748 cells
+2026-05-12 17:54:12 | INFO    | resistancemap.data.loaders | Loading MMRF CoMMpass data from data/raw/mmrf_commpass
+2026-05-12 17:54:12 | INFO    | resistancemap.data.loaders | Loaded MMRF clinical: 995 patients (GDC schema)
+2026-05-12 17:54:12 | INFO    | resistancemap.data.loaders |   OS events: 191/995; median follow-up days: 778; PFS events (line>=2 or death): 351/995
+2026-05-12 17:54:16 | INFO    | resistancemap.data.loaders |   Bulk expression: 60616 genes × 859 samples
+2026-05-12 17:54:17 | INFO    | resistancemap.data.loaders |   Mutations: 154588 records
+2026-05-12 17:54:17 | INFO    | resistancemap.data.loaders | MMRF data loading complete: 995 patients keyed
+2026-05-12 17:54:17 | INFO    | resistancemap.data.loaders | Loading DepMap CRISPR gene-effect from data/raw/depmap/CRISPRGeneEffect.csv
+2026-05-12 17:54:21 | INFO    | resistancemap.data.loaders |   CRISPR matrix: 1208 cell lines × 18531 genes
+2026-05-12 17:54:21 | INFO    | resistancemap.data.loaders |   Stripped '(entrez_id)' decoration from 18531/18531 CRISPR genes
+2026-05-12 17:54:21 | INFO    | resistancemap.data.preprocessors | Harmonizing multi-omics data
+2026-05-12 17:54:21 | INFO    | resistancemap.data.preprocessors |   Additional scRNA-seq datasets: ['GSE124310', 'GSE271107']
+2026-05-12 17:54:21 | INFO    | resistancemap.data.preprocessors |   Additional MMRF data: ['clinical', 'patient_ids', 'os_time', 'os_event', 'pfs_time', 'pfs_event', 'iss_stage', 'cytogenetics', 'therapeutic_agents_all', 'response_label', 'expression', 'mutations']
+2026-05-12 17:54:21 | INFO    | resistancemap.data.preprocessors |   DepMap CRISPR: 1208 cell lines × 18531 genes
+2026-05-12 17:54:21 | INFO    | resistancemap.data.preprocessors |   ID mapping: 0 CCLEName → ModelID entries
+2026-05-12 17:54:21 | INFO    | resistancemap.data.preprocessors | Cell lines in common across modalities: 886
+2026-05-12 17:54:42 | INFO    | resistancemap.data.loaders | Loading drug sensitivity data
+2026-05-12 17:54:43 | INFO    | resistancemap.data.loaders |   GDSC: 575197 records
+2026-05-12 17:54:43 | INFO    | resistancemap.data.loaders |   GDSC: standardized columns
+2026-05-12 17:54:43 | WARNING | resistancemap.data.loaders |   CTRPv2: not found at data/raw/ctrpv2_drug_sensitivity.csv, skipping
+2026-05-12 17:54:46 | INFO    | resistancemap.data.loaders |   PRISM: 701004 records
+2026-05-12 17:54:46 | INFO    | resistancemap.data.loaders |   PRISM: standardized columns
+2026-05-12 17:54:46 | INFO    | resistancemap.data.loaders |   Sample-ID canonicalization via 'cell_line_name': 7485 already-DepMap rows + 11551/14179 newly mapped (2628 unmappable rows kept verbatim and will be filtered by the downstream reindex)
+2026-05-12 17:54:46 | INFO    | resistancemap.data.loaders | Drug sensitivity matrix: 1183 samples × 11 drugs
+2026-05-12 17:54:46 | INFO    | resistancemap.data.preprocessors | Drug-sensitivity targets z-scored: 11/11 drugs with usable variance
+2026-05-12 17:54:46 | INFO    | resistancemap.data.preprocessors |   Lineage labels: 886/886 matched
+2026-05-12 17:54:46 | INFO    | resistancemap.data.preprocessors | PPI-proteomics overlap: 15904 proteins
+2026-05-12 17:54:46 | INFO    | resistancemap.data.preprocessors | scRNA pseudobulk attached: 51 (sample, stage) groups × 21934 shared genes (stages: ['HD', 'MGUS', 'MM', 'SMM'])
+2026-05-12 17:54:46 | INFO    | resistancemap.data.preprocessors | CRISPR coverage: 629/886 common cell lines have a CRISPR screen
+2026-05-12 17:54:46 | INFO    | resistancemap.data.preprocessors | MultiOmicsDataset: 886 samples, 19177 proteins, 42 epigenomic features, 473860 PPI edges
+2026-05-12 17:54:47 | INFO    | resistancemap.data.preprocessors | Re-normalized drug targets using training statistics only
+2026-05-12 17:54:47 | INFO    | resistancemap.data.preprocessors | Splits: train=622, val=132, test=132
+2026-05-12 17:54:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/data_ready.pt
+2026-05-12 17:54:51 | INFO    | resistancemap | <<< STAGE END: data_prep (1.5 min)
+2026-05-12 17:54:51 | INFO    | resistancemap | === Sequential stage: vae_pretrain ===
+2026-05-12 17:54:51 | INFO    | resistancemap | >>> STAGE START: vae_pretrain
+2026-05-12 17:54:54 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 17:55:01 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 1/200 — train_loss=2.0190 val_loss=484.8066 recon=2.0190 kl=0.6594 kl_weight=0.0000
+2026-05-12 17:55:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:03 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 2/200 — train_loss=1.7373 val_loss=688.6077 recon=1.7017 kl=0.8899 kl_weight=0.0400
+2026-05-12 17:55:04 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 3/200 — train_loss=1.6385 val_loss=32.7923 recon=1.5577 kl=1.0092 kl_weight=0.0800
+2026-05-12 17:55:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:05 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 4/200 — train_loss=1.5999 val_loss=12.5670 recon=1.4799 kl=1.0002 kl_weight=0.1200
+2026-05-12 17:55:06 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:07 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 5/200 — train_loss=1.5658 val_loss=5.8575 recon=1.4100 kl=0.9739 kl_weight=0.1600
+2026-05-12 17:55:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:08 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 6/200 — train_loss=1.4984 val_loss=3.2672 recon=1.3245 kl=0.8694 kl_weight=0.2000
+2026-05-12 17:55:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:10 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 7/200 — train_loss=1.4842 val_loss=2.6351 recon=1.2989 kl=0.7721 kl_weight=0.2400
+2026-05-12 17:55:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:11 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 8/200 — train_loss=1.3702 val_loss=2.2533 recon=1.1739 kl=0.7009 kl_weight=0.2800
+2026-05-12 17:55:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:13 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 9/200 — train_loss=1.3616 val_loss=1.9870 recon=1.1527 kl=0.6527 kl_weight=0.3200
+2026-05-12 17:55:14 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:15 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 10/200 — train_loss=1.3522 val_loss=1.8069 recon=1.1366 kl=0.5990 kl_weight=0.3600
+2026-05-12 17:55:16 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:16 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 11/200 — train_loss=1.2753 val_loss=1.6766 recon=1.0446 kl=0.5769 kl_weight=0.4000
+2026-05-12 17:55:17 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:18 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 12/200 — train_loss=1.2408 val_loss=1.5629 recon=0.9951 kl=0.5583 kl_weight=0.4400
+2026-05-12 17:55:19 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:19 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 13/200 — train_loss=1.2055 val_loss=1.4856 recon=0.9515 kl=0.5291 kl_weight=0.4800
+2026-05-12 17:55:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:21 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 14/200 — train_loss=1.1689 val_loss=1.4112 recon=0.9025 kl=0.5124 kl_weight=0.5200
+2026-05-12 17:55:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:22 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 15/200 — train_loss=1.1526 val_loss=1.3664 recon=0.8759 kl=0.4941 kl_weight=0.5600
+2026-05-12 17:55:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:24 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 16/200 — train_loss=1.1320 val_loss=1.3361 recon=0.8508 kl=0.4687 kl_weight=0.6000
+2026-05-12 17:55:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 17/200 — train_loss=1.1248 val_loss=1.3423 recon=0.8266 kl=0.4659 kl_weight=0.6400
+2026-05-12 17:55:26 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 18/200 — train_loss=1.1024 val_loss=1.3146 recon=0.7938 kl=0.4538 kl_weight=0.6800
+2026-05-12 17:55:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:28 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 19/200 — train_loss=1.0818 val_loss=1.2934 recon=0.7691 kl=0.4343 kl_weight=0.7200
+2026-05-12 17:55:29 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:29 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 20/200 — train_loss=1.0686 val_loss=1.2707 recon=0.7542 kl=0.4137 kl_weight=0.7600
+2026-05-12 17:55:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:31 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 21/200 — train_loss=1.0574 val_loss=1.2533 recon=0.7409 kl=0.3956 kl_weight=0.8000
+2026-05-12 17:55:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:32 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 22/200 — train_loss=1.0619 val_loss=1.2615 recon=0.7427 kl=0.3800 kl_weight=0.8400
+2026-05-12 17:55:33 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 23/200 — train_loss=1.0564 val_loss=1.2380 recon=0.7377 kl=0.3621 kl_weight=0.8800
+2026-05-12 17:55:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:35 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 24/200 — train_loss=1.0631 val_loss=1.2135 recon=0.7408 kl=0.3503 kl_weight=0.9200
+2026-05-12 17:55:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:36 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 25/200 — train_loss=1.0168 val_loss=1.2011 recon=0.7050 kl=0.3248 kl_weight=0.9600
+2026-05-12 17:55:37 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:38 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 26/200 — train_loss=1.0381 val_loss=1.1769 recon=0.7240 kl=0.3141 kl_weight=1.0000
+2026-05-12 17:55:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:39 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 27/200 — train_loss=0.9950 val_loss=1.1729 recon=0.6966 kl=0.2985 kl_weight=1.0000
+2026-05-12 17:55:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:41 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 28/200 — train_loss=0.9807 val_loss=1.1810 recon=0.6983 kl=0.2823 kl_weight=1.0000
+2026-05-12 17:55:41 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 29/200 — train_loss=0.9737 val_loss=1.1667 recon=0.7032 kl=0.2705 kl_weight=1.0000
+2026-05-12 17:55:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:43 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 30/200 — train_loss=0.9580 val_loss=1.1411 recon=0.7071 kl=0.2509 kl_weight=1.0000
+2026-05-12 17:55:44 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:44 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 31/200 — train_loss=0.9377 val_loss=1.1219 recon=0.6884 kl=0.2492 kl_weight=1.0000
+2026-05-12 17:55:45 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:46 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 32/200 — train_loss=0.9363 val_loss=1.0972 recon=0.6944 kl=0.2419 kl_weight=1.0000
+2026-05-12 17:55:47 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:47 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 33/200 — train_loss=0.9150 val_loss=1.0827 recon=0.6856 kl=0.2294 kl_weight=1.0000
+2026-05-12 17:55:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:49 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 34/200 — train_loss=0.8961 val_loss=1.0669 recon=0.6715 kl=0.2246 kl_weight=1.0000
+2026-05-12 17:55:50 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:50 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 35/200 — train_loss=0.8965 val_loss=1.0579 recon=0.6738 kl=0.2228 kl_weight=1.0000
+2026-05-12 17:55:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:52 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 36/200 — train_loss=0.8863 val_loss=1.0632 recon=0.6602 kl=0.2261 kl_weight=1.0000
+2026-05-12 17:55:52 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 37/200 — train_loss=0.8860 val_loss=1.0736 recon=0.6707 kl=0.2153 kl_weight=1.0000
+2026-05-12 17:55:53 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 38/200 — train_loss=0.8654 val_loss=1.0856 recon=0.6402 kl=0.2252 kl_weight=1.0000
+2026-05-12 17:55:53 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 39/200 — train_loss=0.8627 val_loss=1.0767 recon=0.6357 kl=0.2271 kl_weight=1.0000
+2026-05-12 17:55:54 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 40/200 — train_loss=0.8623 val_loss=1.0626 recon=0.6310 kl=0.2313 kl_weight=1.0000
+2026-05-12 17:55:55 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 41/200 — train_loss=0.8325 val_loss=1.0515 recon=0.6125 kl=0.2200 kl_weight=1.0000
+2026-05-12 17:55:56 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:56 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 42/200 — train_loss=0.8499 val_loss=1.0419 recon=0.6303 kl=0.2196 kl_weight=1.0000
+2026-05-12 17:55:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:58 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 43/200 — train_loss=0.8121 val_loss=1.0341 recon=0.6041 kl=0.2080 kl_weight=1.0000
+2026-05-12 17:55:59 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:55:59 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 44/200 — train_loss=0.8335 val_loss=1.0292 recon=0.6199 kl=0.2137 kl_weight=1.0000
+2026-05-12 17:56:00 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:56:01 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 45/200 — train_loss=0.8237 val_loss=1.0233 recon=0.6160 kl=0.2078 kl_weight=1.0000
+2026-05-12 17:56:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:56:02 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 46/200 — train_loss=0.8121 val_loss=1.0194 recon=0.6029 kl=0.2092 kl_weight=1.0000
+2026-05-12 17:56:03 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:56:04 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 47/200 — train_loss=0.8072 val_loss=1.0172 recon=0.6000 kl=0.2072 kl_weight=1.0000
+2026-05-12 17:56:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_pretrained.pt
+2026-05-12 17:56:05 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 48/200 — train_loss=0.8026 val_loss=1.0192 recon=0.6017 kl=0.2008 kl_weight=1.0000
+2026-05-12 17:56:06 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 49/200 — train_loss=0.7891 val_loss=1.0200 recon=0.5919 kl=0.1972 kl_weight=1.0000
+2026-05-12 17:56:06 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 50/200 — train_loss=0.7873 val_loss=1.0227 recon=0.5857 kl=0.2016 kl_weight=1.0000
+2026-05-12 17:56:07 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 51/200 — train_loss=0.5926 val_loss=1.0296 recon=0.5926 kl=0.1939 kl_weight=0.0000
+2026-05-12 17:56:07 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 52/200 — train_loss=0.6052 val_loss=1.0340 recon=0.5972 kl=0.1980 kl_weight=0.0400
+2026-05-12 17:56:08 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 53/200 — train_loss=0.5800 val_loss=1.0393 recon=0.5617 kl=0.2296 kl_weight=0.0800
+2026-05-12 17:56:09 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 54/200 — train_loss=0.5592 val_loss=1.0493 recon=0.5262 kl=0.2743 kl_weight=0.1200
+2026-05-12 17:56:09 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 55/200 — train_loss=0.5544 val_loss=1.0576 recon=0.5058 kl=0.3041 kl_weight=0.1600
+2026-05-12 17:56:10 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 56/200 — train_loss=0.5582 val_loss=1.0652 recon=0.4865 kl=0.3581 kl_weight=0.2000
+2026-05-12 17:56:10 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 57/200 — train_loss=0.5783 val_loss=1.0772 recon=0.4811 kl=0.4051 kl_weight=0.2400
+2026-05-12 17:56:11 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 58/200 — train_loss=0.5886 val_loss=1.0877 recon=0.4622 kl=0.4514 kl_weight=0.2800
+2026-05-12 17:56:11 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 59/200 — train_loss=0.6008 val_loss=1.0958 recon=0.4427 kl=0.4942 kl_weight=0.3200
+2026-05-12 17:56:12 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 60/200 — train_loss=0.6287 val_loss=1.0991 recon=0.4435 kl=0.5145 kl_weight=0.3600
+2026-05-12 17:56:13 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 61/200 — train_loss=0.6488 val_loss=1.1007 recon=0.4411 kl=0.5193 kl_weight=0.4000
+2026-05-12 17:56:13 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 62/200 — train_loss=0.6558 val_loss=1.1045 recon=0.4267 kl=0.5207 kl_weight=0.4400
+2026-05-12 17:56:14 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 63/200 — train_loss=0.6610 val_loss=1.1058 recon=0.4232 kl=0.4955 kl_weight=0.4800
+2026-05-12 17:56:14 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 64/200 — train_loss=0.6625 val_loss=1.1057 recon=0.4215 kl=0.4636 kl_weight=0.5200
+2026-05-12 17:56:15 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 65/200 — train_loss=0.6738 val_loss=1.1033 recon=0.4339 kl=0.4283 kl_weight=0.5600
+2026-05-12 17:56:15 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 66/200 — train_loss=0.6751 val_loss=1.0961 recon=0.4437 kl=0.3856 kl_weight=0.6000
+2026-05-12 17:56:16 | INFO    | resistancemap.models.vae | [vae_pretrained] Epoch 67/200 — train_loss=0.6731 val_loss=1.0881 recon=0.4469 kl=0.3534 kl_weight=0.6400
+2026-05-12 17:56:16 | INFO    | resistancemap.models.vae | Early stopping at epoch 67
+2026-05-12 17:56:16 | INFO    | resistancemap | <<< STAGE END: vae_pretrain (1.4 min) | best_val_loss=1.0172 final_epoch=67 total_steps=67
+2026-05-12 17:56:16 | INFO    | resistancemap | === Sequential stage: vae_finetune ===
+2026-05-12 17:56:16 | INFO    | resistancemap | >>> STAGE START: vae_finetune
+2026-05-12 17:56:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 17:56:19 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_pretrained.pt (saved 2026-05-12T22:56:04.127915+00:00)
+2026-05-12 17:56:25 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 1/100 — train_loss=0.7423 val_loss=1.2216 recon=0.7423 kl=0.3519 kl_weight=0.0000
+2026-05-12 17:56:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/vae_finetuned.pt
+2026-05-12 17:56:28 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 2/100 — train_loss=0.6971 val_loss=1.2253 recon=0.6655 kl=0.3790 kl_weight=0.0833
+2026-05-12 17:56:28 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 3/100 — train_loss=0.6854 val_loss=1.2319 recon=0.6193 kl=0.3965 kl_weight=0.1667
+2026-05-12 17:56:29 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 4/100 — train_loss=0.6850 val_loss=1.2452 recon=0.5827 kl=0.4092 kl_weight=0.2500
+2026-05-12 17:56:29 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 5/100 — train_loss=0.6996 val_loss=1.2552 recon=0.5562 kl=0.4302 kl_weight=0.3333
+2026-05-12 17:56:30 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 6/100 — train_loss=0.6998 val_loss=1.2628 recon=0.5163 kl=0.4405 kl_weight=0.4167
+2026-05-12 17:56:31 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 7/100 — train_loss=0.7368 val_loss=1.2686 recon=0.5177 kl=0.4382 kl_weight=0.5000
+2026-05-12 17:56:31 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 8/100 — train_loss=0.7582 val_loss=1.2743 recon=0.4918 kl=0.4567 kl_weight=0.5833
+2026-05-12 17:56:32 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 9/100 — train_loss=0.7784 val_loss=1.2849 recon=0.4858 kl=0.4389 kl_weight=0.6667
+2026-05-12 17:56:32 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 10/100 — train_loss=0.8238 val_loss=1.2950 recon=0.5023 kl=0.4287 kl_weight=0.7500
+2026-05-12 17:56:33 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 11/100 — train_loss=0.8322 val_loss=1.3043 recon=0.4833 kl=0.4187 kl_weight=0.8333
+2026-05-12 17:56:34 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 12/100 — train_loss=0.8634 val_loss=1.3127 recon=0.4931 kl=0.4039 kl_weight=0.9167
+2026-05-12 17:56:34 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 13/100 — train_loss=0.8548 val_loss=1.3159 recon=0.4564 kl=0.3984 kl_weight=1.0000
+2026-05-12 17:56:35 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 14/100 — train_loss=0.8654 val_loss=1.3172 recon=0.4878 kl=0.3776 kl_weight=1.0000
+2026-05-12 17:56:35 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 15/100 — train_loss=0.8423 val_loss=1.3184 recon=0.4811 kl=0.3612 kl_weight=1.0000
+2026-05-12 17:56:36 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 16/100 — train_loss=0.8212 val_loss=1.3138 recon=0.4759 kl=0.3453 kl_weight=1.0000
+2026-05-12 17:56:37 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 17/100 — train_loss=0.7871 val_loss=1.3082 recon=0.4693 kl=0.3178 kl_weight=1.0000
+2026-05-12 17:56:37 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 18/100 — train_loss=0.8195 val_loss=1.2958 recon=0.5089 kl=0.3106 kl_weight=1.0000
+2026-05-12 17:56:38 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 19/100 — train_loss=0.7819 val_loss=1.2878 recon=0.4869 kl=0.2951 kl_weight=1.0000
+2026-05-12 17:56:38 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 20/100 — train_loss=0.7954 val_loss=1.2750 recon=0.5150 kl=0.2804 kl_weight=1.0000
+2026-05-12 17:56:39 | INFO    | resistancemap.models.vae | [vae_finetuned] Epoch 21/100 — train_loss=0.7872 val_loss=1.2678 recon=0.5197 kl=0.2676 kl_weight=1.0000
+2026-05-12 17:56:39 | INFO    | resistancemap.models.vae | Early stopping at epoch 21
+2026-05-12 17:56:39 | INFO    | resistancemap | <<< STAGE END: vae_finetune (0.4 min) | best_val_loss=1.2216 final_epoch=21 total_steps=21
+2026-05-12 17:56:39 | INFO    | resistancemap | === Sequential stage: trajectory_calibrate ===
+2026-05-12 17:56:39 | INFO    | resistancemap | >>> STAGE START: trajectory_calibrate
+2026-05-12 17:56:42 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 17:56:42 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-12T22:56:25.243223+00:00)
+2026-05-12 17:56:44 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:56:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:56:52 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:56:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:56:55 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:56:58 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:07 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:18 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:19 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:24 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:25 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:26 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:26 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:27 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:36 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:42 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 50/500 loss=0.3313 basin_center=1.4786 basin_scale=1.5126
+2026-05-12 17:57:42 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:43 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:44 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:46 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:51 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:54 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:55 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:57:59 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:00 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:01 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:03 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:05 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:07 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:13 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:24 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:24 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:30 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:34 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:35 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:44 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 100/500 loss=0.0096 basin_center=1.4523 basin_scale=1.5063
+2026-05-12 17:58:45 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:58:47 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:02 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:04 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:32 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:43 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 17:59:44 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 150/500 loss=0.0016 basin_center=1.4494 basin_scale=1.5090
+2026-05-12 18:00:06 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:00:21 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:00:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:00:44 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:00:47 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 200/500 loss=0.0014 basin_center=1.4485 basin_scale=1.5106
+2026-05-12 18:01:39 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:01:40 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:01:46 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 250/500 loss=0.0011 basin_center=1.4479 basin_scale=1.5118
+2026-05-12 18:02:09 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:02:11 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:02:48 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 300/500 loss=0.0070 basin_center=1.4476 basin_scale=1.5126
+2026-05-12 18:03:50 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 350/500 loss=0.0115 basin_center=1.4474 basin_scale=1.5136
+2026-05-12 18:04:12 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:04:38 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:04:52 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 400/500 loss=0.0003 basin_center=1.4470 basin_scale=1.5147
+2026-05-12 18:04:57 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:05:43 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 450/500 loss=0.0004 basin_center=1.4469 basin_scale=1.5155
+2026-05-12 18:06:20 | INFO    | resistancemap | Checkpoint saved: checkpoints/stability_calibrated.pt
+2026-05-12 18:06:37 | INFO    | resistancemap.models.trajectory | [stability_calibrate] Epoch 500/500 loss=0.0011 basin_center=1.4466 basin_scale=1.5162
+2026-05-12 18:06:37 | INFO    | resistancemap | <<< STAGE END: trajectory_calibrate (10.0 min) | best_calibration_loss=0.0001 n_valid_samples=692
+2026-05-12 18:06:37 | INFO    | resistancemap | === Sequential stage: trajectory_forecast ===
+2026-05-12 18:06:37 | INFO    | resistancemap | >>> STAGE START: trajectory_forecast
+2026-05-12 18:06:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 18:06:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-12T22:56:25.243223+00:00)
+2026-05-12 18:06:40 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-12T23:06:20.400260+00:00)
+2026-05-12 18:06:41 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-05-12 18:06:41 | INFO    | resistancemap.main | Transferred calibrated ODE weights from MemoryStabilityScorer to TrajectoryForecaster
+2026-05-12 18:06:41 | INFO    | resistancemap.main | Pre-computing VAE latents and reader/writer levels for trajectory training...
+2026-05-12 18:06:44 | INFO    | resistancemap.main | Pre-computed: latents torch.Size([886, 64]), rw_levels torch.Size([886, 20])
+2026-05-12 18:06:49 | INFO    | resistancemap | Checkpoint saved: checkpoints/trajectory_forecaster_trained.pt
+2026-05-12 18:09:26 | INFO    | resistancemap.main | [trajectory_forecast] Early stopping at epoch 21
+2026-05-12 18:09:26 | INFO    | resistancemap | <<< STAGE END: trajectory_forecast (2.8 min) | trajectory_forecast_val_loss=0.0078
+2026-05-12 18:09:26 | INFO    | resistancemap | === Sequential stage: protein_net_train ===
+2026-05-12 18:09:28 | INFO    | resistancemap | >>> STAGE START: protein_net_train
+2026-05-12 18:09:31 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 18:09:31 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-12T22:56:25.243223+00:00)
+2026-05-12 18:09:31 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-12T23:06:20.400260+00:00)
+2026-05-12 18:09:32 | INFO    | resistancemap.main | Pre-computing VAE latent states and stability scores...
+2026-05-12 18:22:40 | INFO    | resistancemap.main | Pre-computed: latents torch.Size([886, 64]), stability torch.Size([886])
+2026-05-12 18:22:40 | INFO    | resistancemap.main | No protein sequences available (dataset.protein_sequences is None); using abundance-only node features. To enable real ESM-2 forward pass, populate protein sequences via resistancemap.data.uniprot_loader.load_protein_sequences in harmonize_omics (P3.1).
+2026-05-12 18:22:40 | INFO    | resistancemap.main | PPI graph: 19177 nodes, 929520 edges
+2026-05-12 18:24:08 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-05-12 18:25:38 | INFO    | resistancemap | Checkpoint saved: checkpoints/protein_net_trained.pt
+2026-05-12 18:33:28 | INFO    | resistancemap.main | [protein_net] Epoch 10/100 train=0.8400 val=1.7890
+2026-05-12 18:40:13 | INFO    | resistancemap.main | [protein_net] Early stopping at epoch 17
+2026-05-12 18:40:13 | INFO    | resistancemap | <<< STAGE END: protein_net_train (30.8 min) | protein_net_val_loss=1.7802
+2026-05-12 18:40:14 | INFO    | resistancemap | === Sequential stage: fusion_train ===
+2026-05-12 18:40:14 | INFO    | resistancemap | >>> STAGE START: fusion_train
+2026-05-12 18:40:17 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 18:40:17 | INFO    | resistancemap | Checkpoint loaded: checkpoints/vae_finetuned.pt (saved 2026-05-12T22:56:25.243223+00:00)
+2026-05-12 18:40:17 | INFO    | resistancemap | Checkpoint loaded: checkpoints/stability_calibrated.pt (saved 2026-05-12T23:06:20.400260+00:00)
+2026-05-12 18:40:17 | INFO    | resistancemap | Checkpoint loaded: checkpoints/trajectory_forecaster_trained.pt (saved 2026-05-12T23:06:48.998333+00:00)
+2026-05-12 18:40:17 | INFO    | resistancemap | Checkpoint loaded: checkpoints/protein_net_trained.pt (saved 2026-05-12T23:25:38.459063+00:00)
+2026-05-12 18:40:17 | INFO    | resistancemap.models.trajectory | Initialized TrajectoryForecaster with latent_dim=64 (deterministic ODE mode)
+2026-05-12 18:40:18 | INFO    | resistancemap.main | Pre-computing modality embeddings for fusion training...
+2026-05-12 19:00:09 | INFO    | resistancemap.main | Embeddings: epi=torch.Size([886, 64]), traj_raw=torch.Size([886, 10]), pnet=torch.Size([886, 256]), stab=torch.Size([886, 1])
+2026-05-12 19:00:09 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-12 19:00:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/fusion_trained.pt
+2026-05-12 19:00:10 | INFO    | resistancemap | Checkpoint saved: checkpoints/fusion_trained.pt
+2026-05-12 19:00:14 | INFO    | resistancemap.main | [fusion] Early stopping at epoch 17
+2026-05-12 19:00:14 | INFO    | resistancemap | <<< STAGE END: fusion_train (20.0 min) | fusion_val_loss=1.2774
+2026-05-12 19:00:14 | INFO    | resistancemap | === Sequential stage: landscape_train ===
+2026-05-12 19:00:14 | INFO    | resistancemap | >>> STAGE START: landscape_train
+2026-05-12 19:00:17 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 19:00:17 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-13T00:00:10.377771+00:00)
+2026-05-12 19:00:17 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-12 19:00:17 | INFO    | resistancemap.main | Computing fused representations for landscape training...
+2026-05-12 19:00:22 | INFO    | resistancemap.main | Fused representations: torch.Size([886, 128])
+2026-05-12 19:00:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:22 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:23 | INFO    | resistancemap | Checkpoint saved: checkpoints/landscape_trained.pt
+2026-05-12 19:00:24 | INFO    | resistancemap.main | [landscape] Epoch 20/100 train=0.9870 val=1.3823
+2026-05-12 19:00:25 | INFO    | resistancemap.main | [landscape] Early stopping at epoch 28
+2026-05-12 19:00:25 | INFO    | resistancemap | <<< STAGE END: landscape_train (0.2 min) | landscape_val_loss=1.3572
+2026-05-12 19:00:25 | INFO    | resistancemap | === Sequential stage: validate ===
+2026-05-12 19:00:25 | INFO    | resistancemap | >>> STAGE START: validate
+2026-05-12 19:00:28 | INFO    | resistancemap | Checkpoint loaded: checkpoints/data_ready.pt (saved 2026-05-12T22:54:47.022670+00:00)
+2026-05-12 19:00:28 | INFO    | resistancemap | Checkpoint loaded: checkpoints/fusion_trained.pt (saved 2026-05-13T00:00:10.377771+00:00)
+2026-05-12 19:00:28 | INFO    | resistancemap | Checkpoint loaded: checkpoints/landscape_trained.pt (saved 2026-05-13T00:00:23.678788+00:00)
+2026-05-12 19:00:28 | INFO    | resistancemap.models.fusion | Initialized CrossModalFusionNet: modalities=['epigenetic', 'trajectory', 'protein_network', 'stability'], hidden_dim=128, output_dim=128
+2026-05-12 19:00:28 | INFO    | resistancemap.main | Per-drug metrics CSV: logs/per_drug_metrics.csv
+2026-05-12 19:00:28 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-12 19:02:48 | INFO    | resistancemap.main | Baselines: 11 models compared; best=Zero (z-scored target floor) (2.8106); ResistanceMap rank=3/11
+2026-05-12 19:02:48 | INFO    | resistancemap.main | Actionability: 4/11 drugs actionable for screening (3 well-calibrated). Failures: ['Cyclophosphamide', 'Doxorubicin', 'Etoposide', 'Lenalidomide', 'Palbociclib', 'Panobinostat', 'Vorinostat']
+2026-05-12 19:02:48 | INFO    | resistancemap.main | Validation: test_mse=2.8201 on 132 samples (11 drugs)
+2026-05-12 19:02:48 | INFO    | resistancemap | Checkpoint saved: checkpoints/pipeline_validated.pt
+2026-05-12 19:02:48 | INFO    | resistancemap | <<< STAGE END: validate (2.4 min) | test_mse=2.8201 n_test_samples=132 n_drugs=11 split=test per_drug_metrics=[{'drug': 'Bortezomib', 'n_obs': 102, 'mse': 0.858392059803009, 'mae': 0.5944423079490662, 'spearman': 0.3338007701398352, 'reliable': True, 'drug_class': 'Proteasome', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Cyclophosphamide', 'n_obs': 76, 'mse': 0.30690470337867737, 'mae': 0.39321643114089966, 'spearman': 0.2257006151742994, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Dinaciclib', 'n_obs': 100, 'mse': 0.12861131131649017, 'mae': 0.1678726226091385, 'spearman': 0.3618001800180018, 'reliable': True, 'drug_class': 'CDK', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Doxorubicin', 'n_obs': 100, 'mse': 1.9566357135772705, 'mae': 0.5317990779876709, 'spearman': 0.13731773177317733, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Etoposide', 'n_obs': 93, 'mse': 0.3322006165981293, 'mae': 0.40482982993125916, 'spearman': 0.09344692787442926, 'reliable': True, 'drug_class': 'DNA-damage', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Lenalidomide', 'n_obs': 95, 'mse': 0.783083975315094, 'mae': 0.5551270842552185, 'spearman': -0.07369820828667413, 'reliable': True, 'drug_class': 'IMiD', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Palbociclib', 'n_obs': 81, 'mse': 0.18558797240257263, 'mae': 0.34742698073387146, 'spearman': 0.04857723577235772, 'reliable': True, 'drug_class': 'CDK', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Panobinostat', 'n_obs': 101, 'mse': 22.634687423706055, 'mae': 0.7988151907920837, 'spearman': 0.09732090856144437, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}, {'drug': 'Romidepsin', 'n_obs': 93, 'mse': 1.2319672107696533, 'mae': 0.5639806985855103, 'spearman': 0.2613022589597445, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': True, 'well_calibrated': False, 'failure_mode': False}, {'drug': 'Venetoclax', 'n_obs': 74, 'mse': 0.02045896090567112, 'mae': 0.11898390203714371, 'spearman': 0.2594742687893372, 'reliable': True, 'drug_class': 'BCL2', 'actionable_for_screening': True, 'well_calibrated': True, 'failure_mode': False}, {'drug': 'Vorinostat', 'n_obs': 100, 'mse': 0.20477619767189026, 'mae': 0.33879420161247253, 'spearman': -0.008352835283528353, 'reliable': True, 'drug_class': 'HDAC', 'actionable_for_screening': False, 'well_calibrated': False, 'failure_mode': True}] baseline_summary={'n_models': 11, 'best_model': 'Zero (z-scored target floor)', 'best_test_mse': 2.81059193611145, 'resistancemap_rank': 3, 'comparison_path': '/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/paper/tables/baseline_comparison.json'} actionability_summary={'n_drugs_total': 11, 'n_actionable_for_screening': 4, 'n_well_calibrated': 3, 'n_failure_modes': 7, 'actionable_drugs': ['Bortezomib', 'Dinaciclib', 'Romidepsin', 'Venetoclax'], 'well_calibrated_drugs': ['Bortezomib', 'Dinaciclib', 'Venetoclax'], 'failure_drugs': ['Cyclophosphamide', 'Doxorubicin', 'Etoposide', 'Lenalidomide', 'Palbociclib', 'Panobinostat', 'Vorinostat'], 'by_class': {'Proteasome': {'n_drugs': 1, 'mean_mse': 0.858392059803009, 'mean_spearman': 0.3338007701398352, 'n_actionable': 1, 'drugs': ['Bortezomib']}, 'DNA-damage': {'n_drugs': 3, 'mean_mse': 0.8652470111846924, 'mean_spearman': 0.15215509160730198, 'n_actionable': 0, 'drugs': ['Cyclophosphamide', 'Doxorubicin', 'Etoposide']}, 'CDK': {'n_drugs': 2, 'mean_mse': 0.1570996418595314, 'mean_spearman': 0.20518870789517976, 'n_actionable': 1, 'drugs': ['Dinaciclib', 'Palbociclib']}, 'IMiD': {'n_drugs': 1, 'mean_mse': 0.783083975315094, 'mean_spearman': -0.07369820828667413, 'n_actionable': 0, 'drugs': ['Lenalidomide']}, 'HDAC': {'n_drugs': 3, 'mean_mse': 8.023810277382532, 'mean_spearman': 0.11675677741255351, 'n_actionable': 1, 'drugs': ['Panobinostat', 'Romidepsin', 'Vorinostat']}, 'BCL2': {'n_drugs': 1, 'mean_mse': 0.02045896090567112, 'mean_spearman': 0.2594742687893372, 'n_actionable': 1, 'drugs': ['Venetoclax']}}, 'thresholds': {'actionable_min_spearman': 0.25, 'actionable_min_n_obs': 30, 'well_calibrated_max_mse': 1.0}, 'interpretation': "ResistanceMap rank-prioritizes compounds for 4/11 drugs (36%). 3/11 are also well-calibrated for absolute IC50 prediction. Known failure modes: ['Cyclophosphamide', 'Doxorubicin', 'Etoposide', 'Lenalidomide', 'Palbociclib', 'Panobinostat', 'Vorinostat']."}
+2026-05-12 19:02:48 | INFO    | resistancemap | === Sequential stage: serve ===
+2026-05-12 19:02:48 | INFO    | resistancemap | >>> STAGE START: serve
