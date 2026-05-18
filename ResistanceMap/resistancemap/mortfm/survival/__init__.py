@@ -32,3 +32,8 @@ from resistancemap.mortfm.survival.time_to_event_metrics import (  # noqa: F401
     integrated_brier_score,
     km_strata_separation,
 )
+from resistancemap.mortfm.survival.baselines import (  # noqa: F401
+    ClinicalOnlyCox,
+    cox_fit_predict_loo,
+    permutation_null_cindex,
+)
