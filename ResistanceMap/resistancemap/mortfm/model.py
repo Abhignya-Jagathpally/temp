@@ -187,7 +187,11 @@ class MORTFM(nn.Module):
     # Full forward
     # ------------------------------------------------------------------
 
-    def forward(
+    def forward_foundation(self, batch: MORTBatch) -> FoundationState:
+        """Lightweight encode-only path for stages A/B/C (foundation pretraining)."""
+        return self.encode(batch)
+
+    def forward_legacy(
         self,
         batch: MORTBatch,
         *,
@@ -240,13 +244,13 @@ class MORTFM(nn.Module):
         return prediction
 
     # ------------------------------------------------------------------
-    # v17 — v16 LENS forward path. Use this instead of forward() for
-    # new training runs. It is the path that produced the v16 results
-    # (Block A static_drug_response, Block B BeatAML transfer, MMRF
-    # LENS LOO C-index, etc.).
+    # CANONICAL v18 forward — the SINGLE OFFICIAL patient-level path.
+    # Calls the v16/v17 LENS modules directly. Returns a dict (not a
+    # dataclass) to discourage drift back to the legacy TrajectoryPrediction
+    # surface. forward_legacy() above remains for old-checkpoint compat.
     # ------------------------------------------------------------------
 
-    def forward_lens(
+    def forward(
         self,
         batch: MORTBatch,
         *,

@@ -120,7 +120,8 @@ def test_smoke_full_forward_emits_all_heads(tmp_path):
     model = MORTFM(cfg, n_pathway_proteins=20, n_drug_candidates=5, n_resistance_states=4)
     batch = next(iter(train_loader))
     with torch.no_grad():
-        out = model(batch, compute_counterfactuals=True)
+        # v18 — legacy TrajectoryPrediction-returning path moved to forward_legacy()
+        out = model.forward_legacy(batch, compute_counterfactuals=True)
     assert out.z_path.shape[0] == cfg.n_time_grid
     assert out.resistance_state_logits.shape == (batch.batch_size, 4)
     assert out.pathway_protein_scores.shape == (batch.batch_size, 20)

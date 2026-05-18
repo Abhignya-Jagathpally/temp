@@ -175,7 +175,14 @@ class MORTFMTrainer:
         components: Dict[str, torch.Tensor] = {}
 
         # Always-on: foundation forward (encoder + dynamics + heads).
-        prediction = self.model(
+        # v18 — explicitly route through forward_legacy(). The new canonical
+        # forward() returns the LENS dict surface; the legacy trainer below
+        # still consumes a TrajectoryPrediction dataclass with state_logits,
+        # survival_curve, pathway_*, etc. The v18 stage router in
+        # mortfm/trainer_v18.py will switch to model(batch) (canonical)
+        # for stages E/F/G/H; this legacy trainer is retained as
+        # forward_legacy() consumer for backward compat with old checkpoints.
+        prediction = self.model.forward_legacy(
             batch,
             time_grid=None,
             n_traj_samples=4 if stage == "E" else 1,

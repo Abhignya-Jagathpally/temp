@@ -85,19 +85,19 @@ def main() -> int:
         time=torch.zeros(B),
     )
 
-    # --- 1. Legacy forward() path ----------------------------------------
+    # --- 1. Legacy forward_legacy() path (v18: renamed from forward()) ---
     with torch.no_grad():
-        legacy = model(batch, n_traj_samples=4)
+        legacy = model.forward_legacy(batch, n_traj_samples=4)
     legacy_ok = (
         legacy.z_path is not None and legacy.resistance_state_logits is not None
         and torch.isfinite(legacy.z_path).all()
     )
-    logger.info("Legacy forward(): z_path shape=%s, finite=%s",
+    logger.info("forward_legacy(): z_path shape=%s, finite=%s",
                 list(legacy.z_path.shape), bool(legacy_ok))
 
-    # --- 2. v16 LENS forward_lens() path ---------------------------------
+    # --- 2. CANONICAL v18 forward() path (was forward_lens() in v17) -----
     with torch.no_grad():
-        lens = model.forward_lens(batch, clinical=clinical, drug=drug)
+        lens = model(batch, clinical=clinical, drug=drug)
     lens_ok = (
         torch.isfinite(lens["z_traj"]).all().item()
         and torch.isfinite(lens["hazard"]).all().item()
@@ -114,8 +114,8 @@ def main() -> int:
 
     # --- 3. Sanity: clinical-only vs graph-projector ablation -----------
     with torch.no_grad():
-        no_graph = model.forward_lens(batch, clinical=clinical, drug=drug,
-                                       use_graph_projector=False)
+        no_graph = model(batch, clinical=clinical, drug=drug,
+                          use_graph_projector=False)
     delta_haz = float((lens["hazard"] - no_graph["hazard"]).abs().mean().item())
     logger.info("Mean |hazard delta| projector-on vs off: %.4f", delta_haz)
 
