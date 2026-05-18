@@ -1,0 +1,119 @@
+# MORT-FM (v15) — default research-track configuration.
+#
+# This config is SEPARATE from configs/default.yaml. The default config drives
+# the v14 static cell-line ResistanceMap pipeline; this config drives the
+# experimental patient/cell-level longitudinal MORT-FM stack and shares NO
+# checkpoints, no metrics, no claims with v14.
+
+# ------------------------------------------------------------------
+# Identity
+# ------------------------------------------------------------------
+model_name: MORT-FM
+version: v15.0-dev
+
+# ------------------------------------------------------------------
+# Modality availability flags (turn off to skip an encoder cleanly).
+# Defaults reflect the "RNA + proteomics + drug + clinical" minimum viable
+# stack. Enable epigenomic + phospho modalities as data becomes available.
+# ------------------------------------------------------------------
+use_rna: true
+use_atac: false
+use_methylation: false
+use_histone_ptm: false
+use_proteomics: true
+use_phosphoproteomics: false
+use_clinical: true
+use_drug: true
+
+# ------------------------------------------------------------------
+# Encoder dimensions.
+# The xxx_input_dim values are *expected* feature counts. They MUST match the
+# loader output; the modality tokenizer raises a shape mismatch at import time
+# otherwise.
+# ------------------------------------------------------------------
+rna_input_dim: 5000
+atac_input_dim: 50000
+methylation_input_dim: 10000
+histone_ptm_input_dim: 6
+proteomics_input_dim: 8000
+phosphoproteomics_input_dim: 4000
+clinical_input_dim: 32
+
+drug_n_drugs: 32
+drug_n_classes: 16
+drug_embed_dim: 64
+
+# ------------------------------------------------------------------
+# Foundation latent.
+# ------------------------------------------------------------------
+d_latent: 128
+d_token: 64
+fusion_layers: 4
+fusion_heads: 4
+fusion_dropout: 0.1
+
+# ------------------------------------------------------------------
+# Dynamics.
+# ------------------------------------------------------------------
+dynamics_kind: neural_sde   # neural_ode | neural_sde | jump_sde
+integration_time: 12.0      # months
+n_time_grid: 25
+sde_n_mc_samples: 16
+use_graph_conditioning: true
+
+# ------------------------------------------------------------------
+# Waddington landscape.
+# ------------------------------------------------------------------
+use_potential: true
+potential_hidden: 256
+n_attractors: 4
+
+# ------------------------------------------------------------------
+# Survival head.
+# ------------------------------------------------------------------
+survival_kind: discrete     # cox | discrete | competing_risks
+survival_n_bins: 12
+
+# ------------------------------------------------------------------
+# Loss weights.
+# ------------------------------------------------------------------
+lambda_recon: 1.0
+lambda_masked: 1.0
+lambda_contrastive: 0.5
+lambda_drug: 1.0
+lambda_trajectory: 1.0
+lambda_survival: 1.0
+lambda_state: 0.5
+lambda_pathway: 0.3
+lambda_perturbation: 0.3
+lambda_landscape: 0.1
+lambda_counterfactual: 0.3
+lambda_calibration: 0.1
+
+# ------------------------------------------------------------------
+# Training.
+# ------------------------------------------------------------------
+batch_size: 64
+pretrain_epochs: 50
+finetune_epochs: 50
+trajectory_epochs: 25
+survival_epochs: 25
+lr: 1.0e-4
+weight_decay: 1.0e-5
+mixed_precision: true
+grad_clip: 1.0
+modality_dropout_p: 0.25
+seed: 42
+
+# ------------------------------------------------------------------
+# Paths.
+# ------------------------------------------------------------------
+checkpoint_dir: checkpoints/mortfm
+log_dir: logs/mortfm
+
+# ------------------------------------------------------------------
+# Claim-guardrail thresholds. The Claim Critic Agent reads these to decide
+# whether a claim is permitted.
+# ------------------------------------------------------------------
+min_paired_n_for_longitudinal_claim: 100
+min_patient_n_for_survival_claim: 200

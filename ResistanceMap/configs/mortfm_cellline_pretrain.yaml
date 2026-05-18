@@ -1,0 +1,68 @@
+# MORT-FM Stage A/B/C config: pre-train the foundation encoder on cell-line
+# multi-omics (CCLE / GDSC / PRISM) before patient-level finetune. This stage
+# does NOT use patient outcomes — pretraining is unsupervised
+# (masked-modality + contrastive + drug-response).
+
+model_name: MORT-FM
+version: v15.0-cellline-pretrain
+
+use_rna: true
+use_atac: false
+use_methylation: false
+use_histone_ptm: false
+use_proteomics: true
+use_phosphoproteomics: false
+use_clinical: false
+use_drug: true
+
+rna_input_dim: 5000
+proteomics_input_dim: 8000
+drug_n_drugs: 16
+drug_n_classes: 12
+drug_embed_dim: 64
+
+d_latent: 128
+d_token: 64
+fusion_layers: 4
+fusion_heads: 4
+fusion_dropout: 0.1
+
+dynamics_kind: neural_ode    # Pretraining stage doesn't need the SDE noise
+integration_time: 1.0
+n_time_grid: 4
+use_graph_conditioning: false
+use_potential: false
+
+survival_kind: discrete
+survival_n_bins: 8
+
+lambda_recon: 1.0
+lambda_masked: 1.0
+lambda_contrastive: 0.5
+lambda_drug: 2.0          # primary supervision signal at this stage
+lambda_trajectory: 0.0
+lambda_survival: 0.0
+lambda_state: 0.0
+lambda_pathway: 0.0
+lambda_perturbation: 0.0
+lambda_landscape: 0.0
+lambda_counterfactual: 0.0
+lambda_calibration: 0.0
+
+batch_size: 128
+pretrain_epochs: 50
+finetune_epochs: 0
+trajectory_epochs: 0
+survival_epochs: 0
+lr: 5.0e-4
+weight_decay: 1.0e-5
+mixed_precision: true
+grad_clip: 1.0
+modality_dropout_p: 0.25
+seed: 42
+
+checkpoint_dir: checkpoints/mortfm/cellline_pretrain
+log_dir: logs/mortfm/cellline_pretrain
+
+min_paired_n_for_longitudinal_claim: 100
+min_patient_n_for_survival_claim: 200

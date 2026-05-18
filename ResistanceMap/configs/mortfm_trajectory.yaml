@@ -1,0 +1,74 @@
+# MORT-FM Stage E config: longitudinal trajectory training.
+# Requires REAL temporal pairs (X_t, X_{t+delta}). Will *refuse* to train if
+# pair_count < min_paired_n_for_longitudinal_claim — see the Claim Critic Agent.
+
+model_name: MORT-FM
+version: v15.0-trajectory
+
+use_rna: true
+use_atac: true             # epigenetic priming is essential for trajectory
+use_methylation: false
+use_histone_ptm: true
+use_proteomics: true
+use_phosphoproteomics: false
+use_clinical: true
+use_drug: true
+
+rna_input_dim: 5000
+atac_input_dim: 50000
+proteomics_input_dim: 8000
+histone_ptm_input_dim: 6
+clinical_input_dim: 32
+drug_n_drugs: 32
+drug_n_classes: 16
+drug_embed_dim: 64
+
+d_latent: 128
+d_token: 64
+fusion_layers: 4
+fusion_heads: 4
+fusion_dropout: 0.1
+
+dynamics_kind: neural_sde
+integration_time: 24.0
+n_time_grid: 49           # ~2 month bins
+sde_n_mc_samples: 32
+use_graph_conditioning: true
+
+use_potential: true
+potential_hidden: 256
+n_attractors: 4
+
+survival_kind: discrete
+survival_n_bins: 12
+
+lambda_recon: 0.3
+lambda_masked: 0.5
+lambda_contrastive: 0.3
+lambda_drug: 0.5
+lambda_trajectory: 2.0     # primary signal at this stage
+lambda_survival: 1.0
+lambda_state: 1.0
+lambda_pathway: 0.5
+lambda_perturbation: 0.0
+lambda_landscape: 0.3
+lambda_counterfactual: 0.0
+lambda_calibration: 0.1
+
+batch_size: 16              # SDE rollout is expensive
+pretrain_epochs: 0
+finetune_epochs: 0
+trajectory_epochs: 60
+survival_epochs: 0
+lr: 5.0e-5
+weight_decay: 1.0e-5
+mixed_precision: true
+grad_clip: 0.5
+modality_dropout_p: 0.05
+seed: 42
+
+checkpoint_dir: checkpoints/mortfm/trajectory
+log_dir: logs/mortfm/trajectory
+
+min_paired_n_for_longitudinal_claim: 100
+min_patient_n_for_survival_claim: 200

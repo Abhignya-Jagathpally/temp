@@ -1,0 +1,75 @@
+# MORT-FM debug config: minimum-dimension model that fits on CPU in < 2 min.
+# Used by tests/mortfm/test_mortfm_trainer_smoke.py and scripts/mortfm_smoke_test.py.
+
+model_name: MORT-FM
+version: v15.0-debug
+
+use_rna: true
+use_atac: false
+use_methylation: false
+use_histone_ptm: false
+use_proteomics: true
+use_phosphoproteomics: false
+use_clinical: false
+use_drug: true
+
+rna_input_dim: 200
+atac_input_dim: 50
+methylation_input_dim: 50
+histone_ptm_input_dim: 6
+proteomics_input_dim: 50
+phosphoproteomics_input_dim: 50
+clinical_input_dim: 4
+drug_n_drugs: 8
+drug_n_classes: 6
+drug_embed_dim: 8
+
+d_latent: 32
+d_token: 16
+fusion_layers: 2
+fusion_heads: 2
+fusion_dropout: 0.0
+
+dynamics_kind: neural_sde
+integration_time: 6.0
+n_time_grid: 4
+sde_n_mc_samples: 2
+use_graph_conditioning: true
+
+use_potential: true
+potential_hidden: 32
+n_attractors: 3
+
+survival_kind: discrete
+survival_n_bins: 4
+
+lambda_recon: 1.0
+lambda_masked: 0.5
+lambda_contrastive: 0.5
+lambda_drug: 1.0
+lambda_trajectory: 1.0
+lambda_survival: 1.0
+lambda_state: 0.5
+lambda_pathway: 0.0
+lambda_perturbation: 0.0
+lambda_landscape: 0.1
+lambda_counterfactual: 0.0
+lambda_calibration: 0.0
+
+batch_size: 2
+pretrain_epochs: 1
+finetune_epochs: 1
+trajectory_epochs: 1
+survival_epochs: 1
+lr: 1.0e-3
+weight_decay: 0.0
+mixed_precision: false
+grad_clip: 1.0
+modality_dropout_p: 0.0
+seed: 42
+
+checkpoint_dir: /tmp/mortfm_debug
+log_dir: /tmp/mortfm_debug_logs
+
+min_paired_n_for_longitudinal_claim: 5
+min_patient_n_for_survival_claim: 5

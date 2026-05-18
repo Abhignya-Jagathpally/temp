@@ -1,0 +1,77 @@
+# MORT-FM ablation config: run with each modality / dynamics flavour disabled
+# to quantify per-component contribution.
+#
+# Usage: copy this file, set ONE of the use_* flags to false (or change
+# dynamics_kind to neural_ode), train, and compare against the full
+# configs/mortfm.yaml baseline checkpoint.
+
+model_name: MORT-FM
+version: v15.0-ablation
+
+use_rna: true
+use_atac: true
+use_methylation: false
+use_histone_ptm: true
+use_proteomics: true
+use_phosphoproteomics: false
+use_clinical: true
+use_drug: true
+
+rna_input_dim: 5000
+atac_input_dim: 50000
+proteomics_input_dim: 8000
+histone_ptm_input_dim: 6
+clinical_input_dim: 32
+drug_n_drugs: 32
+drug_n_classes: 16
+drug_embed_dim: 64
+
+d_latent: 128
+d_token: 64
+fusion_layers: 4
+fusion_heads: 4
+fusion_dropout: 0.1
+
+dynamics_kind: neural_ode    # change to neural_sde or jump_sde to ablate
+integration_time: 12.0
+n_time_grid: 25
+sde_n_mc_samples: 8
+use_graph_conditioning: true
+
+use_potential: false         # ablate Waddington landscape by setting to false
+potential_hidden: 256
+n_attractors: 4
+
+survival_kind: discrete
+survival_n_bins: 12
+
+lambda_recon: 1.0
+lambda_masked: 1.0
+lambda_contrastive: 0.5
+lambda_drug: 1.0
+lambda_trajectory: 1.0
+lambda_survival: 1.0
+lambda_state: 0.5
+lambda_pathway: 0.0          # set to >0 to enable pathway-attribution loss
+lambda_perturbation: 0.0
+lambda_landscape: 0.0
+lambda_counterfactual: 0.0
+lambda_calibration: 0.1
+
+batch_size: 32
+pretrain_epochs: 20
+finetune_epochs: 20
+trajectory_epochs: 20
+survival_epochs: 20
+lr: 1.0e-4
+weight_decay: 1.0e-5
+mixed_precision: true
+grad_clip: 1.0
+modality_dropout_p: 0.0      # zero for ablation runs — keep variance low
+seed: 42
+
+checkpoint_dir: checkpoints/mortfm/ablation
+log_dir: logs/mortfm/ablation
+
+min_paired_n_for_longitudinal_claim: 100
+min_patient_n_for_survival_claim: 200

@@ -44,6 +44,8 @@ not appear in the documentation.
 4. `logs/<run-id>/per_drug_metrics.csv` (required for any AUROC quoted)
 5. W&B run URL (or MLflow tracking URI)
 
+| r-2026-05-17-mortfm-debug | 2026-05-17 | 1x GPU (CUDA) | MMRF N_patients=300 (top-1000 var genes from mmrf_baseline_expression.parquet) + MMRF clinical OS (995 patients, 191 events) via GDC fallback | v15 MORT-FM end-to-end real-data run (Stages A + F, debug-level acceptance) | ~10 s | n/a | **First v15 MORT-FM run on real public data.** Split: 210 train / 45 val / 45 test patients (patient-disjoint). Stage A (RNA reconstruction NB-NLL): 10810→10763 train, 10783→10724 val (2 epochs). Stage F (discrete-time survival + state head): 7.89→6.49 train, 7.48→5.80 val (2 epochs). Modalities: rna + drug only (no scATAC/methylation/histone PTM in this run). Acceptance level achieved: technical (n_patients=300 ≥ 100, n_modalities ≥ 1, survival labels present). Research/Strong levels BLOCKED (n_events=81 < 50 OK but n_modalities=2 ≥ 2 fails — actually it's ≥ 2 already; the blocking reason at research level is the ≥2-timepoint trajectory requirement, since this run has 0 longitudinal pairs). Checkpoint: `checkpoints/mortfm/real_endtoend.pt` (12 MB). Summary: `logs/mortfm/real_endtoend_summary.json`. **No patient-level prediction claim permitted from this row** — it is a code-correctness confirmation that the v15 pipeline executes end-to-end on real MMRF + STRING + GDSC + PRISM data without fabrication. Loss is dropping but the cohort is below `min_patient_n_for_survival_claim=200` for any unit-of-care claim; the gate refuses `research` level. See `docs/MORTFM_LIMITATIONS.md`. |
+
 ## Rule
 
 Metrics without a complete artifact bundle may NOT be copied into docs. The CI
