@@ -107,6 +107,8 @@ class PathwayCausalValidator:
         # CRISPR cross-check: for top-k edges, what fraction of downstream
         # genes are common-essential (frac_essential >= 0.9)? This is the
         # external-evidence channel that gate_causal_mechanism reads.
+        # v17: route every edge ID through IDHarmonizer first so STRING
+        # alias-encoded edge IDs (PDB, Entrez, KEGG, ...) bridge to HGNC.
         crispr_topk_essential_frac = {}
         if self.crispr_essentiality is not None:
             common_ess_set = set(
@@ -114,16 +116,27 @@ class PathwayCausalValidator:
                     self.crispr_essentiality["frac_essential"] >= 0.9
                 ]["gene_symbol"].astype(str).str.upper()
             )
+            try:
+                from resistancemap.mortfm.graph import IDHarmonizer
+                bridge = IDHarmonizer.build_or_load()
+            except Exception:
+                bridge = None
             for k in ks:
                 top = edge_effects.head(k)
                 hits = 0
                 seen = 0
                 for eid in top["edge_id"].astype(str):
                     parts = eid.split("::")
-                    if len(parts) >= 2 and parts[1]:
-                        seen += 1
-                        if parts[1].upper() in common_ess_set:
-                            hits += 1
+                    if len(parts) < 2 or not parts[1]:
+                        continue
+                    seen += 1
+                    target_raw = parts[1]
+                    target_hgnc = None
+                    if bridge is not None:
+                        target_hgnc = bridge.any_alias_to_hgnc([target_raw])[0]
+                    target_hgnc = target_hgnc or target_raw
+                    if target_hgnc.upper() in common_ess_set:
+                        hits += 1
                 crispr_topk_essential_frac[k] = (
                     hits / max(seen, 1) if seen else 0.0
                 )

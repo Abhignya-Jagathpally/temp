@@ -59,6 +59,7 @@ class InterventionGraph:
         edges_parquet: str = "data/processed/graphs/biological_edges.parquet",
         nodes_csv: str = "data/processed/graphs/protein_nodes.csv",
         d_graph: int = 16,
+        attach_id_bridge: bool = True,
     ) -> None:
         self.d_graph = d_graph
         self.edges_path = Path(edges_parquet)
@@ -67,6 +68,15 @@ class InterventionGraph:
         self.nodes: Optional[pd.DataFrame] = None
         self._edge_basis: Optional[torch.Tensor] = None  # (n_edges, d_graph)
         self._edge_id_to_index: Dict[str, int] = {}
+        # v17 — bridge the edge IDs (arbitrary STRING aliases) to HGNC so the
+        # causal validator can cross-check downstream gene essentiality.
+        self.id_bridge = None
+        if attach_id_bridge:
+            try:
+                from resistancemap.mortfm.graph import IDHarmonizer
+                self.id_bridge = IDHarmonizer.build_or_load()
+            except Exception as exc:
+                logger.warning("IDHarmonizer unavailable (%s); edge IDs stay opaque.", exc)
         self._load()
 
     def _load(self) -> None:
@@ -112,6 +122,16 @@ class InterventionGraph:
             for r in sub.itertuples(index=False)
         ]
         return ids[:limit]
+
+    def edge_to_hgnc_pair(self, edge_id: str) -> tuple[Optional[str], Optional[str]]:
+        """Map an edge_id ``source::target::edge_type`` to (source_hgnc, target_hgnc)."""
+        if self.id_bridge is None:
+            return None, None
+        parts = edge_id.split("::", 2)
+        if len(parts) < 2:
+            return None, None
+        mapped = self.id_bridge.any_alias_to_hgnc(parts[:2])
+        return mapped[0], mapped[1]
 
     def base_embedding(self, batch_size: int) -> torch.Tensor:
         """Average-pooled per-row basis — the 'pre-intervention' graph_emb."""
