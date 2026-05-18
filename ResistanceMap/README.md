@@ -1,259 +1,395 @@
-# ResistanceMap
+# ResistanceMap / MORT-FM
 
-A reproducibility-first multi-omics machine-learning pipeline for **compound-prioritization screening** of MM-relevant cell lines against 11 GDSC drugs. Built on real CCLE proteomics + epigenomics + STRING PPI + GDSC drug-sensitivity data, with cryptographic boundary hashing, AgentOps observability, and Tier-A→D evaluation governance.
+Branch `v16` (head `3cfcaf0`, 2026-05-18).
 
-> **v15-mort-fm branch — MORT-FM research track.** A separate, *not-yet-trained* multi-modal foundation model (Multi-Omic Resistance Trajectory Foundation Model) lives on the `v15-mort-fm` branch under `resistancemap/mortfm/`. MORT-FM is a different scientific contribution from ResistanceMap v14: it targets patient-level longitudinal resistance trajectories using a graph-conditioned Neural SDE on a learned Waddington potential. Architecture, data contract, encoders, fusion, dynamics, landscape, heads, losses, trainer, configs, smoke test, and 38-test pytest suite have landed; **no patient-level metrics are claimable yet** because the model has not been trained on a real cohort. See `docs/MORTFM_ARCHITECTURE.md`, `docs/MORTFM_DATA_CONTRACT.md`, and `docs/MORTFM_LIMITATIONS.md`.
+This repository contains two scientific tracks that share an infrastructure
+backbone:
 
-> **What ResistanceMap is.** A trained, calibrated, benchmarked tool that *ranks* cell lines by predicted drug resistance for **9 of 11 GDSC drugs** (82%), with documented failure modes on 2 HDAC-class drugs (Panobinostat, Romidepsin). All claims in this README are anchored to on-disk checkpoints and reproducible from `python main.py --config configs/default.yaml`.
+1. **ResistanceMap v8** — a trained, calibrated cell-line drug-screening
+   pipeline (CCLE proteomics + epigenomics + STRING PPI + GDSC). Still on
+   disk; numbers anchored to `checkpoints/pipeline_validated.pt`. See
+   [§ ResistanceMap v8 historical track](#resistancemap-v8-historical-track)
+   below for the original headline numbers and decision matrix.
+2. **MORT-FM v15+v16** — a Multi-Omic Resistance Trajectory Foundation
+   Model: graph-conditioned Neural SDE on a learned Waddington landscape,
+   typed registries / claim gates / endpoint registry, longitudinal MMRF
+   substrate, causal counterfactual stack. **Current pass focus.** All
+   results below are real, on-disk, and traceable to `RUNS.md` rows.
 
-> **What ResistanceMap is *not*.** It is **not** a patient-level treatment-response predictor (no patient training data has been ingested), **not** a longitudinal forecaster — training data consists of single-time-point cell-line snapshots; no time-ordered `(X_{t=0}, X_{t=Δ})` training pairs exist, so time-to-event and temporal-state claims are outside the model's training scope — and **not** a substitute for the IMWG response criteria in MM clinical decision-making. Earlier README versions overstated the scope; this v8-corrected README reports only what the actual code produces.
+> No fabrication, no synthetic cohorts. The `.claude/settings.json` hook
+> `scripts/hooks/block_synthetic_data.sh` blocks any `np.random` /
+> `_generate_synthetic_cohort` introduction. Every numeric claim in this
+> README cites either a checkpoint or a `RUNS.md` row.
 
-## Headline result (from `checkpoints/pipeline_validated.pt`, last run 2026-05-02)
+---
+
+## MORT-FM v15+v16 status (current)
+
+### Claim gates (12 levels, 5 granted)
+
+```
+GRANTED:
+  technical                  — pipeline runs end-to-end on real data
+  static_drug_response       — Block A (DepMap × GDSC, median Spearman 0.191)
+  single_cell_state          — Block C (51 pseudobulks, 152K cells)
+  sequence_aware             — Block D (ESM-2 cache 7,061 sequences)
+  pathway_context            — Reactome 2,836 pathways + ChEMBL drug-targets
+
+BLOCKED (concrete refusal reason per level):
+  hematologic_specimen_drug_response  — gate requires both Block-B variants
+                                        clear 0.10 median Spearman; only
+                                        init-from-A does (0.103) at 30ep
+  drug_target_mechanism      — per-source coverage 32.5%/37.6%/46.7% < 50% spec
+  survival_prediction        — LOO C-index lower CI 0.442 < 0.50 (n=29 binding)
+  patient_level_clinical_prediction — no external/temporal holdout yet
+  longitudinal_trajectory    — 29 paired patients < 100 threshold
+  resistance_emergence       — same C-index ceiling as survival
+  causal_mechanism           — top-10 edges separate 4.32σ from null but
+                               downstream-gene CRISPR-essentiality = 0%
+                               (STRING source_id → HGNC mapping artifact)
+```
+
+Refresh registries + revalidate:
+
+```bash
+python scripts/mortfm_emit_registries.py
+python scripts/mortfm_validate_integrated_checkpoint.py
+# verdict: PASS — 5 claim levels granted
+```
+
+### Honest result matrix (all from real, on-disk runs)
+
+| Run | Real number | RUNS row |
+|---|---|---|
+| Block A cell-line foundation | Median Spearman **0.191** over 286 GDSC drugs; 124/286 sig at p<0.05; 10 at p<0.001 | `r-2026-05-17-mortfm-block-a-cellline-foundation` |
+| Block B BeatAML from-scratch (30ep) | Median Spearman -0.006 [-0.063, +0.047] | `r-2026-05-18-mortfm-beataml-compare-30ep` |
+| Block B BeatAML init-from-A (30ep) | Median Spearman **+0.103** [+0.070, +0.124] — clears 0.10 threshold | same |
+| **Block B transfer effect** | **Paired Δ = +0.110 [+0.081, +0.133]** — CI excludes zero | same |
+| Block C scRNA latent atlas | 51 pseudobulks + 4,000 cell-level latents; stage classifier macro-F1 0.147 (< 0.25 baseline — honest) | `r-2026-05-18-mortfm-scrna-latent-atlas` |
+| Block D ESM-2 + drug-family | 7,061 ESM-2 embeddings; 1,975/2,000 Block-A coverage for PADIMAC | `r-2026-05-18-mortfm-block-d-validation`, `r-2026-05-18-mortfm-padimac-ingest` |
+| Longitudinal MMRF substrate | 29 paired patients, 20 observed TT2L events | `r-2026-05-18-mortfm-longitudinal-substrate` |
+| LENS resistance: baseline | LOO C-index 0.531 [0.395, 0.673] | `r-2026-05-18-mortfm-lens-resistance-variants` |
+| LENS resistance: **+ clinical** | **LOO C-index 0.603 [0.442, 0.797]** — best variant (+0.072) | same |
+| LENS resistance: + graph projector | LOO C-index 0.552 [0.394, 0.702] (+0.021) | same |
+| LENS resistance: clinical+graph | LOO C-index 0.506 [0.346, 0.677] — **overfits at n=29** | same |
+| DepMap CRISPR external evidence | 1,095 cell-lines × 17,931 genes → **1,057 common essentials** | `r-2026-05-18-mortfm-crispr-ingest` |
+| Causal counterfactual smoke | 200 edges, top-10 vs null **separation 4.32σ** (> 2σ) | `r-2026-05-18-mortfm-causal-smoke` |
+
+The **single biggest finding of v16**: at n=29 paired MMRF patients,
+**clinical features (ISS + age + bort_1L + n_treatments) provide the only
+robust C-index lift** (+0.072); the graph projector adds marginally (+0.021);
+combining them overfits (-0.025). **The binding constraint is data scale,
+not model capacity.**
+
+### MORT-FM architecture
+
+```
+                              EXISTING (v15)               NEW (v16)
+                              ──────────────              ─────────
+Layer A. cell-line foundation │ Block A: DepMap × GDSC × STRING + Reactome + ChEMBL
+                              │   checkpoints/mortfm/block_a_cellline_foundation.pt
+                              │
+Layer B. specimen finetune   │ Block B: BeatAML aligned to A's 2,000-gene space
+                              │   137/139 params ported from A; +30ep training
+                              │
+Layer C. scRNA state encoder │ Block C: HVG-union 3,535 genes; pseudotime ordinal
+                              │   checkpoints/mortfm/block_c_state_encoder.pt
+                              │
+Layer D. sequence + graph    │ Block D: ESM-2 8M cache + STRING graph (636K edges)
+                              │   data/processed/proteins/esm_embeddings__*.pt
+                              │                          + DepMap CRISPR (NEW)
+                              │
+Layer E. integrated checkpoint│ Block E: A overlaid with B (137 keys); C+D pointers
+                              │   checkpoints/mortfm/mortfm_integrated.pt + manifest
+                              │
+Layer F. LENS resistance      │                          ▼ NEW v16 ▼
+                              │   GraphEnergyResistanceSDE: dz_t =
+                              │     [-∇U_θ(z,d) + f_θ(z,g,d,c)] dt + σ_θ(z,d) dW_t
+                              │   + CompetingRiskHead → discrete-time hazards
+                              │   + LatentToGraphProjector → patient-specific graph
+                              │   + clinical_features → ISS/age/bort_1L/n_treatments
+                              │   trained LOO on 29 MMRF paired patients with TT2L
+                              │
+Layer G. causal               │                          ▼ NEW v16 ▼
+                              │   InterventionGraph(do(e=...)) over 636K real edges
+                              │   CounterfactualRunner → Δ_e per edge
+                              │   PathwayCausalValidator → CRISPR + drug-target
+                              │     external-evidence checks; refuses claims with
+                              │     concrete reasons.
+                              │
+META.   registries            │                          ▼ NEW v16 ▼
+                              │   resistancemap/mortfm/registries/
+                              │     feature_space_registry  (8 canonical spaces)
+                              │     endpoint_registry       (10 typed endpoints
+                              │       with allow/forbid claim lists — OS is
+                              │       explicitly forbidden from resistance_emergence)
+                              │     claim_gate_registry    (12 claim levels)
+                              │     artifact_registry      (5 block records)
+                              │   scripts/mortfm_emit_registries.py
+                              │   scripts/mortfm_validate_integrated_checkpoint.py
+```
+
+### Module layout
+
+```
+resistancemap/mortfm/
+  registries/           — feature_space, endpoint, claim_gate, artifact
+  blocks/               — block_a..e + _common (thin adapters over checkpoints)
+  longitudinal/         — schemas, MMRF temporal pair builder, clinical_features
+  trajectory/           — GraphEnergyResistanceSDE, ResistanceBasin, HittingTime,
+                          LatentToGraphProjector, WaddingtonPotential
+  survival/             — CompetingRiskHead, nll_competing_risk, concordance_index
+                          + bootstrap CI, integrated_brier_score, KM strata,
+                          SurvivalCalibration (LBFGS temp-scaling)
+  causal/               — InterventionGraph, CounterfactualRunner,
+                          PathwayCausalValidator
+resistancemap/training/
+  loss_router.py        — LossRouter with required-supervision guardrail
+scripts/
+  mortfm_emit_registries.py
+  mortfm_validate_integrated_checkpoint.py
+  mortfm_train_beataml_finetune.py          — Block B (with --aligned-expression,
+                                              --block-a-checkpoint, --pretrain-epochs,
+                                              --finetune-epochs, --per-drug-out)
+  mortfm_beataml_compare.py                  — paired bootstrap CIs
+  mortfm_train_scrna_state_encoder.py        — Block C
+  mortfm_scrna_latent_atlas.py               — extract z0 latents + UMAP + stage CV
+  mortfm_compute_esm2_embeddings.py          — Block D ESM-2 cache
+  mortfm_block_d_validation.py
+  mortfm_ingest_padimac.py                   — GSE116324 baseline RNA-seq
+  mortfm_ingest_crispr.py                    — DepMap 23Q2 gene-effect
+  mortfm_integrate_blocks_bcd.py             — Block E
+  mortfm_build_longitudinal_dataset.py       — 29 MMRF temporal pairs
+  mortfm_train_lens_resistance.py            — LENS LOO trainer with
+                                              --use-clinical / --use-graph-projector
+  mortfm_lens_variant_compare.py
+  mortfm_lens_smoke_test.py
+  mortfm_causal_smoke_test.py
+```
+
+### Quick start (MORT-FM v16)
+
+```bash
+# 0. Emit registries from current artifacts
+python scripts/mortfm_emit_registries.py
+
+# 1. Validate the integrated checkpoint against the artifact registry
+python scripts/mortfm_validate_integrated_checkpoint.py
+
+# 2. Reproduce the LENS 4-variant ablation (29 MMRF LOO × 80 epochs × 4 = ~4 min)
+for V in baseline clinical_only graph_only clinical_plus_graph; do
+  case "$V" in
+    baseline)            F="" ;;
+    clinical_only)       F="--use-clinical" ;;
+    graph_only)          F="--use-graph-projector" ;;
+    clinical_plus_graph) F="--use-clinical --use-graph-projector" ;;
+  esac
+  python scripts/mortfm_train_lens_resistance.py --epochs 80 \
+    --out "logs/mortfm/lens_resistance_${V}.json" $F
+done
+python scripts/mortfm_lens_variant_compare.py
+
+# 3. Reproduce the Block B 30-epoch transfer comparison
+python scripts/mortfm_train_beataml_finetune.py \
+  --aligned-expression data/processed/beataml/beataml_expression_block_a_features.parquet \
+  --pretrain-epochs 30 --finetune-epochs 30 --restrict-to-mapped \
+  --summary-out logs/mortfm/beataml_block_b_scratch_30ep_summary.json \
+  --checkpoint-name beataml_block_b_scratch_30ep.pt \
+  --per-drug-out logs/mortfm/beataml_per_drug_scratch_30ep.csv
+
+python scripts/mortfm_train_beataml_finetune.py \
+  --block-a-checkpoint checkpoints/mortfm/block_a_cellline_foundation.pt \
+  --aligned-expression data/processed/beataml/beataml_expression_block_a_features.parquet \
+  --pretrain-epochs 30 --finetune-epochs 30 --restrict-to-mapped \
+  --summary-out logs/mortfm/beataml_block_b_init_30ep_summary.json \
+  --checkpoint-name beataml_block_b_finetuned.pt \
+  --per-drug-out logs/mortfm/beataml_per_drug_init_30ep.csv
+
+python scripts/mortfm_beataml_compare.py \
+  --scratch-csv logs/mortfm/beataml_per_drug_scratch_30ep.csv \
+  --init-a-csv logs/mortfm/beataml_per_drug_init_30ep.csv
+
+# 4. Causal counterfactual smoke (200 edges × 8 real MMRF patients)
+python scripts/mortfm_causal_smoke_test.py --n-edges 200
+```
+
+### MORT-FM honest limitations
+
+1. **n=29 is the binding constraint on resistance_emergence.** Clinical-only
+   LENS reaches C-index 0.603 [0.442, 0.797]; lower CI 0.442 misses the 0.50
+   survival gate. With ~100 paired patients this would likely pass. See
+   `docs/LONGITUDINAL_DATA_INVENTORY.md` for the public-cohort path.
+2. **Block B transfer gain is real but the gate's "both variants" rule still fails.**
+   At 30 epochs, paired Δ = +0.110 [+0.081, +0.133] (CI excludes zero), init-A
+   median = 0.103 (above 0.10 threshold). Scratch median = -0.006 (below threshold).
+   The gate requires both ≥ 0.10. Transfer effect is robust; gate-as-written is
+   conservative.
+3. **STRING source_id ↔ HGNC symbol mapping is unfinished.** The causal
+   validator's CRISPR cross-check reads 0% essential overlap for top edges
+   because edge IDs use STRING ENSP-style identifiers, not HGNC symbols.
+   Bridging via the harmonization map is a label-mapping fix, not a model fix.
+4. **Block C latent stage-classifier macro-F1 = 0.147** (below 0.25 random baseline).
+   3-epoch self-supervised reconstruction does not produce stage-discriminative
+   latents. Either needs many more epochs, a contrastive/stage-conditional
+   objective, or richer encoding (e.g., not zero-fill HVG-union absent genes).
+5. **The LENS graph_emb is a learned projection from z0, not Block A's real
+   biological graph.** Wiring the real graph through to MMRF latents (which
+   requires raw MMRF RNA in the Block-A feature space) is a real next step.
+6. **All Block A/B numbers are at debug-tier capacity (small d_latent=64,
+   d_token=32, no graph-conditioned drift on the patient side).** Scale-ups
+   are honest follow-ups, not currently performed.
+
+### Path to clear remaining gates
+
+| Gate | What's needed | Estimated effort |
+|---|---|---|
+| `hematologic_specimen_drug_response` | (a) drug-conditioned head replacing mean-aggregated; (b) per-drug supervision; (c) ≥ 60 epochs | code change + day-scale training |
+| `drug_target_mechanism` | wider ChEMBL ingest (current 5,092 drugs; full ChEMBL v34 has 2M+) | ~1 day data work |
+| `survival_prediction` / `resistance_emergence` | ~80-100 more paired patients (MMRF IA-19, GSE39754, Tirier scRNA) | dbGaP IRB for MMRF; rest is public |
+| `longitudinal_trajectory` | same as above + calendar-time labels | same |
+| `causal_mechanism` | STRING ENSP → HGNC bridge in InterventionGraph; ≥ 20% CRISPR essential overlap in top-10 edges | ~half-day code |
+| `patient_level_clinical_prediction` | external/temporal holdout + clinical-only Cox baseline | day-scale once data lands |
+
+---
+
+## ResistanceMap v8 historical track
+
+The v8 ResistanceMap cell-line pipeline is still reproducible from
+`checkpoints/pipeline_validated.pt` (last full run 2026-05-02). It targets
+a different scientific contribution: **wet-lab compound prioritisation on
+MM-relevant cell lines for 9 of 11 GDSC drugs**.
+
+### v8 headline result
 
 ```
 Trained on:        622 CCLE cell lines × 11 GDSC drugs (3,635 observed IC50 cells)
 Test:              132 cell lines, 736 observed (drug, cell-line) pairs
-Aggregate test_mse:  2.3731   (NaN-masked, pooled across all drugs/cells)
-Per-drug Spearman:   0.045 — 0.396 (n=11), median 0.328
-                     (0.045 is Panobinostat — the documented failure; 9/11 drugs ≥ 0.305)
+Aggregate test_mse:  2.3731 (NaN-masked, pooled across all drugs/cells)
+Per-drug Spearman:   0.045 — 0.396 (median 0.328)
 Actionable for screening:  9/11 drugs (82%)  ← Spearman ≥ 0.25 AND n_test ≥ 30
 Well-calibrated for IC50:  8/11 drugs (73%)  ← additionally MSE < 1.0
 Documented failure modes:  Panobinostat, Romidepsin (HDAC class)
-Baseline rank:             4 / 11 in `paper/tables/baseline_comparison.md`
-                           — beaten by Zero-predictor (2.3678) and Late-fusion (2.3653)
-                           on aggregate, due to Panobinostat MSE=22.3 dragging the mean
 ```
 
-The aggregate `test_mse` looks underwhelming because **one drug (Panobinostat) has MSE 22.3 and Spearman 0.045** — essentially noise. Removing Panobinostat from the average puts ResistanceMap firmly above the trivial baselines. We surface this honestly via the per-drug actionability matrix below rather than hiding it in the aggregate.
+### v8 per-drug decision matrix
 
-## Decision matrix — when to use ResistanceMap
+| Drug | Class | n_test | MSE | Spearman | Verdict |
+|---|---|---|---|---|---|
+| Venetoclax | BCL2 | 68 | 0.010 | 0.328 | screen + IC50 |
+| Bortezomib | Proteasome | 69 | 0.032 | 0.338 | screen + IC50 |
+| Dinaciclib | CDK | 66 | 0.156 | 0.373 | screen + IC50 |
+| Palbociclib | CDK | 69 | 0.197 | 0.305 | screen + IC50 |
+| Cyclophosphamide | DNA-damage | 68 | 0.279 | 0.358 | screen + IC50 |
+| Vorinostat | HDAC | 69 | 0.413 | 0.310 | screen + IC50 |
+| Lenalidomide | IMiD | 69 | 0.499 | 0.396 | screen + IC50 |
+| Etoposide | DNA-damage | 67 | 0.531 | 0.328 | screen + IC50 |
+| Doxorubicin | DNA-damage | 69 | 1.666 | 0.339 | screen only |
+| Romidepsin | HDAC | 56 | 0.237 | 0.240 | **DO NOT USE** |
+| Panobinostat | HDAC | 66 | 22.335 | 0.045 | **DO NOT USE** |
 
-| Drug | Class | n_test | MSE | Spearman | Screening | Calibrated | Verdict |
-|---|---|---|---|---|---|---|---|
-| Venetoclax | BCL2 | 68 | 0.010 | 0.328 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Bortezomib | Proteasome | 69 | 0.032 | 0.338 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Dinaciclib | CDK | 66 | 0.156 | 0.373 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Palbociclib | CDK | 69 | 0.197 | 0.305 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Cyclophosphamide | DNA-damage | 68 | 0.279 | 0.358 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Vorinostat | HDAC | 69 | 0.413 | 0.310 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Lenalidomide | IMiD | 69 | 0.499 | 0.396 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Etoposide | DNA-damage | 67 | 0.531 | 0.328 | ✅ | ✅ | **Use for screening + IC50 estimation** |
-| Doxorubicin | DNA-damage | 69 | 1.666 | 0.339 | ✅ | — | Use for **screening only** (rank-meaningful; absolute IC50 unreliable) |
-| Romidepsin | HDAC | 56 | 0.237 | 0.240 | ❌ | — | **DO NOT USE — failure mode documented** |
-| Panobinostat | HDAC | 66 | 22.335 | 0.045 | ❌ | — | **DO NOT USE — failure mode documented** |
+Full v8 matrix + drug-class summary: `paper/v8_artifacts/actionability_matrix.md`.
 
-**Drug-class summary:**
+### v8 baseline comparison
 
-| Class | Drugs | Actionable | Mean Spearman | Note |
-|---|---|---|---|---|
-| Proteasome | Bortezomib | 1/1 | 0.338 | strong |
-| BCL2 | Venetoclax | 1/1 | 0.328 | strongest absolute MSE (0.010) |
-| CDK | Dinaciclib, Palbociclib | 2/2 | 0.339 | strong |
-| IMiD | Lenalidomide | 1/1 | 0.396 | best rank correlation |
-| DNA-damage | Cyclophosphamide, Doxorubicin, Etoposide | 3/3 | 0.341 | useful for ranking |
-| HDAC | Panobinostat, Romidepsin, Vorinostat | **1/3** | 0.198 | **class-level failure mode** |
+ResistanceMap v8 is ranked 4 / 11 on aggregate `test_mse` against simple
+baselines (Zero, PerDrugTrainMean, GradientBoosting, ResistanceMap,
+RandomForest, Ridge), beaten by Zero / PerDrugTrainMean **on aggregate
+because of the Panobinostat MSE=22.3 outlier**. On the 9 actionable drugs,
+ResistanceMap beats a constant predictor in rank correlation (median Spearman
+0.328 vs 0). See `paper/tables/baseline_comparison.md`.
 
-Full matrix: [`paper/v8_artifacts/actionability_matrix.md`](paper/v8_artifacts/actionability_matrix.md).
-
-## What ResistanceMap is genuinely good for
-
-1. **Wet-lab compound prioritization on MM-relevant cell lines** — for 9/11 GDSC drugs, ResistanceMap ranks candidates with Spearman 0.30–0.40, sufficient to focus follow-up IC50 testing. Most useful cases: Bortezomib (frontline MM standard-of-care, MSE 0.032), Venetoclax (t(11;14) MM, MSE 0.010), Lenalidomide (MM IMiD backbone, Spearman 0.396).
-2. **A re-usable pre-trained 64-d cell-line latent embedding** (`checkpoints/vae_finetuned.pt`) over 886 hematologic-relevant cell lines — usable as a feature extractor for downstream studies.
-3. **A reproducibility-first multi-omics integration benchmark** with cryptographic boundary hashing, automatic baseline comparison (`scripts/run_baselines_real.py`), and Tier-A→D evaluation governance (`paper/v8_evaluation_report.md`).
-4. **A documented HDAC-class failure mode** — itself a useful negative finding for the field. The CCLE proteomics + epigenomics features available do not contain sufficient signal to rank Panobinostat/Romidepsin response. Future work should ingest histone PTM proteomics or HDAC-target enrichment scores.
-
-## What ResistanceMap should NOT be used for
-
-- **Patient-level treatment-response prediction** — no patient training data has been ingested. The pipeline references `gse124310.h5ad`, `gse271107.h5ad`, and `mmrf_commpass/` in config, but `checkpoints/data_ready.pt` contains only cell-line proteomics + epigenomics + PPI. Patient-cohort claims are out of scope until that data is wired in.
-- **Time-to-resistance forecasting / "predict before it happens"** — earlier docs claimed this; it is not supported by training data. Training pairs are contemporaneous `(X_cell-line, IC50_observed)`; there are no `(X_t, X_{t+Δ})` longitudinal pairs.
-- **Pathway-level mechanism attribution** — the architecture supports per-drug attention weights, but they are **not currently persisted** to checkpoints. Pathway-validator (`.claude/agents/proteomics-pathway-validator.md`) cannot evaluate grounding until this is fixed.
-- **Substitute for IMWG MM response criteria** — even when transferred to patient samples, GDSC IC50 is a cell-line viability metric, not a clinical response. No published IC50 → IMWG mapping exists.
-- **HDAC-inhibitor screening** — documented failure mode (1/3 HDAC drugs actionable).
-
-## Architecture
-
-The training DAG that actually runs (10 agents, parallel via `resistancemap/agents/orchestrator.py`):
+### v8 architecture (10-agent training DAG)
 
 ```
 Layer 0  data_validation         file-existence + schema check
-Layer 1  data_prep               CCLE proteomics + epigenomics + STRING + GDSC harmonized → data_ready.pt (77 MB)
-Layer 2  vae_pretrain ‖ esm2_embed   parallel
-                                 (esm2_embed only validates protein names; real ESM-2 forward
-                                  requires ds.protein_sequences which is not currently populated)
+Layer 1  data_prep               CCLE proteomics + epigenomics + STRING + GDSC harmonized
+Layer 2  vae_pretrain ‖ esm2_embed   (esm2_embed currently validates names only;
+                                      see "what's not loaded" note below)
 Layer 3  vae_finetune            hematologic specialization → 64-d latent
-Layer 4  trajectory              calibrate stability score + train forecaster on cell-line latents
-                                 (cell-line resolution; not single-cell trajectory inference)
-Layer 5  protein_net             GAT on STRING PPI subgraph (no real ESM-2 features)
+Layer 4  trajectory              calibrate stability score + train forecaster
+Layer 5  protein_net             GAT on STRING PPI subgraph
 Layer 6  fusion                  cross-attention over (epi, traj, pnet, stab)
 Layer 7  landscape               2-D UMAP layout + drug-resistance head
-Layer 8  validation              per-drug MSE/MAE/Spearman + actionability flags + baselines
-                                 → pipeline_validated.pt + logs/per_drug_metrics.csv + paper/tables/baseline_comparison.md
-
-Boundary integrity:  SHA256 hash chain across all 10 agent outputs (10 hashes per run).
-Observability:       AgentOps tracer/evaluator emit real spans (post-v7 fix).
-Governance:          run_evaluation_governance() runs Tier A/B/C/D after the training DAG.
+Layer 8  validation              per-drug MSE/MAE/Spearman + actionability flags
 ```
 
-Each agent boundary computes `verification_hash = SHA256(output)`; the orchestrator validates self-consistency at handoff. The verification chain is reported in stdout and persisted in the AgentOps dashboard.
-
-## Data — what's actually loaded
-
-| Dataset | What's in `checkpoints/data_ready.pt` | What advertised | Status |
-|---|---|---|---|
-| CCLE Proteomics | 886 cell lines × 19,177 proteins | 1,393 lines × 19,177 | **64% of advertised cohort** (subset selection during harmonization) |
-| CCLE Epigenomics | 886 lines × 42 features | 897 × ~42 | substantially complete |
-| STRING PPI v12 | 19,177 nodes, **473,860 directed edges** | 930k edges | **~half** (confidence-cutoff 0.7 in `configs/default.yaml`) |
-| GDSC drug sensitivity | 886 × 11 drugs, **53.1% NaN sparse** (3,635 observed train cells) | 11 MM-relevant drugs | feature-complete; sparse-by-design |
-| scRNA GSE124310 (27,796 MM cells) | **NOT INGESTED** | listed in config | future work |
-| scRNA GSE271107 (143,748 cells, HD→MGUS→SMM→MM) | **NOT INGESTED** | listed in config | future work |
-| MMRF CoMMpass clinical (1,143 patients) | **NOT INGESTED** | listed in config | future work (`data/mmrf_loader.py` exists but is unwired) |
-| Protein FASTA sequences for ESM-2 | **NOT POPULATED** | "1,280-d ESM-2 embeddings" | `esm2_embed` agent only validates names; real ESM-2 forward never runs |
-
-**Splits** (from `data_ready.pt[splits]`): train 622 / val 132 / test 132 (70 / 15 / 15, random seed 42). Per-drug observed-cell counts in train range 267–348 (median ~340 / 622 = 55%).
-
-### Data Sources Table — provenance
-
-| Dataset | Type | Source | Public/Restricted | Currently used? |
-|---|---|---|---|---|
-| CCLE Proteomics | Bulk | DepMap | Public | **Yes** |
-| CCLE Epigenomics | Bulk | DepMap/ENCODE | Public | **Yes** |
-| STRING PPI v12 | Network | STRING-DB | Public | **Yes** |
-| GDSC | Drug Screen | CancerRxGene | Public | **Yes** |
-| CTRPv2 | Drug Screen | Broad | Registered | configured but not loaded |
-| GSE124310 | scRNA-seq | GEO | Public | **No (planned)** |
-| GSE271107 | scRNA-seq | GEO | Public | **No (planned)** |
-| MMRF CoMMpass | Clinical | GDC Portal | IRB | **No (planned, IRB-gated)** |
-
-## Quick Start
+v8 quick-start:
 
 ```bash
-git clone <this-repo>
-cd ResistanceMap
-pip install -e .
-
-# End-to-end run (requires real data in data/raw/ — see scripts/download_data.sh)
-python main.py --config configs/default.yaml
-
-# Just the validation stage (uses cached checkpoints from training)
-python main.py --config configs/default.yaml --stage validate
-
-# Generate the per-drug decision matrix from validated checkpoints
-python scripts/generate_actionability_report.py
-
-# Compare against integration baselines (concat / PCA / MOFA+-like / late-fusion)
-python scripts/data_integration_audit.py
-
-# Generate Krishnaswamy-style figures (UMAP fallback if PHATE not installed)
-python scripts/krishnaswamy_visualizations.py
-
-# Run orthogonal Tier-A→D evaluation governance
-python main.py --config configs/default.yaml --evaluate
-```
-
-Configs live in `configs/`. `default.yaml` is CPU-friendly; `h100.yaml` uses bf16 + torch.compile for H100. Each stage is checkpoint-aware — a re-run skips completed stages automatically.
-
-## Performance — real numbers, no fabrication
-
-These are the actual numbers from `checkpoints/pipeline_validated.pt`. **Earlier README versions reported AUROC 0.82–0.89 / AUPRC 0.76–0.84 / MAE 0.09–0.18 — those numbers had no provenance in this codebase and have been removed.**
-
-### Aggregate test_mse vs baselines (NaN-masked, same train/val/test split, n_test=132)
-
-From `paper/tables/baseline_comparison.md` (auto-generated by `scripts/run_baselines_real.py`):
-
-| Rank | Model | test_mse | val_mse | Notes |
-|---|---|---|---|---|
-| 1 | Zero (z-scored target floor) | 2.3678 | 1.8841 | predicts 0 everywhere |
-| 2 | PerDrugTrainMean | 2.3678 | 1.8841 | predicts per-drug train mean |
-| 3 | GradientBoosting (PCA-256) | 2.3699 | 2.1597 | strong classical baseline |
-| 4 | **ResistanceMap (10-agent DAG)** | **2.3731** | n/a | this pipeline |
-| 5 | RandomForest (PCA-256) | 2.4134 | 2.0232 | |
-| 6 | Ridge (full proteomics + epi) | 2.4998 | 2.0536 | |
-| ... | ... | ... | ... | (see baseline_comparison.md for the full panel) |
-
-The Zero / per-drug-mean baselines beat ResistanceMap **on the aggregate metric** because of the Panobinostat outlier. On the 9 actionable drugs, ResistanceMap meaningfully outperforms a constant predictor in rank correlation (median Spearman 0.328 vs 0).
-
-### Per-drug performance
-
-See [Decision matrix](#decision-matrix--when-to-use-resistancemap) above. Source CSV: `logs/per_drug_metrics.csv`.
-
-### Integration ablation (from `paper/v8_artifacts/data_integration_audit.md`)
-
-Same train/val/test split, masked-MSE pooled across observed cells:
-
-| Rank | Method | test_mse |
-|---|---|---|
-| 1 | Late fusion (avg of per-modality Ridge) | 2.3653 |
-| 2 | **ResistanceMap CrossModalFusionNet** | **2.3731** |
-| 3 | MOFA+-like shared factors (64) → Ridge | 2.4440 |
-| 4 | Naive concat → Ridge | 2.4583 |
-| 5 | PCA(256/20) per-modality → Ridge | 3.5652 |
-
-ResistanceMap beats naive concat, PCA-Ridge, and a MOFA+-like factor model. It is beaten by simple late fusion by 0.008 MSE — the cross-attention machinery is **not yet justified** by the available data scale (622 train, ~340 obs/drug).
-
-## Known Limitations (explicit)
-
-1. **Data scale ceiling.** Per-drug training counts (~270–350 cells) are small for a 19,177-feature input. Doubling the cohort (e.g., adding CCLE 2024 release) is the highest-ROI next step.
-2. **HDAC class is a documented failure mode.** Panobinostat (MSE 22.3, Spearman 0.045) and Romidepsin (Spearman 0.240) are below screening threshold. Vorinostat is borderline-actionable. The current omics features lack sufficient HDAC-mechanism signal.
-3. **No patient cohorts.** The architecture is set up to ingest scRNA + MMRF, but no code path currently does. README's earlier patient-cohort framing was aspirational, not actual.
-4. **No real ESM-2 embeddings.** `ESM2EmbedAgent` validates protein metadata; the real 1,280-d forward pass only fires inside `train_protein_network` if `dataset.protein_sequences` is non-empty (it isn't). The protein-net trains on abundance + VAE latent + stability features.
-5. **No persisted attribution.** Per-drug attention weights are computed inside `CrossModalFusionNet` and `ProteinNetwork` but not saved to checkpoints. This blocks the v8 `proteomics-pathway-validator` from grounding predictions in KEGG/Reactome.
-6. **Cross-attention complexity not justified.** Late fusion (avg of per-modality Ridge) beats ResistanceMap by 0.008 MSE on the same data. Without more training data or a per-drug head, the architecture's complexity is not earning its keep.
-7. **No longitudinal data.** "Predict resistance state at time t" is not a supported claim; training is on snapshot pairs only.
-8. **No causal grounding.** Without perturbation training data (e.g., DepMap CRISPR screens), pathway "transition" predictions are associative, not interventional.
-
-## Reproducibility
-
-Every numeric claim in this README is tagged to a file:
-
-| Claim | Source |
-|---|---|
-| Aggregate test_mse, n_test_samples, n_drugs | `checkpoints/pipeline_validated.pt[metrics]` |
-| Per-drug MSE, MAE, Spearman | `logs/per_drug_metrics.csv`, also `pipeline_validated.pt[metrics][per_drug_metrics]` |
-| Actionability flags + drug-class summary | `pipeline_validated.pt[metrics][actionability_summary]` |
-| Baseline ranking | `paper/tables/baseline_comparison.md` |
-| Integration ablation | `paper/v8_artifacts/data_integration_audit.md` |
-| SOTA literature comparison | `paper/v8_artifacts/sota_comparison.md` (PMIDs verified live via PubMed) |
-| Visualizations | `paper/v8_artifacts/visualizations/*.png` |
-| Strict evaluation report | `paper/v8_evaluation_report.md` |
-
-Reproduce everything from a clean state:
-
-```bash
-rm -rf checkpoints/ logs/
 python main.py --config configs/default.yaml             # full DAG run
 python scripts/generate_actionability_report.py
 python scripts/data_integration_audit.py
-python scripts/krishnaswamy_visualizations.py
-python main.py --config configs/default.yaml --evaluate   # Tier-A→D governance
+python main.py --config configs/default.yaml --evaluate  # Tier-A→D governance
 ```
 
-Run-ledger policy: every numeric claim in `README.md` and `ARCHITECTURE.md` must trace back to a row in `RUNS.md` (enforced by `scripts/check_docs_consistent.py`).
+### v8 what's NOT loaded (carry-over honest disclaimer)
 
-## Citations and prior art
+| Dataset | Status |
+|---|---|
+| scRNA GSE124310 (27,796 MM cells) | Not in v8 (loaded in v15+ Block C) |
+| scRNA GSE271107 (143,748 cells, HD→MGUS→SMM→MM) | Not in v8 (loaded in v15+ Block C) |
+| MMRF CoMMpass (1,143 patients) | Not in v8 (loaded in v15+ longitudinal) |
+| Protein FASTA / real ESM-2 forward | Not in v8 (loaded in v15+ Block D) |
 
-ResistanceMap stands on four pillars of prior work, cited honestly:
+---
 
-- **MOFA+ — Argelaguet et al. 2020** [Genome Biol, DOI](https://doi.org/10.1186/s13059-020-02015-1), PMID 32393329 — multi-omics factor analysis. ResistanceMap's integration is benchmarked against a MOFA+-like sparse-factor baseline; MOFA+ produces interpretable factors that ResistanceMap currently does not.
-- **MM treatment-specific prediction model landscape — Jarrah et al. 2026** [Eur J Haematol, DOI](https://doi.org/10.1111/ejh.70177), PMID 41909977 — the field's current systematic review.
-- **Dynamic biomarker MM response — Xiong et al. 2026** [J Transl Med, DOI](https://doi.org/10.1186/s12967-026-07946-0), PMID 41814396 — F1=0.75 at Cycle 4 vs R-ISS F1=0.32 (n=662 patients). The strongest current MM-clinical comparator. ResistanceMap is not a head-to-head comparator (cell line vs patient cohort) but cites this as the patient-side benchmark to migrate toward.
-- **Multi-omics MM prognostic signature — Li et al. 2026** [Ann Hematol, DOI](https://doi.org/10.1007/s00277-026-06867-8), PMID 41762247 — uses overlapping data (GSE124310) that ResistanceMap should ingest in the next iteration.
+## Reproducibility / run-ledger policy
 
-Trajectory-method context (the field that "predicts cell-state evolution"):
-- **TrajectoryNet** — Tong, Huang, Wolf, van Dijk, Krishnaswamy 2020 (ICML / arXiv:2002.04461) — single-cell dynamic optimal transport. Operates at single-cell resolution; ResistanceMap is cell-line resolution.
-- **VGFM** — Wang et al. 2025 ([hf.co/papers/2505.13413](https://hf.co/papers/2505.13413)) — flow matching with mass growth, the modern successor to TrajectoryNet.
-- **Conditional Monge Gap** — Driessen et al. 2025 ([hf.co/papers/2504.08328](https://hf.co/papers/2504.08328)) — neural OT generalizing to unseen drugs.
+Every numeric claim in this README cites either a checkpoint or a row in
+`RUNS.md`. The CI check `scripts/check_docs_consistent.py` greps the README
+and `ARCHITECTURE.md` for numeric claims and refuses the build if they
+cannot be traced.
 
-The detailed comparator landscape, with verified PubMed IDs and DOIs, is in [`paper/v8_artifacts/literature_review.md`](paper/v8_artifacts/literature_review.md) and [`paper/v8_artifacts/sota_comparison.md`](paper/v8_artifacts/sota_comparison.md).
+```bash
+rm -rf checkpoints/ logs/
+# v8 path:
+python main.py --config configs/default.yaml
+# v16 MORT-FM path:
+python scripts/mortfm_ingest_depmap.py
+python scripts/mortfm_ingest_chembl.py
+python scripts/mortfm_ingest_reactome.py
+python scripts/mortfm_ingest_uniprot.py
+python scripts/mortfm_ingest_string.py
+python scripts/mortfm_ingest_beataml.py --mode auto
+python scripts/mortfm_train_cellline_foundation.py    # Block A
+python scripts/mortfm_align_beataml_features.py
+python scripts/mortfm_train_beataml_finetune.py \
+  --block-a-checkpoint checkpoints/mortfm/block_a_cellline_foundation.pt \
+  --aligned-expression data/processed/beataml/beataml_expression_block_a_features.parquet \
+  --pretrain-epochs 30 --finetune-epochs 30 --restrict-to-mapped \
+  --checkpoint-name beataml_block_b_finetuned.pt
+python scripts/mortfm_train_scrna_state_encoder.py   # Block C
+python scripts/mortfm_compute_esm2_embeddings.py     # Block D
+python scripts/mortfm_integrate_blocks_bcd.py        # Block E
+python scripts/mortfm_build_longitudinal_dataset.py  # Lane 4+5
+python scripts/mortfm_ingest_crispr.py               # external causal evidence
+python scripts/mortfm_train_lens_resistance.py --use-clinical --epochs 80
+python scripts/mortfm_emit_registries.py
+python scripts/mortfm_validate_integrated_checkpoint.py
+```
 
-## Roadmap (honest priority order)
+---
 
-1. **Persist per-drug attention weights** in `train_fusion` and `train_protein_network` → unlocks pathway-level interpretability and KEGG/Reactome grounding (~50 LOC).
-2. **Wire `data/mmrf_loader.py`** into `prepare_data` so MMRF clinical labels feed validation. Closes the "no patient data" gap (~150 LOC + IRB).
-3. **Ingest scRNA from GSE124310 + GSE271107** as additional fusion modality. The two h5ad files are already in `data/raw/`. (~300 LOC)
-4. **Add per-drug head specialization** so HDAC-class failure doesn't dominate gradients, and so well-performing drugs (Venetoclax, Bortezomib) aren't pulled toward the mean. (~100 LOC)
-5. **Add real ESM-2 forward pass** by populating `dataset.protein_sequences` from UniProt FASTA during `prepare_data`. (~200 LOC)
-6. **Statistical significance test** vs late-fusion baseline (paired Wilcoxon over 5 random seeds) — required to claim the cross-attention machinery is justified.
-7. **Replace synthetic external-cohort path** in `evaluation/external_validation.py` with real MMRF/GMMG/IFM connectors as those datasets become accessible.
+## Citations / prior art
+
+- **MOFA+** — Argelaguet et al. 2020, [Genome Biol](https://doi.org/10.1186/s13059-020-02015-1), PMID 32393329
+- **MM treatment-specific prediction model landscape** — Jarrah et al. 2026, [Eur J Haematol](https://doi.org/10.1111/ejh.70177), PMID 41909977
+- **Dynamic biomarker MM response** — Xiong et al. 2026, [J Transl Med](https://doi.org/10.1186/s12967-026-07946-0), PMID 41814396 — F1=0.75 at Cycle 4 vs R-ISS F1=0.32 (n=662 patients); the strongest current MM-clinical comparator
+- **Multi-omics MM prognostic signature** — Li et al. 2026, [Ann Hematol](https://doi.org/10.1007/s00277-026-06867-8), PMID 41762247
+
+Trajectory-method context (for the LENS SDE):
+- **PRESCIENT** — Yeo et al. 2021 — potential landscape from time-series scRNA, simulates stochastic trajectories in physical time
+- **scNODE** — Sha et al. 2024 — VAE + Neural ODEs for unobserved-timepoint scRNA
+- **TrajectoryNet** — Tong et al. 2020 (ICML), single-cell dynamic optimal transport
+- **CellRank 2** — Lange et al. 2024, multiview fate mapping
+
+PADIMAC reference (GSE116324):
+- **Chapman et al. 2018**, [Br J Haematol](https://doi.org/10.1111/bjh.15598), PMID 30181174
+
+DepMap CRISPR external-evidence channel:
+- **DepMap 23Q2 Public** — Broad Institute, figshare article 22765112
+
+---
 
 ## License
 
@@ -261,14 +397,16 @@ MIT — see `LICENSE`.
 
 ## Contributing
 
-Issues + PRs welcome. Three project-policy rules enforced via `.claude/settings.json` hooks:
+Three project-policy rules enforced via `.claude/settings.json` hooks:
 
-1. No `np.random.default_rng` / `np.random.seed` / `_generate_synthetic_cohort` in non-test code (blocks fabrication).
+1. No `np.random.default_rng` / `np.random.seed` / `_generate_synthetic_cohort` in non-test code (`scripts/hooks/block_synthetic_data.sh`).
 2. `scripts/generate_paper_figures.py:generate_all` is blocked at the Bash hook level (most panels use random data); use `scripts/run_real_figures.py` instead.
-3. Any change to README/ARCHITECTURE must trace numeric claims back to `RUNS.md` rows (enforced by `scripts/check_docs_consistent.py`).
-
-The v8 strict-evaluation multi-agent architecture (9 PhD-level subagents under `.claude/agents/`, with skills under `.claude/skills/`) is available for any future evaluation pass.
+3. Any change to README / `ARCHITECTURE.md` / `RUNS.md` numeric claims must be traceable to an on-disk artifact.
 
 ---
 
-_README v8 corrected 2026-05-02. All metrics derive from `checkpoints/pipeline_validated.pt` produced by the 2026-05-02 run. Earlier README versions reported AUROC/AUPRC/MAE numbers without provenance; those have been removed and replaced with this honest, on-disk-anchored version._
+_README v16 — last updated 2026-05-18. Heads `defd02d` (v15-next-pass) and
+`3cfcaf0` (v15-next-pass-2 = v16 branch head). All v16 numbers derive from
+artifacts under `checkpoints/mortfm/`, `data/processed/`, and `logs/mortfm/`.
+The v8 ResistanceMap section is preserved as a historical track and is still
+reproducible from `checkpoints/pipeline_validated.pt`._
