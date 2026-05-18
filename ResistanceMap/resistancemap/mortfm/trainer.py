@@ -215,14 +215,24 @@ class MORTFMTrainer:
 
         # ---- C: drug response ----
         if "drug" in weights and batch.drug_response is not None:
-            # Predict drug_response from drug_risk_head.
-            preds = prediction.drug_specific_risk
-            # Align shapes: target may be scalar per row; reduce per-drug head.
-            if batch.drug_response.ndim == 1:
-                pred_scalar = preds.mean(dim=-1)
+            preds = prediction.drug_specific_risk             # (N, n_drug_candidates)
+            target = batch.drug_response
+            # Squeeze a singleton last dim so a (N, 1) target compares cleanly
+            # against the per-drug-mean of the head.
+            if target.ndim == 2 and target.shape[-1] == 1:
+                target = target.squeeze(-1)                   # -> (N,)
+            if target.ndim == 1:
+                # Compare against the per-row mean of the candidate-drug risk.
+                pred_scalar = preds.mean(dim=-1)               # (N,)
+                components["drug"] = drug_response_loss(pred_scalar, target)
+            elif target.shape[-1] == preds.shape[-1]:
+                components["drug"] = drug_response_loss(preds, target)
             else:
-                pred_scalar = preds
-            components["drug"] = drug_response_loss(pred_scalar, batch.drug_response)
+                # Shape mismatch we cannot reconcile -- refuse to fabricate.
+                logger.warning(
+                    "Skipping drug loss: pred shape %s vs target shape %s -- not reconcilable.",
+                    tuple(preds.shape), tuple(target.shape),
+                )
 
         # ---- E: trajectory ----
         if "trajectory" in weights and batch.future_state is not None:

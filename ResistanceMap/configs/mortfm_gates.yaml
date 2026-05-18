@@ -1,0 +1,44 @@
+# MORT-FM acceptance / claim gates.
+# Read by resistancemap.governance.claim_gates.run_gates() before every RUNS.md row.
+
+gate_static_drug_response:
+  min_models: 300
+  min_drugs: 50
+  min_observed_response_rows: 10000
+  min_model_mapping_rate: 0.8
+
+gate_pathway_mechanism:
+  min_gene_to_uniprot_coverage: 0.7
+  min_drug_to_target_coverage: 0.5
+  min_pathway_mapping_coverage: 0.5
+  require_reactome: true
+  require_drug_target_edges: true
+
+gate_survival_claim:
+  min_patients: 200
+  min_events: 50
+  require_c_index: true
+  require_patient_disjoint_split: true
+  require_endpoint_name: true
+
+gate_trajectory_claim:
+  min_longitudinal_pairs: 100
+  min_unique_patients_with_2_timepoints: 50
+  require_real_time_units: true
+  forbid_pseudotime_as_calendar_time: true
+
+gate_resistance_claim:
+  forbid_endpoint_only_overall_survival: true
+  allowed_endpoints:
+    - progression_free_survival
+    - relapse_time
+    - refractory_status
+    - mrd_conversion
+    - drug_resistance_label
+    - ex_vivo_resistance_shift
+
+gate_sequence_aware_claim:
+  require_uniprot_fasta: true
+  min_string_protein_coverage: 0.7
+  min_feature_gene_coverage: 0.7
+  require_embedding_cache: true

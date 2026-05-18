@@ -51,6 +51,11 @@ from resistancemap.data.trajectory_pair_builder import (
     build_temporal_pairs,
     summarise_pairs,
 )
+from resistancemap.governance.claim_gates import RunEvidence, run_gates
+from resistancemap.governance.endpoint_validator import (
+    validate_endpoint_semantics,
+    write_endpoint_semantics_report,
+)
 from resistancemap.mortfm.acceptance_gate import evaluate_cohort
 from resistancemap.mortfm.data_module import make_data_module
 from resistancemap.mortfm.model import MORTFM
@@ -221,9 +226,38 @@ def main() -> int:
             tuple(pred.hazard.shape) if pred.hazard is not None else "(discrete, see survival_curve)",
         )
 
-    # ---- 9. Honest summary --------------------------------------------
+    # ---- 9. Endpoint validator + claim gates ---------------------------
+    endpoint_report = validate_endpoint_semantics(
+        endpoint_name="overall_survival",
+        event_observed_column="vital_status",
+        event_time_column="days_to_death | days_to_last_follow_up",
+    )
+    write_endpoint_semantics_report(endpoint_report,
+                                     out_json="logs/mortfm/mmrf_endpoint_semantics.json")
+
+    gate_evidence = RunEvidence(
+        endpoint_name="overall_survival",
+        n_patients=int(summary["n_unique_patients"]),
+        n_events=int(debug_report.n_events_observed),
+        n_longitudinal_pairs=int(summary["n_longitudinal_pairs"]),
+        has_c_index=False,
+        has_patient_disjoint_split=True,
+        has_real_time_units=True,
+        has_pseudotime_only=False,
+        model_mapping_rate=1.0,
+        has_reactome=False, has_drug_target_edges=False,
+        has_uniprot_fasta=False, has_embedding_cache=False,
+    )
+    gate_report = run_gates(gate_evidence,
+                             out_json="logs/mortfm/mmrf_claim_gate_report.json")
+
+    # ---- 10. Honest summary --------------------------------------------
     final_summary = {
-        "run_id": f"r-{time.strftime('%Y-%m-%d')}-mortfm-debug",
+        "run_id": f"r-{time.strftime('%Y-%m-%d')}-mortfm-mmrf-os-validated",
+        "endpoint_name": "overall_survival",
+        "endpoint_type": endpoint_report.endpoint_type,
+        "claim_level_per_endpoint_validator": endpoint_report.claim_level,
+        "endpoint_blocking_reasons": endpoint_report.blocking_reasons,
         "n_snapshots": len(snapshots),
         "n_outcomes": len(outcomes),
         "n_pairs": len(pairs),
@@ -233,11 +267,13 @@ def main() -> int:
         "modality_coverage": debug_report.modality_coverage,
         "split_summary": splits.summary(),
         "acceptance_level_achieved": debug_report.level_achieved,
+        "claim_levels_allowed": gate_report.claim_levels_allowed,
+        "claim_levels_blocked": gate_report.claim_levels_blocked,
         "wall_time_s": round(time.time() - t0, 1),
         "history": history,
         "checkpoint": ckpt,
-        "claim_permitted": "code-correctness only; no patient-level prediction claims (debug-level, "
-                            "below the 200-patient threshold for any survival/trajectory claim)",
+        "claim_permitted": "survival_head_technical_validation ONLY (per endpoint validator); "
+                            "OS is NOT a resistance endpoint; no trajectory claim available.",
     }
     summary_path = out_dir / "real_endtoend_summary.json"
     with open(summary_path, "w") as f:

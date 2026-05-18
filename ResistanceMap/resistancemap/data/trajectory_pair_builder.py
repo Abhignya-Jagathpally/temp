@@ -121,6 +121,7 @@ def build_temporal_pairs(
     outcome_match_tolerance: float = 1.0,
     include_unlabelled: bool = False,
     include_survival_only: bool = True,
+    include_drug_response_only: bool = False,
 ) -> List[TemporalTrainingPair]:
     """Build training pairs from a flat snapshot + outcome stream.
 
@@ -205,6 +206,29 @@ def build_temporal_pairs(
                 already_used = any(
                     p.x_t is x_t and p.x_t_delta is not None for p in pairs
                 )
+                if already_used:
+                    continue
+                pairs.append(TemporalTrainingPair(x_t=x_t, x_t_delta=None, outcome=out))
+
+        # --- drug-response / static label-only rows (single snapshot + label) ---
+        if include_drug_response_only:
+            for x_t in snaps:
+                out = _match_outcome(
+                    patient_id,
+                    baseline_time=x_t.timepoint or 0.0,
+                    outcomes_by_patient=outcomes_by_patient,
+                    tol=outcome_match_tolerance,
+                )
+                if out is None:
+                    continue
+                has_static_label = (
+                    out.drug_response is not None
+                    or out.resistance_label is not None
+                    or (out.future_state is not None)
+                )
+                if not has_static_label:
+                    continue
+                already_used = any(p.x_t is x_t for p in pairs)
                 if already_used:
                     continue
                 pairs.append(TemporalTrainingPair(x_t=x_t, x_t_delta=None, outcome=out))
