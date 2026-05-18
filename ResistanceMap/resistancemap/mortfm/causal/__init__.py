@@ -42,3 +42,17 @@ from resistancemap.mortfm.causal.counterfactual_runner import (  # noqa: F401
 from resistancemap.mortfm.causal.pathway_causal_validator import (  # noqa: F401
     PathwayCausalValidator,
 )
+# v17 evidence joiners
+from resistancemap.mortfm.causal.crispr_evidence_joiner import (  # noqa: F401
+    join_crispr_essentiality,
+)
+from resistancemap.mortfm.causal.drug_target_evidence_joiner import (  # noqa: F401
+    join_drug_target_support,
+)
+from resistancemap.mortfm.causal.pathway_evidence_joiner import (  # noqa: F401
+    join_pathway_support,
+    top_k_pathway_enrichment,
+)
+from resistancemap.mortfm.causal.edge_evidence_report import (  # noqa: F401
+    build_edge_evidence_report,
+)

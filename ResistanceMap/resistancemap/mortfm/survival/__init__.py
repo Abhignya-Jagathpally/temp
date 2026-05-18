@@ -37,3 +37,9 @@ from resistancemap.mortfm.survival.baselines import (  # noqa: F401
     cox_fit_predict_loo,
     permutation_null_cindex,
 )
+from resistancemap.mortfm.survival.regularized_lens import (  # noqa: F401
+    RegularizedLENS,
+    RegularizedLENSConfig,
+    bootstrap_optimism_correction,
+    fit_predict_loo_regularized,
+)
