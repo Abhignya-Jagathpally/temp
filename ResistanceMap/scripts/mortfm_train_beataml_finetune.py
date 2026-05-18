@@ -266,6 +266,8 @@ def main() -> int:
     ap.add_argument("--per-drug-out", default="logs/mortfm/beataml_per_drug_metrics.csv",
                     help="Output CSV for per-drug Spearman metrics. "
                          "Override when running multiple variants back-to-back.")
+    ap.add_argument("--pretrain-epochs", type=int, default=3)
+    ap.add_argument("--finetune-epochs", type=int, default=3)
     args = ap.parse_args()
 
     # ---- 1. Build cohort ---------------------------------------------
@@ -302,7 +304,8 @@ def main() -> int:
         use_phosphoproteomics=False, use_clinical=False, use_drug=True,
         use_proteomics=False,
         n_time_grid=4, integration_time=6.0,
-        pretrain_epochs=3, finetune_epochs=3, trajectory_epochs=0, survival_epochs=0,
+        pretrain_epochs=args.pretrain_epochs, finetune_epochs=args.finetune_epochs,
+        trajectory_epochs=0, survival_epochs=0,
         batch_size=32, lr=1e-4, weight_decay=1e-5,
         mixed_precision=False, drug_embed_dim=16,
         checkpoint_dir="checkpoints/mortfm",
