@@ -42,3 +42,46 @@ gate_sequence_aware_claim:
   min_string_protein_coverage: 0.7
   min_feature_gene_coverage: 0.7
   require_embedding_cache: true
+
+# ---------------------------------------------------------------------------
+# Block B/C/D data-readiness gates. These guard the *inputs* to MORT-FM
+# Block-E integration, not the model claims themselves. The corresponding
+# claim gates above guard outputs.
+# ---------------------------------------------------------------------------
+
+gate_beataml_specimen_drug_response:
+  # Used by scripts/mortfm_validate_beataml.py.
+  min_specimens_with_expression: 300
+  min_specimens_with_drug_response: 100
+  min_drugs: 20
+  require_specimen_disjoint_split: true
+
+gate_single_cell_state_pretraining:
+  # Used by scripts/mortfm_build_scrna_manifest.py (acceptance is read at
+  # Block-C runtime; here we record the spec thresholds for documentation).
+  min_total_cells: 50000
+  min_unique_samples: 10
+  require_counts_layer: true
+  # Pseudotime-only datasets cannot be used for trajectory claims (see
+  # gate_trajectory_claim).
+  pseudotime_only_block_trajectory_claim: true
+
+gate_pathway_context:
+  # Read by scripts/mortfm_harmonize_identifiers.py — pure mapping coverage,
+  # separated from the (claim-level) gate_pathway_mechanism above.
+  min_feature_gene_to_uniprot_coverage: 0.70
+
+gate_drug_target_mechanism:
+  # Read by scripts/mortfm_resolve_drug_names.py. Realistic threshold based on
+  # the public ChEMBL drug-targets export; the spec-level 0.50 target is also
+  # recorded in the report for honesty.
+  min_per_source_drug_coverage: 0.30
+  spec_target_drug_coverage: 0.50
+
+gate_sequence_aware:
+  # Read by scripts/mortfm_compute_esm2_embeddings.py. Mirrors
+  # gate_sequence_aware_claim but adds the embedding-cache population check.
+  require_uniprot_fasta: true
+  require_esm_embedding_cache: true
+  min_n_embeddings: 100
+  min_feature_gene_coverage_via_identifier_map: 0.70

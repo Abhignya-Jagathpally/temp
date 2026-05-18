@@ -203,7 +203,10 @@ def main() -> int:
             ].values.ravel()
         ),
     })
-    proteins.to_csv(out_path.parent / "protein_nodes.csv", index=False)
+    # Write to a distinct filename so we never overwrite the UniProt-derived
+    # ``protein_nodes.csv`` (which carries the gene_symbol column the identifier
+    # harmoniser depends on).
+    proteins.to_csv(out_path.parent / "protein_nodes_from_graph.csv", index=False)
     coverage.n_protein_nodes = len(proteins)
 
     drugs = pd.DataFrame({

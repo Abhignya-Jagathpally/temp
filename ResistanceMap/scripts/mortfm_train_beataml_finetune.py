@@ -25,6 +25,7 @@ Outputs:
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import sys
@@ -69,7 +70,15 @@ def build_beataml_pairs(
     clin_path: Path = Path("data/processed/beataml/beataml_clinical.csv"),
     rna_genes: int = 1000,
     drug_metric: str = "AUC",
+    use_reference_features: bool = False,
 ):
+    """Build BeatAML training pairs.
+
+    If ``use_reference_features`` is True, the expression matrix is already
+    aligned to the Block-A feature space (zero-filled where missing) and we
+    keep every column in order. Otherwise we keep the top-``rna_genes`` by
+    variance — the legacy v14 behaviour for standalone runs.
+    """
     expr = pd.read_parquet(expr_path)
     drug = pd.read_parquet(drug_path)
     clin = pd.read_csv(clin_path)
@@ -83,14 +92,14 @@ def build_beataml_pairs(
     overlap = sorted(set(expr.index.astype(str)) & set(per_specimen_response.index.astype(str)))
     logger.info("Specimens with both expression and drug response: %d", len(overlap))
 
-    # Subset expression to top-variance genes
     expr_sub = expr.loc[overlap]
-    if expr_sub.shape[1] > rna_genes:
+    if not use_reference_features and expr_sub.shape[1] > rna_genes:
         variances = expr_sub.var(axis=0).sort_values(ascending=False)
         top = variances.index[:rna_genes].tolist()
         expr_sub = expr_sub[top]
     feature_names = list(expr_sub.columns.astype(str))
-    logger.info("Expression subset: %d specimens × %d genes", *expr_sub.shape)
+    logger.info("Expression subset: %d specimens × %d genes (reference-aligned=%s)",
+                expr_sub.shape[0], expr_sub.shape[1], use_reference_features)
 
     # Patient ID for split (LabId -> PatientId so specimens from the same patient stay in one split)
     pid_map = dict(zip(clin["lab_id"].astype(str), clin["patient_id"].astype(str)))
@@ -197,15 +206,74 @@ def per_drug_metrics(
     return out_df
 
 
+def _load_block_a_into(model: "MORTFM", ckpt_path: Path, device: torch.device) -> dict:
+    """Load Block A's state_dict into ``model`` with strict=False.
+
+    Returns a report describing which keys matched / mismatched. Designed
+    around shape compatibility — if the BeatAML model is built with the same
+    rna_input_dim as Block A (which is what feature alignment guarantees),
+    the encoder + fusion + landscape weights port over cleanly.
+    """
+    payload = torch.load(str(ckpt_path), map_location=device, weights_only=False)
+    src = payload["model_state_dict"]
+    tgt = model.state_dict()
+    matched, skipped_shape, skipped_missing = [], [], []
+    new_state = dict(tgt)
+    for k, v in src.items():
+        if k not in tgt:
+            skipped_missing.append(k)
+            continue
+        if tgt[k].shape != v.shape:
+            skipped_shape.append((k, list(v.shape), list(tgt[k].shape)))
+            continue
+        new_state[k] = v
+        matched.append(k)
+    model.load_state_dict(new_state, strict=False)
+    logger.info("Block-A load: matched=%d, shape_mismatched=%d, missing_in_target=%d",
+                len(matched), len(skipped_shape), len(skipped_missing))
+    return {
+        "block_a_checkpoint": str(ckpt_path.resolve()),
+        "n_params_matched": len(matched),
+        "n_params_shape_mismatched": len(skipped_shape),
+        "n_params_only_in_source": len(skipped_missing),
+        "shape_mismatched_examples": skipped_shape[:10],
+    }
+
+
 def main() -> int:
     t0 = time.time()
     Path("logs/mortfm").mkdir(parents=True, exist_ok=True)
     Path("checkpoints/mortfm").mkdir(parents=True, exist_ok=True)
 
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--block-a-checkpoint", default=None,
+                    help="Path to Block A checkpoint. If provided, the BeatAML "
+                         "model is initialised from these weights AND the "
+                         "expression matrix must already be aligned to the "
+                         "Block-A 2000-gene reference space.")
+    ap.add_argument("--aligned-expression", default=None,
+                    help="Path to BeatAML expression already aligned to the "
+                         "reference feature space (output of "
+                         "scripts/mortfm_align_beataml_features.py).")
+    ap.add_argument("--drug-identifier-map", default="data/processed/drugs/drug_identifier_map.csv",
+                    help="Optional drug-identifier map; used to restrict the "
+                         "per-drug eval to drugs with known targets if --restrict-to-mapped.")
+    ap.add_argument("--restrict-to-mapped", action="store_true",
+                    help="If set, the per-drug eval keeps only drugs with "
+                         "match_tier > 0 in the drug identifier map.")
+    ap.add_argument("--summary-out", default="logs/mortfm/beataml_summary.json")
+    ap.add_argument("--checkpoint-name", default="beataml_finetuned.pt")
+    args = ap.parse_args()
+
     # ---- 1. Build cohort ---------------------------------------------
-    pairs, feature_names = build_beataml_pairs()
+    use_aligned = args.block_a_checkpoint is not None and args.aligned_expression is not None
+    expr_path = Path(args.aligned_expression) if use_aligned else Path("data/processed/beataml/beataml_expression.parquet")
+    pairs, feature_names = build_beataml_pairs(
+        expr_path=expr_path,
+        use_reference_features=use_aligned,
+    )
     summary = summarise_pairs(pairs)
-    logger.info("BeatAML pairs: %s", summary)
+    logger.info("BeatAML pairs: %s (block_a_aligned=%s)", summary, use_aligned)
 
     # ---- 2. Acceptance gate ------------------------------------------
     debug = evaluate_cohort(pairs, level="debug")
@@ -239,7 +307,39 @@ def main() -> int:
     logger.info("Split summary: %s", splits.summary())
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = MORTFM(cfg, n_pathway_proteins=200, n_drug_candidates=11, n_resistance_states=4)
+    # If we are loading Block A, recover its exact head dimensions so the
+    # state-dict ports cleanly into the BeatAML model.
+    block_a_load_report = None
+    n_drug_candidates = 11
+    n_pathway_proteins = 200
+    n_resistance_states = 4
+    if use_aligned:
+        a_payload = torch.load(args.block_a_checkpoint, map_location="cpu", weights_only=False)
+        a_state = a_payload.get("model_state_dict", {})
+        # Drug-risk head out-dim = n_drug_candidates.
+        for k, v in a_state.items():
+            if k.endswith("drug_risk_head.0.weight") or k.endswith("drug_risk_head.weight"):
+                n_drug_candidates = int(v.shape[0])
+            if k.endswith("resistance_state_head.weight"):
+                n_resistance_states = int(v.shape[0])
+        a_cfg = a_payload.get("config", {})
+        if a_cfg:
+            cfg = MORTFMConfig(**{**asdict(cfg), **{
+                "d_token": a_cfg.get("d_token", cfg.d_token),
+                "d_latent": a_cfg.get("d_latent", cfg.d_latent),
+                "fusion_layers": a_cfg.get("fusion_layers", cfg.fusion_layers),
+                "fusion_heads": a_cfg.get("fusion_heads", cfg.fusion_heads),
+                "drug_embed_dim": a_cfg.get("drug_embed_dim", cfg.drug_embed_dim),
+            }})
+        logger.info("Reusing Block-A config: d_token=%d, d_latent=%d, drug_embed_dim=%d, "
+                    "n_drug_candidates=%d", cfg.d_token, cfg.d_latent, cfg.drug_embed_dim,
+                    n_drug_candidates)
+    model = MORTFM(
+        cfg, n_pathway_proteins=n_pathway_proteins,
+        n_drug_candidates=n_drug_candidates, n_resistance_states=n_resistance_states,
+    )
+    if use_aligned:
+        block_a_load_report = _load_block_a_into(model, Path(args.block_a_checkpoint), device)
     trainer = MORTFMTrainer(model, cfg, train_loader=train_loader, val_loader=val_loader,
                              device=device)
 
@@ -252,18 +352,27 @@ def main() -> int:
             history.append(asdict(h))
 
     # ---- 6. Save checkpoint -------------------------------------------
-    ckpt = trainer.save_checkpoint("beataml_finetuned.pt")
+    ckpt = trainer.save_checkpoint(args.checkpoint_name)
     logger.info("Saved checkpoint -> %s", ckpt)
 
     # ---- 7. Per-drug metrics -----------------------------------------
     per_drug_df = per_drug_metrics(
         drug_path=Path("data/processed/beataml/beataml_drug_response.parquet"),
         model=model, feature_names=feature_names,
-        expr_path=Path("data/processed/beataml/beataml_expression.parquet"),
+        expr_path=expr_path,
         clin_path=Path("data/processed/beataml/beataml_clinical.csv"),
         device=device, cfg=cfg,
         out_csv=Path("logs/mortfm/beataml_per_drug_metrics.csv"),
     )
+    # Optional: restrict to drugs with known targets per drug identifier map.
+    if args.restrict_to_mapped and Path(args.drug_identifier_map).exists():
+        dmap = pd.read_csv(args.drug_identifier_map)
+        beataml_map = dmap[dmap["source_dataset"] == "BeatAML"]
+        mapped_drugs = set(beataml_map[beataml_map["match_tier"] > 0]["source_drug_name"].astype(str))
+        before = len(per_drug_df)
+        per_drug_df = per_drug_df[per_drug_df["drug_name"].astype(str).isin(mapped_drugs)]
+        logger.info("Restricted per-drug eval to %d / %d drugs with known targets",
+                    len(per_drug_df), before)
     median_spearman = float(per_drug_df["spearman"].median()) if len(per_drug_df) else float("nan")
     n_significant = int((per_drug_df["spearman_p"] < 0.05).sum()) if len(per_drug_df) else 0
     logger.info("Per-drug median Spearman = %.3f, %d/%d significant at p<0.05",
@@ -303,11 +412,13 @@ def main() -> int:
         "split_summary": splits.summary(),
         "history": history,
         "checkpoint": ckpt,
+        "block_a_aligned": use_aligned,
+        "block_a_load_report": block_a_load_report,
         "claim_permitted": "ex vivo drug-response per-specimen ranking ONLY; no resistance, no trajectory, "
                             "no survival, no pathway-mechanism claim until ChEMBL+Reactome+UniProt ingested.",
         "wall_time_s": round(time.time() - t0, 1),
     }
-    out_path = Path("logs/mortfm/beataml_summary.json")
+    out_path = Path(args.summary_out)
     with open(out_path, "w") as f:
         json.dump(final_summary, f, indent=2, default=str)
     logger.info("Wrote summary -> %s", out_path)

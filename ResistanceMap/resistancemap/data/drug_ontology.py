@@ -114,6 +114,49 @@ def lookup_entry(name: str) -> Optional[DrugOntologyEntry]:
     return _ENTRIES.get(canon) if canon else None
 
 
+import re as _re
+
+_NORMALIZE_RE = _re.compile(r"[^a-z0-9]+")
+
+
+def normalize_drug_name(name: str) -> str:
+    """Strip parentheticals, punctuation, whitespace; lowercase.
+
+    Used for cross-source matching when a registry stores
+    "Bortezomib (Velcade)" but ChEMBL has "BORTEZOMIB".
+    Returns "" for None / NaN.
+    """
+    if name is None:
+        return ""
+    s = str(name)
+    if s.lower() in {"nan", "none"}:
+        return ""
+    s = _re.sub(r"\([^)]*\)", " ", s)  # drop parenthetical suffixes
+    s = _NORMALIZE_RE.sub("", s.lower())
+    return s
+
+
+def lookup_entry_loose(name: str) -> Optional[DrugOntologyEntry]:
+    """Like :func:`lookup_entry` but tries a normalized-name fallback.
+
+    First tries the exact synonym lookup; if that misses, retries with
+    parentheticals stripped and punctuation collapsed.
+    """
+    e = lookup_entry(name)
+    if e is not None:
+        return e
+    norm = normalize_drug_name(name)
+    if not norm:
+        return None
+    for entry in _ENTRIES.values():
+        if normalize_drug_name(entry.canonical_name) == norm:
+            return entry
+        for s in entry.synonyms:
+            if normalize_drug_name(s) == norm:
+                return entry
+    return None
+
+
 def known_classes() -> List[str]:
     """All canonical drug classes in the ontology."""
     return sorted({e.drug_class for e in _ENTRIES.values()})
