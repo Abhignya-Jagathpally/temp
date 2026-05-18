@@ -77,6 +77,48 @@ class TrainingMetrics:
     wall_time_s: float = 0.0
 
 
+class MissingSupervisionError(RuntimeError):
+    """Raised by stage E/F/G when supervision coverage < threshold.
+
+    v18.2 — replaces the silent "skip empty-loss batches" behaviour the
+    v17 docstring claimed but the code didn't enforce. Any stage that
+    advertises a clinical claim level MUST receive enough supervised
+    batches; otherwise the run is refused, not silently mis-trained.
+    """
+
+
+@dataclass
+class StageSupervisionReport:
+    """Per-stage supervision audit used by v18.2's strict policy."""
+    stage: str
+    n_batches: int = 0
+    n_supervised_batches: int = 0
+    missing_reasons: Dict[str, int] = field(default_factory=dict)
+
+    @property
+    def coverage(self) -> float:
+        return self.n_supervised_batches / max(self.n_batches, 1)
+
+    def summary(self) -> dict:
+        return {
+            "stage": self.stage,
+            "n_batches": self.n_batches,
+            "n_supervised_batches": self.n_supervised_batches,
+            "coverage": self.coverage,
+            "missing_reasons": dict(self.missing_reasons),
+        }
+
+
+# v18.2 — supervision-coverage thresholds the strict policy enforces.
+# Stages outside this dict are NOT supervised stages (foundation
+# pretraining); they may legitimately have empty-loss batches.
+STRICT_SUPERVISION_COVERAGE = {
+    "E": 0.80,   # trajectory — needs future_state
+    "F": 0.90,   # survival   — needs event_time + event_observed
+    "G": 0.70,   # pathway    — needs pathway_targets
+}
+
+
 # ---------------------------------------------------------------------------
 # Stage spec
 # ---------------------------------------------------------------------------
@@ -299,16 +341,39 @@ class MORTFMTrainer:
         sum_loss = 0.0
         sum_components: Dict[str, float] = {}
         n_batches = 0
+        # v18.2 — supervision audit for the strict policy.
+        sup_report = StageSupervisionReport(stage=stage)
+
+        # v18.2 — which supervision key is mandatory for this stage?
+        required_supervision_key = {
+            "E": "trajectory", "F": "survival", "G": "pathway",
+        }.get(stage)
 
         for batch in self.train_loader:
+            sup_report.n_batches += 1
             self.optimizer.zero_grad()
             with torch.amp.autocast("cuda", enabled=(self.config.mixed_precision and self.device.type == "cuda")):
                 components, weights = self._losses_for_batch(batch, stage)
                 if not components:
-                    # No live loss for this stage on this batch (e.g. survival
-                    # stage but no event labels). Skip rather than fail —
-                    # zero-grad keeps the optimizer state coherent.
+                    # v18.2 — record reason instead of silently continuing.
+                    sup_report.missing_reasons["no_components"] = (
+                        sup_report.missing_reasons.get("no_components", 0) + 1
+                    )
                     continue
+                # v18.2 — for supervised stages, count a batch as "supervised"
+                # only if the stage-specific loss component actually fired.
+                if required_supervision_key:
+                    if required_supervision_key in components:
+                        sup_report.n_supervised_batches += 1
+                    else:
+                        sup_report.missing_reasons[
+                            f"missing_{required_supervision_key}"
+                        ] = sup_report.missing_reasons.get(
+                            f"missing_{required_supervision_key}", 0
+                        ) + 1
+                else:
+                    # Foundation stages (A/B/C) — any non-empty component counts
+                    sup_report.n_supervised_batches += 1
                 total, breakdown = assemble_total_loss(components, weights)
             self.scaler.scale(total).backward()
             self.scaler.unscale_(self.optimizer)
@@ -319,6 +384,26 @@ class MORTFMTrainer:
             for k, v in breakdown.items():
                 sum_components[k] = sum_components.get(k, 0.0) + v
             n_batches += 1
+
+        # v18.2 — STRICT supervision check BEFORE we finalise the epoch.
+        # Any stage in STRICT_SUPERVISION_COVERAGE that fell below its
+        # threshold raises rather than silently producing a misleading loss.
+        if stage in STRICT_SUPERVISION_COVERAGE:
+            min_cov = STRICT_SUPERVISION_COVERAGE[stage]
+            if sup_report.coverage < min_cov:
+                raise MissingSupervisionError(
+                    f"Stage {stage!r} supervision coverage = "
+                    f"{sup_report.coverage:.1%} ({sup_report.n_supervised_batches}/"
+                    f"{sup_report.n_batches} batches) — below the strict "
+                    f"{min_cov:.0%} threshold. Reasons: {sup_report.missing_reasons}. "
+                    f"This is the v18.2 'raise, don't skip' policy: the trainer "
+                    f"refuses to advance an under-supervised supervised stage."
+                )
+            logger.info(
+                "Stage %s supervision: %d/%d batches supervised (%.1f%% ≥ %.0f%% threshold)",
+                stage, sup_report.n_supervised_batches, sup_report.n_batches,
+                100 * sup_report.coverage, 100 * min_cov,
+            )
 
         avg = sum_loss / max(n_batches, 1)
         for k in sum_components:
