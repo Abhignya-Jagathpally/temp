@@ -1,6 +1,13 @@
 # ResistanceMap / MORT-FM
 
-Branch `v16` (head `3cfcaf0`, 2026-05-18).
+Branch `v17` (latest head; v16 archived). v17 enforces three steering
+constraints from the v16 honest-limitations review: (1) every patient-level
+claim must beat a clinical-only Cox baseline AND a permutation null on the
+same LOO splits; (2) the STRING-alias → HGNC ID bridge is now first-class
+so the causal validator's CRISPR cross-check is no longer blocked by ID
+mismatch; (3) `resistancemap/mortfm/model.py:MORTFM` is unified —
+`forward_lens()` calls the v16 LENS modules directly (no parallel
+placeholder paths).
 
 This repository contains two scientific tracks that share an infrastructure
 backbone:
@@ -23,7 +30,16 @@ backbone:
 
 ---
 
-## MORT-FM v15+v16 status (current)
+## MORT-FM v15+v16+v17 status (current)
+
+### v17 deltas (since v16, four commits)
+
+| v17 commit | Real measurable change |
+|---|---|
+| **v17.1** STRING-alias → HGNC ID bridge | Causal-validator HGNC coverage **0% → 100%** (200/200 edges); common-essential overlap 0% → 5.5%; refusal reasons now biological, not infrastructural |
+| **v17.2** Clinical-only Cox + permutation null | Honest verdict surfaced: **clinical-only Cox C-index = 0.366** (worse than random, p=0.956 vs null at n=29). Best LENS (C=0.603) beats Cox by +0.237 but lower CI 0.442 still below null+2σ — `patient_level_claim_allowed = False` correctly refused |
+| **v17.3** *(this commit)* Unify model.py around v16 LENS | `MORTFM.forward_lens()` calls GraphEnergyResistanceSDE + CompetingRiskHead + ResistanceBasin + HittingTime + LatentToGraphProjector directly. Both `forward()` (legacy) and `forward_lens()` (v16) verified on real MMRF z0 batch |
+| v17 cumulative effect | No claim levels added, but every previously-blocked gate has a concrete, biological refusal reason — not an infrastructure artifact |
 
 ### Claim gates (12 levels, 5 granted)
 
@@ -140,9 +156,11 @@ resistancemap/mortfm/
                           LatentToGraphProjector, WaddingtonPotential
   survival/             — CompetingRiskHead, nll_competing_risk, concordance_index
                           + bootstrap CI, integrated_brier_score, KM strata,
-                          SurvivalCalibration (LBFGS temp-scaling)
-  causal/               — InterventionGraph, CounterfactualRunner,
-                          PathwayCausalValidator
+                          SurvivalCalibration (LBFGS temp-scaling),
+                          ClinicalOnlyCox, permutation_null_cindex  (v17)
+  graph/                — IDHarmonizer (STRING alias ↔ HGNC ↔ UniProt bridge)  (v17)
+  causal/               — InterventionGraph (now ID-bridged), CounterfactualRunner,
+                          PathwayCausalValidator (now CRISPR-bridged)
 resistancemap/training/
   loss_router.py        — LossRouter with required-supervision guardrail
 scripts/
@@ -165,6 +183,10 @@ scripts/
   mortfm_lens_variant_compare.py
   mortfm_lens_smoke_test.py
   mortfm_causal_smoke_test.py
+  # v17 additions:
+  mortfm_causal_evidence_report.py           — per-edge HGNC/UniProt/CRISPR table
+  mortfm_survival_baseline_suite.py          — clinical-only Cox + permutation null
+  mortfm_v17_unified_smoke.py                — contract test: both forward() paths
 ```
 
 ### Quick start (MORT-FM v16)
@@ -405,8 +427,10 @@ Three project-policy rules enforced via `.claude/settings.json` hooks:
 
 ---
 
-_README v16 — last updated 2026-05-18. Heads `defd02d` (v15-next-pass) and
-`3cfcaf0` (v15-next-pass-2 = v16 branch head). All v16 numbers derive from
-artifacts under `checkpoints/mortfm/`, `data/processed/`, and `logs/mortfm/`.
-The v8 ResistanceMap section is preserved as a historical track and is still
-reproducible from `checkpoints/pipeline_validated.pt`._
+_README v17 — last updated 2026-05-18. v17 commits added on top of the
+v16 head `3cfcaf0`: `4ccf49f` (STRING-alias→HGNC bridge), `4f120f8`
+(clinical-only Cox baseline suite), this commit (model.py unification +
+README update). All v16+v17 numbers derive from artifacts under
+`checkpoints/mortfm/`, `data/processed/`, `results/mortfm/`, and
+`logs/mortfm/`. The v8 ResistanceMap section is preserved as a historical
+track and is still reproducible from `checkpoints/pipeline_validated.pt`._

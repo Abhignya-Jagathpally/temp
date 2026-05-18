@@ -46,6 +46,20 @@ from resistancemap.mortfm.schemas import (
     TrajectoryPrediction,
 )
 
+# v17 — first-class import of the v16 LENS modules. The classic
+# `forward()` method still uses the legacy TrajectorySampler+WaddingtonPotential
+# path for backward compatibility with checkpoints saved before v16. The
+# new `forward_lens()` method uses GraphEnergyResistanceSDE + CompetingRiskHead
+# + ResistanceBasin + HittingTime — the v16 path actually trained on
+# MMRF + BeatAML + scRNA. New trainers should call forward_lens().
+from resistancemap.mortfm.trajectory import (  # noqa: E402
+    GraphEnergyResistanceSDE,
+    HittingTime,
+    LatentToGraphProjector,
+    ResistanceBasin,
+)
+from resistancemap.mortfm.survival import CompetingRiskHead  # noqa: E402
+
 
 class MORTFM(nn.Module):
     """End-to-end MORT-FM."""
@@ -117,6 +131,38 @@ class MORTFM(nn.Module):
         )
         self.counterfactual_head = CounterfactualInterventionHead(
             sampler=self.sampler, risk_head=self.drug_risk_head
+        )
+
+        # ------------------------------------------------------------------
+        # v17 — v16 LENS submodules. Always allocated so checkpoints
+        # serialise both paths; forward_lens() chooses among them at call
+        # time. Hyperparameters mirror what mortfm_train_lens_resistance.py
+        # actually used (n_basins=5, n_time_grid=config.n_time_grid).
+        # ------------------------------------------------------------------
+        self.lens_sde = GraphEnergyResistanceSDE(
+            d_latent=config.d_latent,
+            d_graph=16,
+            d_drug=8,
+            d_clinical=5,
+            n_basins=5,
+            integration_time=1.0,
+            n_time_grid=config.n_time_grid,
+            n_mc_samples=4,
+        )
+        self.lens_basin = ResistanceBasin(
+            d_latent=config.d_latent, n_basins=5,
+            share_centroids_with=self.lens_sde.potential,
+        )
+        self.lens_hitting = HittingTime(
+            self.lens_basin, resistant_basin_index=4, prob_threshold=0.3,
+        )
+        self.lens_graph_projector = LatentToGraphProjector(
+            d_latent=config.d_latent, d_graph=16,
+        )
+        self.lens_competing_risk = CompetingRiskHead(
+            d_latent=config.d_latent,
+            n_bins=config.survival_n_bins,
+            event_names=["progression"],
         )
 
     # ------------------------------------------------------------------
@@ -192,3 +238,70 @@ class MORTFM(nn.Module):
             )
             prediction.counterfactual_rankings = [[r.__dict__ for r in results]]
         return prediction
+
+    # ------------------------------------------------------------------
+    # v17 — v16 LENS forward path. Use this instead of forward() for
+    # new training runs. It is the path that produced the v16 results
+    # (Block A static_drug_response, Block B BeatAML transfer, MMRF
+    # LENS LOO C-index, etc.).
+    # ------------------------------------------------------------------
+
+    def forward_lens(
+        self,
+        batch: MORTBatch,
+        *,
+        clinical: Optional[torch.Tensor] = None,
+        drug: Optional[torch.Tensor] = None,
+        graph_emb: Optional[torch.Tensor] = None,
+        use_graph_projector: bool = True,
+    ) -> dict:
+        """LENS-style forward: SDE rollout + competing-risk hazard + basin probs.
+
+        Parameters
+        ----------
+        batch : MORTBatch (used only for encoding to z0)
+        clinical : (B, 5) clinical covariates from encode_for_lens, or None
+                   (then zero-filled). MUST match d_clinical=5.
+        drug : (B, 8) drug context (one-hot-ish), or None.
+        graph_emb : (B, 16) precomputed biological graph embedding, or
+                    None — in which case use_graph_projector decides
+                    whether to learn graph_emb = projector(z0) or feed zeros.
+
+        Returns
+        -------
+        dict with keys:
+            z0, z_traj, z_samples, t_grid, hazard, survival_curve,
+            cif_per_event, basin_probs, hitting_cdf, hitting_mean_tau,
+            hitting_frac_hit
+        """
+        state = self.encode(batch)
+        z0 = state.z0
+        B = z0.shape[0]
+        if drug is None:
+            drug = z0.new_zeros((B, 8))
+        if clinical is None:
+            clinical = z0.new_zeros((B, 5))
+        if graph_emb is None:
+            graph_emb = (
+                self.lens_graph_projector(z0)
+                if use_graph_projector
+                else z0.new_zeros((B, 16))
+            )
+        sde_out = self.lens_sde(z0, graph_emb, drug, clinical, return_samples=True)
+        z_final = sde_out["z_traj"][:, -1, :]
+        head_out = self.lens_competing_risk(z_final)
+        basin_probs = self.lens_basin.trajectory_probs(sde_out["z_traj"])
+        hit_out = self.lens_hitting(sde_out["z_samples"], sde_out["t_grid"])
+        return {
+            "z0": z0,
+            "z_traj": sde_out["z_traj"],
+            "z_samples": sde_out["z_samples"],
+            "t_grid": sde_out["t_grid"],
+            "hazard": head_out["hazard"],
+            "survival_curve": head_out["survival_curve"],
+            "cif_per_event": head_out["cif_per_event"],
+            "basin_probs": basin_probs,
+            "hitting_cdf": hit_out["cdf"],
+            "hitting_mean_tau": hit_out["mean_tau"],
+            "hitting_frac_hit": hit_out["frac_hit"],
+        }
