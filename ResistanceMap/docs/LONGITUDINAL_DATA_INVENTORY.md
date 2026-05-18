@@ -29,10 +29,16 @@ the search targets for the next data-ingestion sprint.
    - Source: GDC (Genomic Data Commons) + dbGaP phs000748
    - Ingestion friction: dbGaP controlled access; requires IRB
 
-2. **GSE116324 / GSE2658 (Heuck et al. APEX)** — bortezomib pre/post treatment
-   - ~150 paired samples with response category
-   - Source: GEO public
-   - Ingestion friction: low; standard GEO HT-array
+2. **GSE116324 (Chapman et al. PADIMAC)** — **NOT paired longitudinal**
+   - 44 newly diagnosed MM patients with **baseline-only** RNA-seq + PAD
+     (bortezomib + adriamycin + dexamethasone) treatment response
+   - Ingested 2026-05-18 at `data/processed/padimac/` — 98.8% Block-A
+     feature coverage (1,975/2,000), so it cleanly joins the Block-A
+     static_drug_response training pool.
+   - Does **NOT** unlock `gate_longitudinal_trajectory` — corrected from
+     the prior version of this inventory which misattributed it to APEX.
+   - For paired pre/post bortezomib, see GSE9782 (Mulligan et al.) and
+     GSE39754 (Brioli et al.) which actually carry baseline + relapse pairs.
 
 3. **GSE9782 (Mulligan et al.)** — bortezomib pre-treatment + response endpoint
    - Cross-sectional but with response labels usable as resistance proxy
@@ -101,9 +107,12 @@ the 100-pair gate. **This requires no model changes — only data work.**
 | Scenario | n_pairs | gate_longitudinal_trajectory |
 |---|---|---|
 | Current (MMRF only) | 29 | **FAIL** |
-| + GSE116324 | ~179 | **PASS** (if calendar-time labels survive ingestion) |
-| + GSE116324 + Tirier | ~193 | **PASS** + scRNA channel |
-| All-of-the-above | ~250+ | **PASS** + multi-modal |
+| + GSE39754 (Brioli paired) | ~50 | **FAIL** (still <100) |
+| + Tirier 2021 EGA scRNA | ~64 | **FAIL** + scRNA channel |
+| + MMRF IA-19 (if accessible) | ~130 | **PASS** |
+| + GSE9782 (APEX cross-sectional usable as response proxy) | ~330 | **PASS** + drug-response cross-validation |
+
+(Removed prior row that assumed GSE116324 was paired — it is not.)
 
 ## Honest limitations of this inventory
 

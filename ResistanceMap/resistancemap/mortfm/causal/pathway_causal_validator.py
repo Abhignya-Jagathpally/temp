@@ -59,6 +59,10 @@ class PathwayCausalValidator:
             pd.read_parquet(reactome_parquet) if Path(reactome_parquet).exists() else None
         )
         self.crispr_dir = Path(crispr_dir)
+        # The new ingest emits essentiality_summary.csv; load it once for the
+        # validator's CRISPR check.
+        ess_csv = self.crispr_dir / "essentiality_summary.csv"
+        self.crispr_essentiality = pd.read_csv(ess_csv) if ess_csv.exists() else None
 
     def validate(
         self,
@@ -100,17 +104,51 @@ class PathwayCausalValidator:
         top_mean = float(edge_effects.head(10)["delta"].dropna().mean()) if n else float("nan")
         separation = (top_mean - neg_mean) / max(neg_std, 1e-6) if neg_std == neg_std else float("nan")
 
+        # CRISPR cross-check: for top-k edges, what fraction of downstream
+        # genes are common-essential (frac_essential >= 0.9)? This is the
+        # external-evidence channel that gate_causal_mechanism reads.
+        crispr_topk_essential_frac = {}
+        if self.crispr_essentiality is not None:
+            common_ess_set = set(
+                self.crispr_essentiality[
+                    self.crispr_essentiality["frac_essential"] >= 0.9
+                ]["gene_symbol"].astype(str).str.upper()
+            )
+            for k in ks:
+                top = edge_effects.head(k)
+                hits = 0
+                seen = 0
+                for eid in top["edge_id"].astype(str):
+                    parts = eid.split("::")
+                    if len(parts) >= 2 and parts[1]:
+                        seen += 1
+                        if parts[1].upper() in common_ess_set:
+                            hits += 1
+                crispr_topk_essential_frac[k] = (
+                    hits / max(seen, 1) if seen else 0.0
+                )
+
         reasons: List[str] = []
+        causal_pass = True
         if not (separation == separation and separation > 2.0):
             reasons.append(
                 f"top-10 mean delta ({top_mean:.4f}) is within 2 std of the "
                 f"middle-10% negative control ({neg_mean:.4f} +- {neg_std:.4f}); "
                 "no causal_mechanism claim from this run."
             )
+            causal_pass = False
         if self.drug_targets is None:
             reasons.append("drug_targets.csv missing — cannot check drug-target recall")
-        if not (self.crispr_dir / "gene_effect.csv").exists():
-            reasons.append("CRISPR gene-effect data not on disk — causal_mechanism gate stays blocked")
+            causal_pass = False
+        if self.crispr_essentiality is None:
+            reasons.append("CRISPR essentiality summary not on disk — causal_mechanism gate stays blocked")
+            causal_pass = False
+        elif crispr_topk_essential_frac and crispr_topk_essential_frac.get(10, 0.0) < 0.20:
+            reasons.append(
+                f"top-10 edges have only {100*crispr_topk_essential_frac.get(10,0):.0f}% "
+                "common-essential downstream genes (CRISPR threshold 20%)"
+            )
+            causal_pass = False
 
         return CausalValidationResult(
             n_edges_scored=n,
@@ -122,7 +160,8 @@ class PathwayCausalValidator:
                 "negative_control_std_delta": neg_std,
                 "top10_mean_delta": top_mean,
                 "separation_in_std": separation,
+                "crispr_topk_essential_frac": crispr_topk_essential_frac,
             },
-            causal_mechanism_gate_pass=False,
+            causal_mechanism_gate_pass=bool(causal_pass),
             reasons_blocked=reasons,
         )

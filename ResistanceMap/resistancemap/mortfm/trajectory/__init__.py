@@ -39,6 +39,9 @@ from resistancemap.mortfm.trajectory.graph_energy_sde import (  # noqa: F401
     GraphEnergyResistanceSDE,
     WaddingtonPotential,
 )
+from resistancemap.mortfm.trajectory.graph_projector import (  # noqa: F401
+    LatentToGraphProjector,
+)
 from resistancemap.mortfm.trajectory.hitting_time import (  # noqa: F401
     HittingTime,
 )
