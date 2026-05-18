@@ -1,0 +1,5725 @@
+{
+  "run_id": "r-2026-05-18-dead-code-audit",
+  "n_files_scanned": 434,
+  "n_files_allowlisted": 82,
+  "by_kind": {
+    "unused_import": 694,
+    "unused_local": 49,
+    "orphan_module": 73
+  },
+  "wall_time_s": 3.767,
+  "findings": [
+    {
+      "file": "resistancemap/v10_runner.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/main.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/main.py",
+      "line": 165,
+      "kind": "unused_local",
+      "symbol": "verifier",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/main.py",
+      "line": 192,
+      "kind": "unused_local",
+      "symbol": "profiler",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/config.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/_facts.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "time",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "sparse",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "NMF",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 435,
+      "kind": "unused_local",
+      "symbol": "clusters",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "Union",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "ElasticNet",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "LogisticRegression",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "StratifiedKFold",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "cross_val_predict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "Pipeline",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "stats",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "RidgeClassifier",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "ElasticNetCV",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "RandomForestRegressor",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "cross_val_predict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "GridSearchCV",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 48,
+      "kind": "unused_import",
+      "symbol": "Pipeline",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "pd",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 52,
+      "kind": "unused_import",
+      "symbol": "scvi",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/__init__.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "PERCEPTIONBaseline",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "CPABaseline",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/__init__.py",
+      "line": 4,
+      "kind": "unused_import",
+      "symbol": "SimpleBaselinesSuite",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/__init__.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "MOFAPlusBaseline",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/__init__.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "CellRankBaseline",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/__init__.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "ScVIBaseline",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/__init__.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "IntegrationBenchmark",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agentops/optimizer.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agentops/dashboard.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "EvaluationMetrics",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agentops/dashboard.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "OptimizationMetrics",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agentops/evaluator.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "hashlib",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/verification/guardrails.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/verification/guardrails.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/verification/guardrails.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "np",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/verification/math_reasoning.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/verification/math_reasoning.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/verification/zero_trust.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "stats",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/verification/zero_trust.py",
+      "line": 550,
+      "kind": "unused_local",
+      "symbol": "log_entry",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data_quality/profiler.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data_quality/profiler.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "ABC",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data_quality/profiler.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "abstractmethod",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/uncertainty_explanations.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/counterfactual_engine.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/counterfactual_engine.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/counterfactual_engine.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Sequence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/counterfactual_engine.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Union",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/counterfactual_engine.py",
+      "line": 227,
+      "kind": "unused_local",
+      "symbol": "t_span_dev",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/temporal_explanations.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/pathway_attribution.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/pathway_attribution.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "Sequence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/__init__.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/__init__.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/visualization.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/visualization.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "mcolors",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/visualization.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "FancyArrowPatch",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/interpretability/visualization.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "Axes3D",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/scrna_integration.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/scrna_integration.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "dirichlet_multinomial",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/scrna_integration.py",
+      "line": 187,
+      "kind": "unused_local",
+      "symbol": "device",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "ABC",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "abstractmethod",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "stats",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Normal",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 195,
+      "kind": "unused_local",
+      "symbol": "prior_nu",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 658,
+      "kind": "unused_local",
+      "symbol": "device",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/imaging_radiomics.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/imaging_radiomics.py",
+      "line": 4,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/guardrails.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/missing_modality.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/missing_modality.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/missing_modality.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "Normal",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/missing_modality.py",
+      "line": 250,
+      "kind": "unused_local",
+      "symbol": "batch_size",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/continual_learning.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/continual_learning.py",
+      "line": 4,
+      "kind": "unused_import",
+      "symbol": "ABC",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/continual_learning.py",
+      "line": 4,
+      "kind": "unused_import",
+      "symbol": "abstractmethod",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/continual_learning.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/continual_learning.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "odeint",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/multi_site_harmonization.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/multi_site_harmonization.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "gammaln",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/multi_site_harmonization.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "digamma",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/multi_site_harmonization.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "polygamma",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/infrastructure/multi_site_harmonization.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "minimize",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/orchestrator.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/external_validation.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/external_validation.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "expit",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/external_validation.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "pd",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/ablation_harness.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/charter.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "DummyRegressor",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "DummyClassifier",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/leakage.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/benchmarking.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/benchmarking.py",
+      "line": 724,
+      "kind": "unused_local",
+      "symbol": "ref_auc",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/prospective_validation.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/prospective_validation.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "Callable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/prospective_validation.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/fairness_audit.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/fairness_audit.py",
+      "line": 9,
+      "kind": "unused_import",
+      "symbol": "pdist",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/fairness_audit.py",
+      "line": 9,
+      "kind": "unused_import",
+      "symbol": "squareform",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/base.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/post_hoc_calibration.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/ablations.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/ablations.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "expit",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/ablations.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "pd",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/power_analysis.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "log10",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/power_analysis.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/epistemic_boundaries.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/cytogenetic_stratification.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/cytogenetic_stratification.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "stats",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/cytogenetic_stratification.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "ElasticNet",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/competing_risks.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/calibration.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/rubric.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/statistical_testing.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/statistical_testing.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Path",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "StratifiedKFold",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 45,
+      "kind": "unused_import",
+      "symbol": "nn",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 252,
+      "kind": "unused_import",
+      "symbol": "RandomForestClassifier",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 674,
+      "kind": "unused_local",
+      "symbol": "bars",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/__init__.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "AblationStudy",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/__init__.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "AblationConfig",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/__init__.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "ModelFactory",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/__init__.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "run_full_ablation",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "StatisticalComparison",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "delong_test",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/experiments/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "bootstrap_ci",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/utils/checkpoint.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/utils/logging_utils.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/utils/metrics.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/trainer.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/trainer.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "copy",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/trainer.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/trainer.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/losses.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/losses.py",
+      "line": 374,
+      "kind": "unused_local",
+      "symbol": "dim",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/loss_router.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/loss_router.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/mortfm_losses.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/mortfm_losses.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/mortfm_losses.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "Sequence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/training/mortfm_losses.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "basin_entropy_penalty",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/governance/endpoint_validator.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/governance/claim_gates.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/governance/claim_gates.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/governance/claim_gates.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "EndpointSemanticsReport",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/barrier_estimation.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/waddington_visualizer.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/rwr_propagation.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/rwr_propagation.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "dataclass",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/rwr_propagation.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/scalar_potential.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/attractor_basin.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/predictor.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/predictor.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/landscape_regularizers.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/neural_ode_flow.py",
+      "line": 42,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/hbayes_outer.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/potential.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/landscape/gat_propagation.py",
+      "line": 51,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trainer.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trainer.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "nn",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trainer.py",
+      "line": 47,
+      "kind": "unused_import",
+      "symbol": "AcceptanceReport",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/model.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/acceptance_gate.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/acceptance_gate.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/acceptance_gate.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "Set",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/data_module.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/data_module.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/data_module.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/schemas.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/schemas.py",
+      "line": 42,
+      "kind": "unused_import",
+      "symbol": "Sequence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/inference/pipeline.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/inference/api.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/inference/api.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "torch",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/inference/api.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "TemporalLandscape",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/inference/api.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "LandscapeResult",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/per_drug_head.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/per_drug_head.py",
+      "line": 47,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/bistability.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/bistability.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/bistability.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "global_mean_pool",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/identifiable_ode.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/identifiable_ode.py",
+      "line": 44,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/identifiable_ode.py",
+      "line": 46,
+      "kind": "unused_import",
+      "symbol": "Sequence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/identifiable_ode.py",
+      "line": 46,
+      "kind": "unused_import",
+      "symbol": "Union",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/identifiable_ode.py",
+      "line": 898,
+      "kind": "unused_local",
+      "symbol": "K",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/identifiable_ode.py",
+      "line": 1107,
+      "kind": "unused_local",
+      "symbol": "device",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/vae.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/vae.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/vae.py",
+      "line": 543,
+      "kind": "unused_local",
+      "symbol": "film_idx",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/domain_adaptation.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/domain_adaptation.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/domain_adaptation.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/domain_adaptation.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "Subset",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/clonal_heterogeneity.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/clonal_heterogeneity.py",
+      "line": 402,
+      "kind": "unused_local",
+      "symbol": "avg_fitness",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/cell_communication.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "np",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/cell_communication.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "global_mean_pool",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/cell_communication.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "GlobalAttention",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/cell_communication.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "PyGData",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/cell_communication.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "PyGBatch",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/rl_treatment_optimization.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/rl_treatment_optimization.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/protein_network.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/protein_network.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "global_mean_pool",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/protein_network.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "PyGBatch",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/clinical_anchored_ode.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/clinical_anchored_ode.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/foundation_fusion.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/foundation_fusion.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/fusion.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/fusion.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/cell_state_plasticity.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/cell_state_plasticity.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/disentangled_vae.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/disentangled_vae.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "Callable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/disentangled_vae.py",
+      "line": 46,
+      "kind": "unused_import",
+      "symbol": "kl_divergence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/disentangled_vae.py",
+      "line": 269,
+      "kind": "unused_local",
+      "symbol": "D",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/disentangled_vae.py",
+      "line": 673,
+      "kind": "unused_local",
+      "symbol": "K",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/trajectory.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/trajectory.py",
+      "line": 923,
+      "kind": "unused_local",
+      "symbol": "batch_size",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/trajectory.py",
+      "line": 1052,
+      "kind": "unused_local",
+      "symbol": "batch_size",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/trajectory.py",
+      "line": 1260,
+      "kind": "unused_local",
+      "symbol": "device",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/causal_fusion.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/causal_fusion.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/causal_fusion.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "Set",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/causal_fusion.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "Union",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mcp_integration/connectors.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "heapq",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/latent_compute/scheduler.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Set",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/smm_progression.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/smm_progression.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/smm_progression.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/smm_progression.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "special",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/smm_progression.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "stats",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/smm_progression.py",
+      "line": 96,
+      "kind": "unused_local",
+      "symbol": "batch_size",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/early_relapse_detection.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/early_relapse_detection.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "linregress",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/emd_prediction.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/emd_prediction.py",
+      "line": 4,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/emd_prediction.py",
+      "line": 9,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/treatment_conditioned.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/treatment_conditioned.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/treatment_conditioned.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/treatment_conditioned.py",
+      "line": 674,
+      "kind": "unused_local",
+      "symbol": "batch_size",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "Tanh",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "Sigmoid",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "abstractmethod",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "minimize",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 283,
+      "kind": "unused_local",
+      "symbol": "batch_size",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 577,
+      "kind": "unused_local",
+      "symbol": "n",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/relapse_prediction.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/immunotherapy_response.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/immunotherapy_response.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "pad_sequence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/mrd_prediction.py",
+      "line": 1,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/clinical/mrd_prediction.py",
+      "line": 357,
+      "kind": "unused_local",
+      "symbol": "batch_size",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/drug_target_loader.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/cite_seq_loader.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/cite_seq_loader.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/cite_seq_loader.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/identifier_mapping.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/identifier_mapping.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "functools",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/identifier_mapping.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/reactome_loader.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/reactome_loader.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "dataclass",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/reactome_loader.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/reactome_loader.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/methylation_loader.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/methylation_loader.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/methylation_loader.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/protein_sequence_cache.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/protein_sequence_cache.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/protein_sequence_cache.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/pathway_harmonization.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "Set",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/pathway_harmonization.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "pd",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/clinical_outcome_loader.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/clinical_outcome_loader.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "re",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/model_id_resolver.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/trajectory_pair_builder.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/trajectory_pair_builder.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/splits.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/manifest_schemas.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/manifest_schemas.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/drug_ontology.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/drug_ontology.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/scrna_loader.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/scrna_loader.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Dict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "hashlib",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "warnings",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "Union",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "defaultdict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "DataLoader",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 609,
+      "kind": "unused_local",
+      "symbol": "rng",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/string_debiasing.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/uniprot_loader.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/uniprot_loader.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "pickle",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/histone_ptm_loader.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/histone_ptm_loader.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "Dict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/single_cell_preprocessing.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/single_cell_preprocessing.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "Path",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/targets.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/phosphoproteomics_loader.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/phosphoproteomics_loader.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/phosphoproteomics_loader.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/perturbation_loader.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/perturbation_loader.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/graph_builder.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/graph_builder.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/graph_builder.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "np",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/graph_builder.py",
+      "line": 262,
+      "kind": "unused_import",
+      "symbol": "AutoTokenizer",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/graph_builder.py",
+      "line": 262,
+      "kind": "unused_import",
+      "symbol": "AutoModel",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/treatment_exposure.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/treatment_exposure.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "Path",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "Path",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "Dict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "Union",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "defaultdict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "stats",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "VarianceThreshold",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "KFold",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 399,
+      "kind": "unused_local",
+      "symbol": "required_cols",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mortfm_dataset.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mortfm_dataset.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mortfm_dataset.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "Dict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/mortfm_dataset.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "DrugContext",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/proteomics_loader.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/proteomics_loader.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/proteomics_loader.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/feature_alignment.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/feature_alignment.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/feature_alignment.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/loaders.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/loaders.py",
+      "line": 884,
+      "kind": "unused_local",
+      "symbol": "n",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/chembl_drug_target_loader.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/chembl_drug_target_loader.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "dataclass",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/chembl_drug_target_loader.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessors.py",
+      "line": 6,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessors.py",
+      "line": 53,
+      "kind": "unused_import",
+      "symbol": "anndata",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/preprocessors.py",
+      "line": 326,
+      "kind": "unused_local",
+      "symbol": "model_to_ccle",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/scatac_loader.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/data/scatac_loader.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/orchestrator.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/orchestrator.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "deque",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/example_usage.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/example_usage.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "ResistanceMapConfig",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/example_usage.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "log_summary",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/specialized.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/base.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/agents/base.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "Path",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/observability/v11_stage_decorator.py",
+      "line": 9,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/observability/instrumentation.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/identifiability_proof.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/identifiability_proof.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "IdentifiabilityConfig",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "FisherInformationAnalyzer",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "StructuralIdentifiabilityTest",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "EmpiricalConvergenceTest",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "SensitivityAnalyzer",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "run_full_identifiability_analysis",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "StabilityConfig",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "BifurcationAnalyzer",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "BasinOfAttraction",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "LyapunovExponentComputer",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "PhasePortraitGenerator",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/__init__.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "FixedPointFinder",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/stability_analysis.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/stability_analysis.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/stability_analysis.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "nn",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/stability_analysis.py",
+      "line": 36,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/stability_analysis.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "odeint",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/theory/stability_analysis.py",
+      "line": 560,
+      "kind": "unused_local",
+      "symbol": "n_renorms",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines/last_observation.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines/clinical_only.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines/base.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines/simple_survival.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines/transcriptome_only.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/baselines/__init__.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_c/forecasting_uncertainty.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_c/clinical_safety.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_c/baseline_adversary.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_c/baseline_adversary.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_c/baseline_adversary.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_c/__init__.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/survival.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/survival.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "scipy",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/shift.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/pathway_stability.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/forecasting.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/calibration.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/per_drug.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/metrics/__init__.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_d/chair.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_d/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_b/cell_state_specialist.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_b/cell_state_specialist.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_b/architecture_auditor.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_b/__init__.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_b/pathway_ppi.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_a/data_adequacy.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_a/data_adequacy.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "detect_temporal_leakage",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_a/bias_fairness.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_a/measurement_integration.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/evaluation/tier_a/__init__.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_d_graph.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/_common.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_b_beataml.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_b_beataml.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_e_integrated.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_a_cellline.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_a_cellline.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "asdict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_a_cellline.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_a_cellline.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/blocks/block_c_scrna.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/drug_response/per_drug_sampler.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/drug_response/per_drug_sampler.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/drug_response/drug_conditioned_head.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/drug_response/__init__.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "DrugConditionedSpecimenResponseHead",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/drug_response/__init__.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "PerDrugPairSampler",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/competing_risk_head.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/competing_risk_head.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/survival_calibration.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/baselines.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/baselines.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "dataclass",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/baselines.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/time_to_event_metrics.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/time_to_event_metrics.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/time_to_event_metrics.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "CompetingRiskHead",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "discrete_time_grid",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "survival_curve_from_hazards",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "SurvivalCalibration",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "concordance_index",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "concordance_index_bootstrap_ci",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "integrated_brier_score",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 29,
+      "kind": "unused_import",
+      "symbol": "km_strata_separation",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "ClinicalOnlyCox",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "cox_fit_predict_loo",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "permutation_null_cindex",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "RegularizedLENS",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "RegularizedLENSConfig",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "bootstrap_optimism_correction",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/__init__.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "fit_predict_loo_regularized",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/regularized_lens.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/regularized_lens.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Callable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/regularized_lens.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/survival/regularized_lens.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/pathway_evidence_joiner.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/edge_evidence_report.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/edge_evidence_report.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/drug_target_evidence_joiner.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/crispr_evidence_joiner.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/crispr_evidence_joiner.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/pathway_causal_validator.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/pathway_causal_validator.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/counterfactual_runner.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/intervention_graph.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/intervention_graph.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "np",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "InterventionGraph",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "InterventionType",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "CounterfactualRunner",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "EdgeEffect",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 42,
+      "kind": "unused_import",
+      "symbol": "PathwayCausalValidator",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 46,
+      "kind": "unused_import",
+      "symbol": "join_crispr_essentiality",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 49,
+      "kind": "unused_import",
+      "symbol": "join_drug_target_support",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 52,
+      "kind": "unused_import",
+      "symbol": "join_pathway_support",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 52,
+      "kind": "unused_import",
+      "symbol": "top_k_pathway_enrichment",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/causal/__init__.py",
+      "line": 56,
+      "kind": "unused_import",
+      "symbol": "build_edge_evidence_report",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/longitudinal_dataset.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/longitudinal_dataset.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/longitudinal_dataset.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/cohort_registry.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/cohort_registry.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "field",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/censoring_policy.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/temporal_splitter.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/temporal_splitter.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Literal",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/temporal_splitter.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/temporal_splitter.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Tuple",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/endpoint_mapper.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/temporal_pair_builder.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/resistance_endpoint_builder.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/cohort_harmonizer.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/cohort_harmonizer.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/clinical_features.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/longitudinal/schemas.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/registries/endpoint_registry.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/registries/feature_space_registry.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/registries/claim_gate_registry.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/registries/artifact_registry.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/single_cell/pseudotime_regularizer.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/single_cell/state_contrastive_loss.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/single_cell/disease_stage_sampler.py",
+      "line": 9,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/single_cell/disease_stage_sampler.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/single_cell/__init__.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "supcon_loss",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/single_cell/__init__.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "pseudotime_ordinal_loss",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/single_cell/__init__.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "StratifiedStageSampler",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/graph/id_harmonizer.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/graph/__init__.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "IDHarmonizer",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/resistance_basin.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/hitting_time.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/hitting_time.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/graph_projector.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/__init__.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "GraphConditionedDrift",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/__init__.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "GraphEnergyResistanceSDE",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/__init__.py",
+      "line": 37,
+      "kind": "unused_import",
+      "symbol": "WaddingtonPotential",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/__init__.py",
+      "line": 42,
+      "kind": "unused_import",
+      "symbol": "LatentToGraphProjector",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/__init__.py",
+      "line": 45,
+      "kind": "unused_import",
+      "symbol": "HittingTime",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/__init__.py",
+      "line": 48,
+      "kind": "unused_import",
+      "symbol": "ResistanceBasin",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/mortfm/trajectory/graph_energy_sde.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/rl/ope.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/rl/ope.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "Sequence",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/drug_encoder.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/drug_encoder.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "List",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/drug_encoder.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "materialise_drug_context",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/atac_encoder.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/modality_tokenizer.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/modality_tokenizer.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "Dict",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/modality_tokenizer.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/rna_encoder.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/rna_encoder.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/clinical_encoder.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/histone_ptm_encoder.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/proteomic_encoder.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/proteomic_encoder.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "F",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/phosphoproteomic_encoder.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/models/encoders/methylation_encoder.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_causal_evidence_report_v2.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_build_longitudinal_dataset.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_longitudinal_pair_audit.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/pilot_ppi_propagation.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "sys",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_beataml_compare.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_download_public_data.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_survival.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_cellline_foundation.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/check_docs_consistent.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_all_blocks.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_regularized_lens_eval.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_causal_smoke_test.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_causal_smoke_test.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "pd",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_preprocess_scrna.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_compute_esm2_embeddings.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_compute_esm2_embeddings.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "load_or_compute_embeddings",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_latex_tables.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_latex_tables.py",
+      "line": 253,
+      "kind": "unused_local",
+      "symbol": "rng",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_latex_tables.py",
+      "line": 453,
+      "kind": "unused_local",
+      "symbol": "rng",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_validate_integrated_checkpoint.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_paper_figures.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_paper_figures.py",
+      "line": 579,
+      "kind": "unused_local",
+      "symbol": "rng",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_paper_figures.py",
+      "line": 613,
+      "kind": "unused_local",
+      "symbol": "bars",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_paper_figures.py",
+      "line": 824,
+      "kind": "unused_local",
+      "symbol": "rng",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_baselines_real.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_depmap.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_prepare_mmrf.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_experiments.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_experiments.py",
+      "line": 41,
+      "kind": "unused_import",
+      "symbol": "deepcopy",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_experiments.py",
+      "line": 42,
+      "kind": "unused_import",
+      "symbol": "dataclass",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_experiments.py",
+      "line": 44,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_experiments.py",
+      "line": 44,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_experiments.py",
+      "line": 567,
+      "kind": "unused_import",
+      "symbol": "SGDClassifier",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_experiments.py",
+      "line": 780,
+      "kind": "unused_import",
+      "symbol": "stats",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_block_c_contrastive.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_block_c_contrastive.py",
+      "line": 275,
+      "kind": "unused_local",
+      "symbol": "macro_f1_std",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_beataml_finetune.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/build_scrna_summary.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_uniprot.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_lens_variant_compare.py",
+      "line": 9,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_actionability_report.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/generate_actionability_report.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "json",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_padimac.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/krishnaswamy_visualizations.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/krishnaswamy_visualizations.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "json",
+      "detail": ""
+    },
+    {
+      "file": "scripts/krishnaswamy_visualizations.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "LinearSegmentedColormap",
+      "detail": ""
+    },
+    {
+      "file": "scripts/krishnaswamy_visualizations.py",
+      "line": 81,
+      "kind": "unused_local",
+      "symbol": "pred_full",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_beataml_drug_conditioned.py",
+      "line": 23,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_beataml_drug_conditioned.py",
+      "line": 136,
+      "kind": "unused_local",
+      "symbol": "feature_names",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_beataml_drug_conditioned.py",
+      "line": 198,
+      "kind": "unused_local",
+      "symbol": "test_y",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_v17_unified_smoke.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_v17_unified_smoke.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "pd",
+      "detail": ""
+    },
+    {
+      "file": "scripts/pull_mmrf_clinical.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_prism.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_run_real_endtoend.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "DataLoader",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "VAEConfig",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "TrajectoryConfig",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "FusionConfig",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "LandscapeConfig",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 54,
+      "kind": "unused_import",
+      "symbol": "ProteinNetworkModel",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 64,
+      "kind": "unused_import",
+      "symbol": "odeint",
+      "detail": ""
+    },
+    {
+      "file": "scripts/train.py",
+      "line": 474,
+      "kind": "unused_local",
+      "symbol": "chromatin_ode",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_pretrain_foundation.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_integrate_blocks_bcd.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_build_temporal_pairs.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_resolve_drug_names.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_resolve_drug_names.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_trajectory.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_beataml.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_crispr.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_scrna_state_encoder.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/run_real_figures.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_chembl.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_emit_registries.py",
+      "line": 24,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/preprocess_mmrf_gdc.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/preprocess_mmrf_gdc.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "io",
+      "detail": ""
+    },
+    {
+      "file": "scripts/preprocess_mmrf_gdc.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "scripts/preprocess_mmrf_gdc.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "Iterable",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_geo_singlecell.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_geo_singlecell.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "pd",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_align_beataml_features.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_survival_baseline_suite.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_survival_baseline_suite.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "Dict",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_gdsc.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_harmonize_identifiers.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/data_integration_audit.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_scrna_latent_atlas.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_scrna_latent_atlas.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "Optional",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_scrna_latent_atlas.py",
+      "line": 49,
+      "kind": "unused_import",
+      "symbol": "ModalityName",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_scrna_latent_atlas.py",
+      "line": 49,
+      "kind": "unused_import",
+      "symbol": "ModalityTensor",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_block_d_validation.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_block_d_validation.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "known_classes",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_string.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_build_biological_graph.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_lens_resistance.py",
+      "line": 33,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_train_lens_resistance.py",
+      "line": 38,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_v17_gate_revalidate.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_v17_gate_revalidate.py",
+      "line": 48,
+      "kind": "unused_local",
+      "symbol": "survival_baseline",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_v17_gate_revalidate.py",
+      "line": 49,
+      "kind": "unused_local",
+      "symbol": "causal_smoke",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_validate_beataml.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/gdc_download.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_perturbation.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_build_scrna_manifest.py",
+      "line": 22,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_build_scrna_manifest.py",
+      "line": 25,
+      "kind": "unused_import",
+      "symbol": "json",
+      "detail": ""
+    },
+    {
+      "file": "scripts/mortfm_ingest_reactome.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/dev/dead_code_audit.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/dev/dead_code_audit.py",
+      "line": 286,
+      "kind": "unused_local",
+      "symbol": "rm_root",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12_refactor/krishnaswamy_visualizations.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "os",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12_refactor/krishnaswamy_visualizations.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "mcolors",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12_refactor/krishnaswamy_visualizations.py",
+      "line": 241,
+      "kind": "unused_local",
+      "symbol": "ids",
+      "detail": ""
+    },
+    {
+      "file": "scripts/baselines/mofa_baseline.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/baselines/elasticnet_baseline.py",
+      "line": 26,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12/s_v12_t1114_specialist_head.py",
+      "line": 47,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12/s_v12_mofa_vs_v11_5_pfs.py",
+      "line": 54,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12/s_v12_mofa_vs_v11_5_pfs.py",
+      "line": 65,
+      "kind": "unused_import",
+      "symbol": "torch",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12/s_v12_hbayes_ppc.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12/s_v12_hbayes_ppc.py",
+      "line": 34,
+      "kind": "unused_import",
+      "symbol": "sys",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v12/paired_wilcoxon_rm_vs_latefusion.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5g_paired_cindex_test.py",
+      "line": 49,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5g_paired_cindex_test.py",
+      "line": 229,
+      "kind": "unused_local",
+      "symbol": "risk_richer",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5g_paired_cindex_test.py",
+      "line": 230,
+      "kind": "unused_local",
+      "symbol": "risk_mm4",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s3_gat_f6_replication.py",
+      "line": 21,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5_v11_conformal_waddington_features.py",
+      "line": 35,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5d_cox_discrimination.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s1c_encode_mmrf_v11.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s2f_f1_f2_gates_v11.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s1f_ode_forward_diagnostic.py",
+      "line": 28,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5c_discrimination_metrics.py",
+      "line": 31,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5c_discrimination_metrics.py",
+      "line": 40,
+      "kind": "unused_import",
+      "symbol": "torch",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5c_discrimination_metrics.py",
+      "line": 52,
+      "kind": "unused_import",
+      "symbol": "ScalarPotential",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5c_discrimination_metrics.py",
+      "line": 52,
+      "kind": "unused_import",
+      "symbol": "ScalarPotentialConfig",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5c_discrimination_metrics.py",
+      "line": 55,
+      "kind": "unused_import",
+      "symbol": "NeuralODEFlow",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5c_discrimination_metrics.py",
+      "line": 55,
+      "kind": "unused_import",
+      "symbol": "NeuralODEFlowConfig",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s7_v11_dps_neural_ode.py",
+      "line": 27,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5e_cox_with_programs.py",
+      "line": 49,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5f_mmsygnal_complete_routing.py",
+      "line": 39,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "scripts/v11/s5f_mmsygnal_complete_routing.py",
+      "line": 43,
+      "kind": "unused_import",
+      "symbol": "time",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ope_and_guardrails.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ope_and_guardrails.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "pytest",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ope_and_guardrails.py",
+      "line": 7,
+      "kind": "unused_import",
+      "symbol": "doubly_robust",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ope_and_guardrails.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "GUARDRAILS",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_metrics_and_calibration.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_metrics_and_calibration.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "pytest",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_agents.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_agents.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "asyncio",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_agents.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "json",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_agents.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "Path",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_agents.py",
+      "line": 30,
+      "kind": "unused_import",
+      "symbol": "ValidationAgent",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_evaluation_orchestrator.py",
+      "line": 16,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_evaluation_charter_and_rubric.py",
+      "line": 11,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_observability_instrumentation.py",
+      "line": 13,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_evaluation_metrics.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_evaluation_metrics.py",
+      "line": 10,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_leakage.py",
+      "line": 2,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_evaluation_baselines.py",
+      "line": 17,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_evaluation_baselines.py",
+      "line": 19,
+      "kind": "unused_import",
+      "symbol": "inspect",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ml_integration.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "Dict",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ml_integration.py",
+      "line": 18,
+      "kind": "unused_import",
+      "symbol": "Any",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ml_integration.py",
+      "line": 20,
+      "kind": "unused_import",
+      "symbol": "_GradientReversalFunction",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ml_integration.py",
+      "line": 32,
+      "kind": "unused_import",
+      "symbol": "LandscapeResult",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ml_integration.py",
+      "line": 241,
+      "kind": "unused_local",
+      "symbol": "col_sums",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_ml_integration.py",
+      "line": 562,
+      "kind": "unused_local",
+      "symbol": "proteomics_dim",
+      "detail": ""
+    },
+    {
+      "file": "tests/test_evaluation_leakage.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_schemas.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_mortfm_trainer_smoke.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_identifier_mapping.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_acceptance_gate.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_single_cell_preprocessing.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_single_cell_preprocessing.py",
+      "line": 12,
+      "kind": "unused_import",
+      "symbol": "QCReport",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_patient_holdout_split.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_manifest_schemas.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_manifest_schemas.py",
+      "line": 8,
+      "kind": "unused_import",
+      "symbol": "load_public_data_manifest",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_temporal_pair_builder.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_stage_supervision_strict.py",
+      "line": 14,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_canonical_forward.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_endpoint_validator.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_mortfm_losses.py",
+      "line": 3,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_mortfm_losses.py",
+      "line": 5,
+      "kind": "unused_import",
+      "symbol": "math",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_mortfm_losses.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "masked_modality_loss",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_mortfm_losses.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "pathway_attribution_loss",
+      "detail": ""
+    },
+    {
+      "file": "tests/mortfm/test_mortfm_losses.py",
+      "line": 15,
+      "kind": "unused_import",
+      "symbol": "perturbation_consistency_loss",
+      "detail": ""
+    },
+    {
+      "file": "resistancemap/baselines/integration_baselines.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.baselines.integration_baselines",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/baselines/perception_baseline.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.baselines.perception_baseline",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/baselines/classical_baselines.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.baselines.classical_baselines",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/baselines/cpa_baseline.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.baselines.cpa_baseline",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/interpretability/uncertainty_explanations.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.interpretability.uncertainty_explanations",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/interpretability/counterfactual_engine.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.interpretability.counterfactual_engine",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/interpretability/temporal_explanations.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.interpretability.temporal_explanations",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/interpretability/pathway_attribution.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.interpretability.pathway_attribution",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/interpretability/visualization.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.interpretability.visualization",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/infrastructure/scrna_integration.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.infrastructure.scrna_integration",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/infrastructure/uncertainty_quantification.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.infrastructure.uncertainty_quantification",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/infrastructure/imaging_radiomics.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.infrastructure.imaging_radiomics",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/infrastructure/missing_modality.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.infrastructure.missing_modality",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/infrastructure/continual_learning.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.infrastructure.continual_learning",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/infrastructure/multi_site_harmonization.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.infrastructure.multi_site_harmonization",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/external_validation.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.external_validation",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/ablation_harness.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.ablation_harness",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/benchmarking.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.benchmarking",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/prospective_validation.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.prospective_validation",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/fairness_audit.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.fairness_audit",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/post_hoc_calibration.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.post_hoc_calibration",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/ablations.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.ablations",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/power_analysis.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.power_analysis",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/epistemic_boundaries.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.epistemic_boundaries",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/cytogenetic_stratification.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.cytogenetic_stratification",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/evaluation/competing_risks.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.evaluation.competing_risks",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/experiments/statistical_testing.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.experiments.statistical_testing",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/experiments/ablation_study.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.experiments.ablation_study",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/utils/metrics.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.utils.metrics",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/training/trainer.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.training.trainer",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/training/losses.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.training.losses",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/landscape/barrier_estimation.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.landscape.barrier_estimation",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/landscape/waddington_visualizer.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.landscape.waddington_visualizer",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/landscape/attractor_basin.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.landscape.attractor_basin",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/landscape/hbayes_outer.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.landscape.hbayes_outer",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/bistability.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.bistability",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/identifiable_ode.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.identifiable_ode",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/domain_adaptation.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.domain_adaptation",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/clonal_heterogeneity.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.clonal_heterogeneity",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/cell_communication.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.cell_communication",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/rl_treatment_optimization.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.rl_treatment_optimization",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/clinical_anchored_ode.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.clinical_anchored_ode",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/cell_state_plasticity.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.cell_state_plasticity",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/disentangled_vae.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.disentangled_vae",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/models/causal_fusion.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.models.causal_fusion",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/smm_progression.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.smm_progression",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/early_relapse_detection.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.early_relapse_detection",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/emd_prediction.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.emd_prediction",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/treatment_conditioned.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.treatment_conditioned",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/dynamic_treatment_regimes.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.dynamic_treatment_regimes",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/relapse_prediction.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.relapse_prediction",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/utils.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.utils",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/immunotherapy_response.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.immunotherapy_response",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/clinical/mrd_prediction.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.clinical.mrd_prediction",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/drug_target_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.drug_target_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/cite_seq_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.cite_seq_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/reactome_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.reactome_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/methylation_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.methylation_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/pathway_harmonization.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.pathway_harmonization",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/mmrf_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.mmrf_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/string_debiasing.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.string_debiasing",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/histone_ptm_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.histone_ptm_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/targets.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.targets",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/phosphoproteomics_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.phosphoproteomics_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/graph_builder.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.graph_builder",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/treatment_exposure.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.treatment_exposure",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/preprocessing.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.preprocessing",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/proteomics_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.proteomics_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/chembl_drug_target_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.chembl_drug_target_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/data/scatac_loader.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.data.scatac_loader",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/agents/example_usage.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.agents.example_usage",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/theory/identifiability_proof.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.theory.identifiability_proof",
+      "detail": "module is not imported by any file in the scanned roots"
+    },
+    {
+      "file": "resistancemap/theory/stability_analysis.py",
+      "line": 0,
+      "kind": "orphan_module",
+      "symbol": "resistancemap.theory.stability_analysis",
+      "detail": "module is not imported by any file in the scanned roots"
+    }
+  ]
+}

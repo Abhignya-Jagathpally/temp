@@ -1,0 +1,62 @@
+# configs/dead_code_allowlist.yaml
+# =================================
+# Allowlist for the v18.5 dead-code audit (scripts/dev/dead_code_audit.py).
+#
+# Files / dotted paths listed here are EXCLUDED from "unused" reporting.
+# An entry can be:
+#   * a file path relative to repo root         → entire file allowlisted
+#   * a dotted module path                      → module's public surface allowlisted
+#   * a "<path>::<symbol>" pair                 → just that symbol allowlisted
+#
+# Use this for:
+#   - __init__.py re-export shims
+#   - public API surfaces consumed by external callers (notebooks, paper)
+#   - legacy modules preserved for checkpoint loading
+#   - dynamically imported modules (e.g. by runpy / hydra / pytest fixtures)
+
+allowlist:
+
+  # ---- __init__.py re-export shims (unused-import false positives) -----
+  - "resistancemap/__init__.py"
+  - "resistancemap/models/__init__.py"
+  - "resistancemap/models/heads/__init__.py"   # moved under legacy; harmless
+  - "resistancemap/models/dynamics/__init__.py"
+  - "resistancemap/legacy/__init__.py"
+  - "resistancemap/legacy/v15_planned_mortfm/__init__.py"
+  - "resistancemap/legacy/v15_planned_mortfm/models/__init__.py"
+  - "resistancemap/legacy/v15_planned_mortfm/models/dynamics/__init__.py"
+  - "resistancemap/legacy/v15_planned_mortfm/models/heads/__init__.py"
+  - "resistancemap/mortfm/__init__.py"
+  - "resistancemap/mortfm/registries/__init__.py"
+  - "resistancemap/mortfm/blocks/__init__.py"
+  - "resistancemap/mortfm/longitudinal/__init__.py"
+  - "resistancemap/landscape/__init__.py"
+  - "resistancemap/data/__init__.py"
+  - "resistancemap/training/__init__.py"
+  - "resistancemap/evaluation/__init__.py"
+  - "resistancemap/inference/__init__.py"
+  - "scripts/mortfm/__init__.py"
+
+  # ---- v18 canonical shims (runpy-delegating, imports look unused) -----
+  - "scripts/mortfm/00_download_public_data.py"
+  - "scripts/mortfm/01_harmonize_identifiers.py"
+  - "scripts/mortfm/02_build_longitudinal_dataset.py"
+  - "scripts/mortfm/03_prepare_mmrf.py"
+  - "scripts/mortfm/04_pretrain_foundation.py"
+  - "scripts/mortfm/05_train_block_c_contrastive.py"
+  - "scripts/mortfm/06_train_lens_resistance.py"
+  - "scripts/mortfm/07_train_survival.py"
+  - "scripts/mortfm/08_eval_causal_evidence_v2.py"
+  - "scripts/mortfm/09_gate_revalidate.py"
+
+  # ---- v15 planned-MORTFM heads (kept for forward_legacy + old ckpts) --
+  - "resistancemap/legacy/v15_planned_mortfm/"
+
+  # ---- archived scripts (kept for RUNS.md reproduction) ----------------
+  - "scripts/archive/"
+
+  # ---- legacy v10 sprint scripts (RUNS.md-referenced) ------------------
+  - "scripts/v10/"
+
+  # ---- training / loss code that exports test-only helpers -------------
+  - "resistancemap/training/mortfm_losses.py::masked_modality_loss"
