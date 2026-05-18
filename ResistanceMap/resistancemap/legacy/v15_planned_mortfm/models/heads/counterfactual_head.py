@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Sequence
 import torch
 import torch.nn as nn
 
-from resistancemap.models.dynamics.trajectory_sampler import TrajectorySampler
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.trajectory_sampler import TrajectorySampler
 
 
 @dataclass

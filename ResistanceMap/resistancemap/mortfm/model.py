@@ -30,15 +30,18 @@ import torch
 import torch.nn as nn
 
 from resistancemap.landscape.potential import WaddingtonPotential
-from resistancemap.models.dynamics.trajectory_sampler import TrajectorySampler
+# v18.3 — TrajectorySampler + v15 task heads live under the legacy namespace.
+# They are exercised ONLY via forward_legacy() and via historical checkpoint
+# loaders. The canonical v18 forward() uses the v16 LENS submodules instead.
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.trajectory_sampler import TrajectorySampler
 from resistancemap.models.foundation_fusion import MultiOmicFoundationFusion
-from resistancemap.models.heads.counterfactual_head import CounterfactualInterventionHead
-from resistancemap.models.heads.drug_risk_head import DrugSpecificTrajectoryRiskHead
-from resistancemap.models.heads.pathway_route_head import PathwayRouteHead
-from resistancemap.models.heads.resistance_state_head import ResistanceStateHead
-from resistancemap.models.heads.time_to_resistance_head import TimeToResistanceHead
-from resistancemap.models.heads.trajectory_head import TrajectoryDistributionHead
-from resistancemap.models.heads.uncertainty_head import EvidentialUncertaintyHead
+from resistancemap.legacy.v15_planned_mortfm.models.heads.counterfactual_head import CounterfactualInterventionHead
+from resistancemap.legacy.v15_planned_mortfm.models.heads.drug_risk_head import DrugSpecificTrajectoryRiskHead
+from resistancemap.legacy.v15_planned_mortfm.models.heads.pathway_route_head import PathwayRouteHead
+from resistancemap.legacy.v15_planned_mortfm.models.heads.resistance_state_head import ResistanceStateHead
+from resistancemap.legacy.v15_planned_mortfm.models.heads.time_to_resistance_head import TimeToResistanceHead
+from resistancemap.legacy.v15_planned_mortfm.models.heads.trajectory_head import TrajectoryDistributionHead
+from resistancemap.legacy.v15_planned_mortfm.models.heads.uncertainty_head import EvidentialUncertaintyHead
 from resistancemap.mortfm.schemas import (
     FoundationState,
     MORTBatch,

@@ -14,7 +14,7 @@ from typing import Any, Optional
 import torch
 import torch.nn as nn
 
-from resistancemap.models.dynamics.graph_conditioned_drift import GraphConditionedDrift
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.graph_conditioned_drift import GraphConditionedDrift
 
 try:
     from torchdiffeq import odeint, odeint_adjoint

@@ -14,15 +14,15 @@ All modules fall back to a torch-only Euler integrator if ``torchdiffeq`` /
 ``torchsde`` is not installed, so smoke-tests work in a minimal environment.
 """
 
-from resistancemap.models.dynamics.neural_ode import GraphConditionedNeuralODE
-from resistancemap.models.dynamics.neural_sde import GraphConditionedNeuralSDE
-from resistancemap.models.dynamics.jump_sde import NeuralJumpSDE
-from resistancemap.models.dynamics.graph_conditioned_drift import GraphConditionedDrift
-from resistancemap.models.dynamics.treatment_conditioned_dynamics import (
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.neural_ode import GraphConditionedNeuralODE
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.neural_sde import GraphConditionedNeuralSDE
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.jump_sde import NeuralJumpSDE
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.graph_conditioned_drift import GraphConditionedDrift
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.treatment_conditioned_dynamics import (
     TreatmentConditionedDynamics,
 )
-from resistancemap.models.dynamics.trajectory_sampler import TrajectorySampler
-from resistancemap.models.dynamics.temporal_decoder import TemporalDecoder
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.trajectory_sampler import TrajectorySampler
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.temporal_decoder import TemporalDecoder
 
 __all__ = [
     "GraphConditionedNeuralODE",

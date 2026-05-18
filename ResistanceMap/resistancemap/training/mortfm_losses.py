@@ -50,7 +50,8 @@ from resistancemap.landscape.potential import WaddingtonPotential
 from resistancemap.models.encoders.atac_encoder import atac_bernoulli_nll
 from resistancemap.models.encoders.proteomic_encoder import gaussian_nll
 from resistancemap.models.encoders.rna_encoder import nb_negative_log_likelihood
-from resistancemap.models.heads.time_to_resistance_head import (
+# v18.3 — survival heads moved under legacy namespace (v15 planned-MORTFM tree).
+from resistancemap.legacy.v15_planned_mortfm.models.heads.time_to_resistance_head import (
     CoxSurvivalHead,
     DiscreteTimeSurvivalHead,
 )

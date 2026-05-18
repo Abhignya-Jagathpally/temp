@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from resistancemap.landscape.potential import WaddingtonPotential
-from resistancemap.models.heads.time_to_resistance_head import (
+from resistancemap.legacy.v15_planned_mortfm.models.heads.time_to_resistance_head import (
     CoxSurvivalHead,
     DiscreteTimeSurvivalHead,
 )

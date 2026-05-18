@@ -24,7 +24,7 @@ from typing import Any, Callable, Optional
 import torch
 import torch.nn as nn
 
-from resistancemap.models.dynamics.graph_conditioned_drift import GraphConditionedDrift
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.graph_conditioned_drift import GraphConditionedDrift
 
 try:
     import torchsde

@@ -21,9 +21,9 @@ from typing import Any, Optional
 import torch
 import torch.nn as nn
 
-from resistancemap.models.dynamics.neural_ode import GraphConditionedNeuralODE
-from resistancemap.models.dynamics.neural_sde import GraphConditionedNeuralSDE
-from resistancemap.models.dynamics.jump_sde import NeuralJumpSDE
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.neural_ode import GraphConditionedNeuralODE
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.neural_sde import GraphConditionedNeuralSDE
+from resistancemap.legacy.v15_planned_mortfm.models.dynamics.jump_sde import NeuralJumpSDE
 
 
 @dataclass
