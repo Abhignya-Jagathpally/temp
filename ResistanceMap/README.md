@@ -1,7 +1,52 @@
 # ResistanceMap / MORT-FM
 
-Branch `v17` (latest head; v16 archived). v17 implements the full
-steering plan from the v16 honest-limitations review (9 commits):
+Branch `v18-clean-canonical-mortfm` (latest head; v17 archived).
+v18 is the **clean-canonical-MORTFM** pass: one official patient-level
+execution path, legacy code namespaced under `resistancemap/legacy/`,
+trainer that **raises** instead of silently skipping when supervision
+is missing, and a discoverable numbered scripts workflow.
+
+### v18 deltas (6 commits)
+
+| v18 commit | Real measurable change |
+|---|---|
+| **v18.0** branch off v17 | new branch `v18-clean-canonical-mortfm`; baseline 78/78 tests, v17 smoke PASS |
+| **v18.1** canonical forward | `MORTFM.forward()` is now the LENS dict-returning path (was `forward_lens()` in v17). `forward_legacy()` is the v15 TrajectoryPrediction path. `forward_lens` name retired |
+| **v18.2** strict trainer supervision | trainer **raises** `MissingSupervisionError` if stages E/F/G coverage falls below 0.80/0.90/0.70. Foundation stages A/B/C remain permissive |
+| **v18.3** archive v15 planned-MORTFM | `models/dynamics` + `models/heads` → `resistancemap/legacy/v15_planned_mortfm/` (kept importable for old ckpts) |
+| **v18.4** canonical scripts workflow | new `scripts/mortfm/00-09_*.py` numbered shims; 3 superseded scripts → `scripts/archive/` |
+| **v18.5** dead-code audit | stdlib-only ast-based reporter + 33-entry allowlist; baseline = 694 unused imports + 49 unused locals + 73 orphan modules over 434 files |
+
+Single canonical surface (v18):
+
+```python
+from resistancemap.mortfm.model import MORTFM
+model = MORTFM(cfg)
+
+# ONE official patient-level path — returns the LENS dict
+out = model(batch, clinical=clinical, drug=drug)
+out["z_traj"], out["hazard"], out["basin_probs"], out["hitting_cdf"]
+
+# Foundation-only encode (stages A/B/C) — no SDE/heads
+state = model.forward_foundation(batch)
+
+# Old v15-style TrajectoryPrediction (for historical checkpoints only)
+legacy = model.forward_legacy(batch, n_traj_samples=4)
+```
+
+Contract tests for the canonical surface:
+`tests/mortfm/test_canonical_forward.py` (4) +
+`tests/mortfm/test_stage_supervision_strict.py` (4) +
+`tests/mortfm/test_mortfm_trainer_smoke.py` (5) +
+`tests/dev/test_dead_code_audit.py` (2). All pass on this branch.
+
+The v17 numbers below are unchanged — v18 is a code-quality pass, not
+a retraining pass.
+
+---
+
+v17 (previous) implemented the full steering plan from the v16
+honest-limitations review (9 commits):
 
   1. **Collapse duplicate MORT-FM paths into one executable path** (v17.3)
   2. **Wire real biological graph identifiers** — STRING alias → HGNC ↔ UniProt (v17.1)

@@ -1,13 +1,13 @@
 {
   "run_id": "r-2026-05-18-dead-code-audit",
-  "n_files_scanned": 434,
+  "n_files_scanned": 435,
   "n_files_allowlisted": 82,
   "by_kind": {
-    "unused_import": 694,
+    "unused_import": 695,
     "unused_local": 49,
     "orphan_module": 73
   },
-  "wall_time_s": 3.767,
+  "wall_time_s": 3.704,
   "findings": [
     {
       "file": "resistancemap/v10_runner.py",
@@ -5080,6 +5080,13 @@
     {
       "file": "tests/test_evaluation_leakage.py",
       "line": 12,
+      "kind": "unused_import",
+      "symbol": "annotations",
+      "detail": ""
+    },
+    {
+      "file": "tests/dev/test_dead_code_audit.py",
+      "line": 11,
       "kind": "unused_import",
       "symbol": "annotations",
       "detail": ""
