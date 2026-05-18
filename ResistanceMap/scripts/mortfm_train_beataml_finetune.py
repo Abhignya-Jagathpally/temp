@@ -263,10 +263,17 @@ def main() -> int:
                          "match_tier > 0 in the drug identifier map.")
     ap.add_argument("--summary-out", default="logs/mortfm/beataml_summary.json")
     ap.add_argument("--checkpoint-name", default="beataml_finetuned.pt")
+    ap.add_argument("--per-drug-out", default="logs/mortfm/beataml_per_drug_metrics.csv",
+                    help="Output CSV for per-drug Spearman metrics. "
+                         "Override when running multiple variants back-to-back.")
     args = ap.parse_args()
 
     # ---- 1. Build cohort ---------------------------------------------
-    use_aligned = args.block_a_checkpoint is not None and args.aligned_expression is not None
+    # Decouple "use aligned features" from "init from Block A" so a scratch
+    # variant can be trained on the SAME feature space — required for a
+    # fair transfer-vs-scratch comparison.
+    use_aligned = args.aligned_expression is not None
+    use_block_a_init = args.block_a_checkpoint is not None
     expr_path = Path(args.aligned_expression) if use_aligned else Path("data/processed/beataml/beataml_expression.parquet")
     pairs, feature_names = build_beataml_pairs(
         expr_path=expr_path,
@@ -313,7 +320,7 @@ def main() -> int:
     n_drug_candidates = 11
     n_pathway_proteins = 200
     n_resistance_states = 4
-    if use_aligned:
+    if use_block_a_init:
         a_payload = torch.load(args.block_a_checkpoint, map_location="cpu", weights_only=False)
         a_state = a_payload.get("model_state_dict", {})
         # Drug-risk head out-dim = n_drug_candidates.
@@ -338,7 +345,7 @@ def main() -> int:
         cfg, n_pathway_proteins=n_pathway_proteins,
         n_drug_candidates=n_drug_candidates, n_resistance_states=n_resistance_states,
     )
-    if use_aligned:
+    if use_block_a_init:
         block_a_load_report = _load_block_a_into(model, Path(args.block_a_checkpoint), device)
     trainer = MORTFMTrainer(model, cfg, train_loader=train_loader, val_loader=val_loader,
                              device=device)
@@ -362,7 +369,7 @@ def main() -> int:
         expr_path=expr_path,
         clin_path=Path("data/processed/beataml/beataml_clinical.csv"),
         device=device, cfg=cfg,
-        out_csv=Path("logs/mortfm/beataml_per_drug_metrics.csv"),
+        out_csv=Path(args.per_drug_out),
     )
     # Optional: restrict to drugs with known targets per drug identifier map.
     if args.restrict_to_mapped and Path(args.drug_identifier_map).exists():
@@ -413,6 +420,7 @@ def main() -> int:
         "history": history,
         "checkpoint": ckpt,
         "block_a_aligned": use_aligned,
+        "block_a_init": use_block_a_init,
         "block_a_load_report": block_a_load_report,
         "claim_permitted": "ex vivo drug-response per-specimen ranking ONLY; no resistance, no trajectory, "
                             "no survival, no pathway-mechanism claim until ChEMBL+Reactome+UniProt ingested.",

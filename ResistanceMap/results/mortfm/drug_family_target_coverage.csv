@@ -1,0 +1,11 @@
+drug_family,n_source_records,n_mapped_to_chembl_or_ontology,coverage,by_tier,by_source
+outside_mm_ontology,1835,677,0.3689373297002725,0=1158;3=462;5=109;4=106,PRISM=1432;GDSC=287;BeatAML=116
+HDAC_inhibitor,6,6,1.0,1=6,PRISM=3;GDSC=2;BeatAML=1
+proteasome_inhibitor,5,5,1.0,1=4;2=1,PRISM=3;GDSC=1;BeatAML=1
+CDK_inhibitor,5,5,1.0,1=5,GDSC=2;PRISM=2;BeatAML=1
+IMiD,4,4,1.0,1=4,PRISM=2;GDSC=1;BeatAML=1
+BCL2_inhibitor,3,3,1.0,1=3,GDSC=1;PRISM=1;BeatAML=1
+alkylating_agent,3,3,1.0,1=3,PRISM=2;GDSC=1
+XPO1_inhibitor,2,2,1.0,1=2,PRISM=1;BeatAML=1
+TOP2_inhibitor,1,1,1.0,1=1,PRISM=1
+anthracycline,1,1,1.0,1=1,PRISM=1

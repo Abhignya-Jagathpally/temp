@@ -1,0 +1,12 @@
+drug_family,n_targets_in_ontology,n_targets_with_uniprot,n_targets_with_pathway_annotation_by_uniprot
+proteasome_inhibitor,1,1,0
+IMiD,3,3,0
+HDAC_inhibitor,4,4,0
+BCL2_inhibitor,1,1,0
+CDK_inhibitor,2,2,0
+anthracycline,2,2,0
+TOP2_inhibitor,2,2,0
+anti-CD38_mAb,1,1,0
+anti-SLAMF7_mAb,1,1,0
+corticosteroid,1,1,0
+XPO1_inhibitor,1,1,0

@@ -24,6 +24,24 @@ DEFAULT_BLOCK_C_CHECKPOINT = "checkpoints/mortfm/block_c_state_encoder.pt"
 DEFAULT_BLOCK_C_REPORT = "logs/mortfm/block_c_summary.json"
 
 
+def _infer_head_dims(state_dict: dict) -> dict:
+    """Read head output dims out of the saved state-dict.
+
+    Block C was trained with non-default ``n_pathway_proteins`` /
+    ``n_drug_candidates`` / ``n_resistance_states``. We must reconstruct
+    the model with the same head sizes or load_state_dict will refuse.
+    """
+    dims = {"n_pathway_proteins": 500, "n_drug_candidates": 11, "n_resistance_states": 4}
+    for k, v in state_dict.items():
+        if k.endswith("pathway_head.protein_net.2.weight") or k.endswith("pathway_head.protein_net.0.weight"):
+            dims["n_pathway_proteins"] = int(v.shape[0])
+        if k.endswith("drug_risk_head.0.weight") or k.endswith("drug_risk_head.weight"):
+            dims["n_drug_candidates"] = int(v.shape[0])
+        if k.endswith("resistance_state_head.weight"):
+            dims["n_resistance_states"] = int(v.shape[0])
+    return dims
+
+
 def load_block_c(
     checkpoint_path: str = DEFAULT_BLOCK_C_CHECKPOINT,
 ):
@@ -35,7 +53,11 @@ def load_block_c(
     from resistancemap.mortfm.schemas import MORTFMConfig
 
     cfg = MORTFMConfig(**payload["config"]) if isinstance(payload.get("config"), dict) else MORTFMConfig()
-    model = MORTFM(cfg)
+    head_dims = _infer_head_dims(payload["model_state_dict"])
+    # Filter out any "200" pathway-net size from the second linear in the
+    # protein_net Sequential — Block C's pathway head emits 200 proteins.
+    logger.info("Block C head dims inferred: %s", head_dims)
+    model = MORTFM(cfg, **head_dims)
     model.load_state_dict(payload["model_state_dict"], strict=False)
     model.eval()
     return model, cfg, payload
