@@ -1,13 +1,17 @@
 # ResistanceMap / MORT-FM
 
-Branch `v17` (latest head; v16 archived). v17 enforces three steering
-constraints from the v16 honest-limitations review: (1) every patient-level
-claim must beat a clinical-only Cox baseline AND a permutation null on the
-same LOO splits; (2) the STRING-alias → HGNC ID bridge is now first-class
-so the causal validator's CRISPR cross-check is no longer blocked by ID
-mismatch; (3) `resistancemap/mortfm/model.py:MORTFM` is unified —
-`forward_lens()` calls the v16 LENS modules directly (no parallel
-placeholder paths).
+Branch `v17` (latest head; v16 archived). v17 implements the full
+steering plan from the v16 honest-limitations review (9 commits):
+
+  1. **Collapse duplicate MORT-FM paths into one executable path** (v17.3)
+  2. **Wire real biological graph identifiers** — STRING alias → HGNC ↔ UniProt (v17.1)
+  3. **Make clinical-only Cox the mandatory baseline** for every patient-level claim (v17.2)
+  4. **Longitudinal cohort registry** with explicit "contributes_to" semantics (v17.4)
+  5. **Block C contrastive/stage-aware re-train** — macro-F1 0.147 → **0.431** held-out (v17.5)
+  6. **Drug-conditioned BeatAML head** — scratch 0.203 / init_a 0.276 / Δ +0.074 with CI [+0.033, +0.112] (v17.6)
+  7. **Regularized LENS + Harrell optimism correction** — corrected C=0.480 (v17.7)
+  8. **Three-channel causal evidence** (CRISPR + drug-target + Reactome) with permutation enrichment p=0.002 (v17.8)
+  9. **Final gate revalidation: 6/12 granted (+1 vs v16)** — newly granted: `hematologic_specimen_drug_response` (v17.9)
 
 This repository contains two scientific tracks that share an infrastructure
 backbone:
@@ -32,37 +36,48 @@ backbone:
 
 ## MORT-FM v15+v16+v17 status (current)
 
-### v17 deltas (since v16, four commits)
+### v17 deltas (since v16, nine commits — final tally **6/12 granted, +1 vs v16**)
 
 | v17 commit | Real measurable change |
 |---|---|
-| **v17.1** STRING-alias → HGNC ID bridge | Causal-validator HGNC coverage **0% → 100%** (200/200 edges); common-essential overlap 0% → 5.5%; refusal reasons now biological, not infrastructural |
-| **v17.2** Clinical-only Cox + permutation null | Honest verdict surfaced: **clinical-only Cox C-index = 0.366** (worse than random, p=0.956 vs null at n=29). Best LENS (C=0.603) beats Cox by +0.237 but lower CI 0.442 still below null+2σ — `patient_level_claim_allowed = False` correctly refused |
-| **v17.3** *(this commit)* Unify model.py around v16 LENS | `MORTFM.forward_lens()` calls GraphEnergyResistanceSDE + CompetingRiskHead + ResistanceBasin + HittingTime + LatentToGraphProjector directly. Both `forward()` (legacy) and `forward_lens()` (v16) verified on real MMRF z0 batch |
-| v17 cumulative effect | No claim levels added, but every previously-blocked gate has a concrete, biological refusal reason — not an infrastructure artifact |
+| **v17.1** STRING-alias → HGNC ID bridge | Causal-validator HGNC coverage **0% → 100%** (200/200 edges); common-essential overlap 0% → 5.5% |
+| **v17.2** Clinical-only Cox + permutation null | clinical-only Cox C=0.366 < null (p=0.956); LENS beats Cox by +0.237 but lower CI < null+2σ — gate correctly refused |
+| **v17.3** Unify model.py around v16 LENS | `MORTFM.forward_lens()` calls v16 modules directly; legacy + v16 both verified |
+| **v17.4** Longitudinal cohort registry | 7 cohorts typed; censoring policy + temporal splitter centralised |
+| **v17.5** Block C contrastive | **macro-F1 = 0.431** held-out (vs v16 self-sup 0.147) — passes "useful" band |
+| **v17.6** Drug-conditioned BeatAML head | **scratch 0.203 / init_a 0.276 / paired Δ +0.074 [+0.033, +0.112]** — **`hematologic_specimen_drug_response` NEWLY GRANTED** |
+| **v17.7** Regularized LENS + Harrell optimism | clinical+z0 raw 0.515, optimism +0.035, **corrected 0.480** — still below 0.5; binding constraint = real n |
+| **v17.8** Causal evidence v2 (3 channels + enrichment) | Top-20 pathway count 64 vs null 14.4 → **10.9σ, p=0.002**; drug-target support 40%; only CRISPR overlap (1/20) blocks |
+| **v17.9** Final gate revalidate | **6/12 claim levels granted** (+1 vs v16) |
 
-### Claim gates (12 levels, 5 granted)
+### Claim gates (12 levels, **6 granted, 6 blocked with concrete reasons**)
 
 ```
-GRANTED:
-  technical                  — pipeline runs end-to-end on real data
-  static_drug_response       — Block A (DepMap × GDSC, median Spearman 0.191)
-  single_cell_state          — Block C (51 pseudobulks, 152K cells)
-  sequence_aware             — Block D (ESM-2 cache 7,061 sequences)
-  pathway_context            — Reactome 2,836 pathways + ChEMBL drug-targets
+GRANTED (6/12):
+  technical                          — pipeline runs end-to-end on real data
+  static_drug_response               — Block A (DepMap × GDSC, median Spearman 0.191)
+  hematologic_specimen_drug_response — v17.6 drug-conditioned head: scratch 0.203,
+                                       init_a 0.276, paired Δ +0.074 [+0.033, +0.112]
+                                       (NEWLY GRANTED in v17)
+  single_cell_state                  — v17.5 contrastive Block C: held-out
+                                       macro-F1 = 0.431 (v16 self-sup was 0.147)
+  sequence_aware                     — Block D (ESM-2 cache 7,061 sequences)
+  pathway_context                    — v17.8 top-20 pathway count 64 vs null 14.4,
+                                       p=0.002 (10.9σ enrichment; vs v16 it was
+                                       structural-only)
 
-BLOCKED (concrete refusal reason per level):
-  hematologic_specimen_drug_response  — gate requires both Block-B variants
-                                        clear 0.10 median Spearman; only
-                                        init-from-A does (0.103) at 30ep
-  drug_target_mechanism      — per-source coverage 32.5%/37.6%/46.7% < 50% spec
-  survival_prediction        — LOO C-index lower CI 0.442 < 0.50 (n=29 binding)
-  patient_level_clinical_prediction — no external/temporal holdout yet
+BLOCKED (6/12, concrete refusal reason per level):
+  drug_target_mechanism      — per-source coverage 32.5/37.6/46.7% < 50% spec
+  survival_prediction        — v17.7 corrected C=0.480 < 0.50 (n=29 binding;
+                               raw LOO C=0.515 [0.348, 0.684])
+  patient_level_clinical_prediction — needs external/temporal holdout + clinical
+                                      baseline win; v17.7 verdict: False
   longitudinal_trajectory    — 29 paired patients < 100 threshold
-  resistance_emergence       — same C-index ceiling as survival
-  causal_mechanism           — top-10 edges separate 4.32σ from null but
-                               downstream-gene CRISPR-essentiality = 0%
-                               (STRING source_id → HGNC mapping artifact)
+  resistance_emergence       — lower CI 0.348 < 0.55 (needs ≥80-100 more pairs)
+  causal_mechanism           — v17.8 strict gate: 1/20 common-essential targets
+                               (need ≥4); BUT pathway enrichment p=0.002 +
+                               drug-target support 40% — two of three channels
+                               confirm
 ```
 
 Refresh registries + revalidate:
@@ -427,10 +442,12 @@ Three project-policy rules enforced via `.claude/settings.json` hooks:
 
 ---
 
-_README v17 — last updated 2026-05-18. v17 commits added on top of the
-v16 head `3cfcaf0`: `4ccf49f` (STRING-alias→HGNC bridge), `4f120f8`
-(clinical-only Cox baseline suite), this commit (model.py unification +
-README update). All v16+v17 numbers derive from artifacts under
+_README v17.9 (final, 2026-05-18) — v17 added 9 commits on top of v16 head
+`3cfcaf0`: `4ccf49f` (v17.1 STRING-alias→HGNC bridge), `4f120f8` (v17.2
+clinical-only Cox), `72e51dc` (v17.3 model.py unification), `008d071`
+(v17.4-8 longitudinal upgrade + Block C contrastive + drug-conditioned
+BeatAML + regularised LENS + causal v2), and this commit (v17.9 final
+gate revalidation + RUNS + README). All numbers derive from artifacts under
 `checkpoints/mortfm/`, `data/processed/`, `results/mortfm/`, and
 `logs/mortfm/`. The v8 ResistanceMap section is preserved as a historical
 track and is still reproducible from `checkpoints/pipeline_validated.pt`._
