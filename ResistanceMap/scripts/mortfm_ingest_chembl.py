@@ -40,7 +40,8 @@ def ingest_chembl(raw_dir: Path, out_dir: Path) -> dict:
     if not target_files:
         raise FileNotFoundError(
             f"ChEMBL ingestion: expected *drug_target*.csv under {raw_dir.resolve()}. "
-            f"Generate via the ChEMBL portal export or the live ChEMBL MCP server."
+            f"Generate via the ChEMBL portal export, live ChEMBL MCP, or "
+            f"python3 scripts/mortfm_download_public_data.py --only chembl"
         )
     src = sorted(target_files)[0]
     df = pd.read_csv(src, low_memory=False, dtype=str)
@@ -64,6 +65,8 @@ def ingest_chembl(raw_dir: Path, out_dir: Path) -> dict:
 
     targets_df = pd.DataFrame({
         "drug_id": df["drug_id"].astype(str),
+        "drug_name": df.get("drug_name", pd.Series("", index=df.index)).astype(str),
+        "chembl_id": df["drug_id"].astype(str),
         "target_gene": df.get("target_gene", pd.Series("", index=df.index)).astype(str),
         "target_uniprot": df["target_uniprot"].astype(str),
         "target_type": "primary",

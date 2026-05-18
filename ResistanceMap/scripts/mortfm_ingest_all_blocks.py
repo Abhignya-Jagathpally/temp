@@ -8,8 +8,11 @@ Each per-source script is invoked as a subprocess so that one missing source
 does not abort the others — the function returns a summary dict naming which
 blocks succeeded vs. failed (with the FileNotFoundError messages preserved).
 
-This script does NOT download any data. It assumes ``data/raw_public/`` has
-been populated per ``docs/MORTFM_PUBLIC_DATA.md``.
+Populate ``data/raw_public/`` first::
+
+    python3 scripts/mortfm_download_public_data.py --link-legacy
+
+See also ``docs/MORTFM_PUBLIC_DATA.md``.
 """
 
 from __future__ import annotations

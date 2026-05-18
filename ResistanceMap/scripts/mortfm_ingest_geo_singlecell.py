@@ -120,7 +120,8 @@ def main() -> int:
     if not raw_dir.is_dir():
         raise FileNotFoundError(
             f"GEO ingestion: {raw_dir.resolve()} not found. "
-            f"Use geofetch or sra-tools to download GSE161195, GSE223060, GSE199373 etc."
+            f"Run python3 scripts/mortfm_download_public_data.py --only geo, or use "
+            f"geofetch / sra-tools for GSE161195, GSE223060, GSE199373 etc."
         )
     rows = []
     for sub in sorted(raw_dir.iterdir()):

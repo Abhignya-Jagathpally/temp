@@ -39,7 +39,8 @@ def ingest_reactome(raw_dir: Path, out_dir: Path) -> dict:
     if not candidates:
         raise FileNotFoundError(
             f"Reactome ingestion: expected {{HGNC,NCBI,UniProt}}2Reactome_All_Levels.txt under "
-            f"{raw_dir.resolve()}. Download from https://reactome.org/download/current/."
+            f"{raw_dir.resolve()}. Download from https://reactome.org/download/current/ or "
+            f"python3 scripts/mortfm_download_public_data.py --only reactome"
         )
     src = sorted(candidates)[0]
     logger.info("Reading Reactome membership from %s", src)

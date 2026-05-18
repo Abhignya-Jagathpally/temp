@@ -62,7 +62,8 @@ def ingest_uniprot(raw_dir: Path, out_dir: Path) -> dict:
     if not fastas:
         raise FileNotFoundError(
             f"UniProt ingestion: expected UP*9606*.fasta(.gz) under {raw_dir.resolve()}. "
-            f"Download from https://www.uniprot.org/proteomes/UP000005640."
+            f"Download from https://www.uniprot.org/proteomes/UP000005640 or "
+            f"python3 scripts/mortfm_download_public_data.py --only uniprot"
         )
     fasta_path = sorted(fastas)[0]
     logger.info("Reading UniProt FASTA %s ...", fasta_path)

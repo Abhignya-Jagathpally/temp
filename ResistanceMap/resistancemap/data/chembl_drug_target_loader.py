@@ -152,22 +152,31 @@ def write_chembl_coverage_report(
     prism_drugs: Sequence[str],
     out_json: str = "logs/mortfm/drug_target_coverage_report.json",
 ) -> Dict[str, float]:
-    drugs_with_targets = set(drug_targets["drug_name"].astype(str).str.lower())
-    chembl_ids = set(drug_targets["chembl_id"].astype(str))
+    # The processed CSV may carry either ``drug_name`` (when the source export
+    # included one) or only ``drug_id`` / ``chembl_id``. Honour whichever exists.
+    name_col = "drug_name" if "drug_name" in drug_targets.columns else None
+    drugs_with_targets = (
+        set(drug_targets[name_col].astype(str).str.lower())
+        if name_col is not None else set()
+    )
+    chembl_ids = set(drug_targets["chembl_id"].astype(str)) if "chembl_id" in drug_targets.columns else set()
+    drug_ids = set(drug_targets["drug_id"].astype(str)) if "drug_id" in drug_targets.columns else set()
 
     def _coverage(drug_list: Sequence[str]) -> float:
         if not drug_list:
             return 0.0
         mapped = sum(
             1 for d in drug_list
-            if str(d).lower() in drugs_with_targets or str(d) in chembl_ids
+            if (str(d).lower() in drugs_with_targets)
+            or (str(d) in chembl_ids)
+            or (str(d) in drug_ids)
         )
         return mapped / len(drug_list)
 
     rep = {
         "n_drug_target_rows": int(len(drug_targets)),
-        "n_unique_drugs": int(drug_targets["drug_id"].nunique()),
-        "n_unique_targets": int(drug_targets["target_uniprot"].nunique()),
+        "n_unique_drugs": int(drug_targets["drug_id"].nunique()) if "drug_id" in drug_targets.columns else 0,
+        "n_unique_targets": int(drug_targets["target_uniprot"].nunique()) if "target_uniprot" in drug_targets.columns else 0,
         "n_gdsc_drugs": len(gdsc_drugs),
         "n_prism_drugs": len(prism_drugs),
         "gdsc_drug_target_coverage": _coverage(gdsc_drugs),

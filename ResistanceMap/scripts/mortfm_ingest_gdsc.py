@@ -41,7 +41,8 @@ def _find_one(raw_dir: Path, patterns: list[str]) -> Path:
             return sorted(hits)[0]
     raise FileNotFoundError(
         f"GDSC ingestion: none of {patterns} found under {raw_dir.resolve()}. "
-        f"Download from https://www.cancerrxgene.org/downloads/bulk_download."
+        f"Download from https://www.cancerrxgene.org/downloads/bulk_download or "
+        f"python3 scripts/mortfm_download_public_data.py --only gdsc"
     )
 
 

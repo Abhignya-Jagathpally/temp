@@ -35,7 +35,8 @@ def ingest_prism(raw_dir: Path, out_dir: Path) -> dict:
     if not files:
         raise FileNotFoundError(
             f"PRISM ingestion: expected secondary-screen-dose-response-curve-parameters*.csv "
-            f"under {raw_dir.resolve()}. Download from DepMap PRISM Repurposing release."
+            f"under {raw_dir.resolve()}. Download via "
+            f"python3 scripts/mortfm_download_public_data.py --only prism"
         )
     src = sorted(files)[0]
     logger.info("Reading PRISM %s", src)

@@ -40,7 +40,8 @@ def ingest_string(raw_dir: Path, out_dir: Path, *, score_threshold: int = 700) -
     if not links or not aliases:
         raise FileNotFoundError(
             f"STRING ingestion: expected protein.links and protein.aliases under {raw_dir.resolve()}. "
-            f"Download from https://string-db.org/cgi/download (taxon 9606)."
+            f"Download from https://string-db.org/cgi/download (taxon 9606) or "
+            f"python3 scripts/mortfm_download_public_data.py --only string"
         )
     links_path = sorted(links)[0]
     aliases_path = sorted(aliases)[0]

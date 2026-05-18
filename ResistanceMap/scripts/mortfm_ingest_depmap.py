@@ -42,9 +42,15 @@ logger = logging.getLogger("mortfm_ingest_depmap")
 
 _EXPECTED_FILES = {
     "model": "Model.csv",
-    "expression": "OmicsExpressionProteinCodingGenesTPMLogp1.csv",
     "crispr": "CRISPRGeneEffect.csv",
 }
+
+# DepMap renamed the TPM matrix in 24Q4/26Q1; accept any of these.
+_EXPRESSION_GLOBS = (
+    "OmicsExpressionProteinCodingGenesTPMLogp1.csv",
+    "OmicsExpressionTPMLogp1HumanProteinCodingGenes.csv",
+    "OmicsExpression*ProteinCoding*TPM*.csv",
+)
 
 
 def _md5(path: Path, chunk: int = 65536) -> str:
@@ -62,9 +68,21 @@ def _require(path: Path, label: str) -> Path:
     if not path.exists():
         raise FileNotFoundError(
             f"DepMap ingestion: expected {label} at {path.resolve()}. "
-            f"Download from https://depmap.org/portal/data_page/ and place under data/raw_public/depmap/."
+            f"Download from https://depmap.org/portal/data_page/ and place under data/raw_public/depmap/, "
+            f"or run: python3 scripts/mortfm_download_public_data.py --only depmap"
         )
     return path
+
+
+def _find_expression(raw_dir: Path) -> Path:
+    for pat in _EXPRESSION_GLOBS:
+        hits = sorted(raw_dir.glob(pat))
+        if hits:
+            return hits[0]
+    raise FileNotFoundError(
+        f"DepMap ingestion: expected an expression TPM matrix ({', '.join(_EXPRESSION_GLOBS[:2])}) "
+        f"under {raw_dir.resolve()}. Run: python3 scripts/mortfm_download_public_data.py --only depmap"
+    )
 
 
 def ingest_depmap(raw_dir: Path, out_dir: Path) -> dict:
@@ -73,7 +91,7 @@ def ingest_depmap(raw_dir: Path, out_dir: Path) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     model_path = _require(raw_dir / _EXPECTED_FILES["model"], "Model.csv")
-    expr_path = _require(raw_dir / _EXPECTED_FILES["expression"], "OmicsExpressionProteinCodingGenesTPMLogp1.csv")
+    expr_path = _find_expression(raw_dir)
     crispr_path = _require(raw_dir / _EXPECTED_FILES["crispr"], "CRISPRGeneEffect.csv")
 
     logger.info("Reading DepMap Model.csv ...")
@@ -81,8 +99,22 @@ def ingest_depmap(raw_dir: Path, out_dir: Path) -> dict:
     logger.info("DepMap: %d models", len(models))
 
     logger.info("Reading DepMap RNA TPM matrix (this may take a minute) ...")
-    expr = pd.read_csv(expr_path, index_col=0, low_memory=False)
-    # DepMap convention: first column is ModelID; columns are "<HGNC> (<EntrezID>)"
+    # DepMap release formats differ:
+    # * Older releases: index_col=0 IS the ModelID.
+    # * Newer releases (24Q2+): row index is anonymous; ModelID lives in a
+    #   named column alongside SequencingID / ModelConditionID metadata.
+    # Detect via header.
+    header = pd.read_csv(expr_path, nrows=0).columns.tolist()
+    if "ModelID" in header:
+        expr = pd.read_csv(expr_path, low_memory=False)
+        meta_cols = [c for c in ["Unnamed: 0", "SequencingID", "ModelConditionID",
+                                 "IsDefaultEntryForMC", "IsDefaultEntryForModel"] if c in expr.columns]
+        expr = expr.drop(columns=meta_cols).set_index("ModelID")
+        logger.info("DepMap RNA: new format detected; index_col=ModelID")
+    else:
+        expr = pd.read_csv(expr_path, index_col=0, low_memory=False)
+        logger.info("DepMap RNA: older format; index_col=0")
+    # DepMap convention: column header is "<HGNC> (<EntrezID>)"; strip the suffix.
     expr.columns = [c.split(" (")[0] for c in expr.columns]
     rna_out = out_dir / "omics" / "rna_matrix.parquet"
     rna_out.parent.mkdir(parents=True, exist_ok=True)
