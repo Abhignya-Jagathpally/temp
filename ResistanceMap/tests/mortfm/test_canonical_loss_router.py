@@ -41,7 +41,13 @@ from resistancemap.training.canonical_mortfm_losses import (
 # --------------------------------------------------------------------------
 
 
-def _mk_outputs(B: int = 4, T: int = 4, d: int = 8, K: int = 6, n_basins: int = 5):
+def _mk_outputs(B: int = 4, T: int = 4, d: int = 8, K: int = None, n_basins: int = 5):
+    # v19 Phase 7: hitting_cdf and survival_curve MUST share their time
+    # axis. If the caller omits K, default to K=T so survival_hitting_consistency_loss
+    # validates. Legacy callers may still pass K explicitly to exercise the
+    # mismatch-detection error path.
+    if K is None:
+        K = T
     return {
         "z0":               torch.zeros(B, d),
         "z_traj":           torch.linspace(0.0, 1.0, T)
@@ -50,7 +56,7 @@ def _mk_outputs(B: int = 4, T: int = 4, d: int = 8, K: int = 6, n_basins: int = 
         "t_grid":           torch.linspace(0.0, 6.0, T),
         "hazard":           torch.full((B, K), 1.0 / K),
         "survival_curve":   torch.linspace(1.0, 0.5, K).unsqueeze(0).expand(B, K).clone(),
-        "cif_per_event":    torch.zeros(B, 1, K),
+        "cif_per_event":    torch.zeros(B, K, 1),
         "basin_probs":      torch.full((B, T, n_basins), 1.0 / n_basins),
         "hitting_cdf":      torch.linspace(0.1, 0.9, T).unsqueeze(0).expand(B, T).clone(),
         "hitting_mean_tau": torch.full((B,), 3.0),
@@ -170,7 +176,8 @@ def test_canonical_trajectory_loss_zero_on_nonpositive_dt():
 
 @pytest.mark.parametrize("stage,expected_terms", [
     ("E", ("trajectory", "sde_path", "basin_transition")),
-    ("F", ("survival", "hitting")),
+    # v19 Phase 7: stage F gains hitting_nll + surv_hit_consistency
+    ("F", ("survival", "hitting", "hitting_nll", "surv_hit_consistency")),
     ("G", ("basin_transition",)),
     ("H", ("survival",)),
 ])

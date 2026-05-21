@@ -42,6 +42,11 @@ from resistancemap.mortfm.trajectory.graph_energy_sde import (  # noqa: F401
 from resistancemap.mortfm.trajectory.graph_projector import (  # noqa: F401
     LatentToGraphProjector,
 )
+from resistancemap.mortfm.trajectory.grid import (  # noqa: F401
+    CanonicalTimeGridConfig,
+    canonical_time_grid,
+    time_grid_meta,
+)
 from resistancemap.mortfm.trajectory.hitting_time import (  # noqa: F401
     HittingTime,
 )

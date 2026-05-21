@@ -26,10 +26,16 @@ from __future__ import annotations
 
 import logging
 import math
+import warnings
 from typing import Optional
 
 import torch
 import torch.nn as nn
+
+from resistancemap.mortfm.trajectory.grid import (
+    CanonicalTimeGridConfig,
+    canonical_time_grid,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -163,15 +169,45 @@ class GraphEnergyResistanceSDE(nn.Module):
         integration_time: float = 1.0,
         n_time_grid: int = 8,
         n_mc_samples: int = 4,
+        time_grid_config: Optional[CanonicalTimeGridConfig] = None,
     ) -> None:
         super().__init__()
         self.potential = WaddingtonPotential(d_latent, d_drug, n_basins=n_basins)
         self.drift = GraphConditionedDrift(d_latent, d_graph, d_drug, max(d_clinical, 1))
         self.diffusion = _Diffusion(d_latent, d_drug)
-        self.integration_time = integration_time
-        self.n_time_grid = n_time_grid
         self.n_mc_samples = n_mc_samples
         self._has_clinical = d_clinical > 0
+
+        # v19 Phase 7: when a CanonicalTimeGridConfig is supplied, the SDE's
+        # internal time grid is replaced by the shared canonical grid so the
+        # survival head and the SDE rollout live on the same time axis.
+        # If no config is given, the legacy linspace(0, integration_time,
+        # n_time_grid) grid is preserved for backward compatibility with
+        # v15/v17 checkpoints — but we emit a DeprecationWarning so callers
+        # migrate before the dual-grid mode is removed in v20.
+        if time_grid_config is not None:
+            grid = time_grid_config.build()
+            self.integration_time = float(time_grid_config.t_max_months)
+            self.n_time_grid = int(time_grid_config.n_steps)
+            self.register_buffer("t_grid", grid, persistent=False)
+            self._uses_canonical_grid = True
+        else:
+            warnings.warn(
+                "GraphEnergyResistanceSDE constructed without "
+                "time_grid_config; falling back to legacy "
+                f"linspace(0, {integration_time}, {n_time_grid}). The "
+                "directional-consistency invariant between hitting CDF and "
+                "competing-risk survival cannot be evaluated until both "
+                "subsystems share a CanonicalTimeGridConfig. This fallback "
+                "is preserved for v15/v17 checkpoint compatibility only.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.integration_time = integration_time
+            self.n_time_grid = n_time_grid
+            grid = torch.linspace(0.0, float(integration_time), int(n_time_grid))
+            self.register_buffer("t_grid", grid, persistent=False)
+            self._uses_canonical_grid = False
 
     def _grad_u(self, z: torch.Tensor, drug: torch.Tensor) -> torch.Tensor:
         """Compute grad_z U(z, d). Always run under enable_grad so the
@@ -232,7 +268,10 @@ class GraphEnergyResistanceSDE(nn.Module):
             clinical = z0.new_zeros((B, 1))
         T = self.n_time_grid
         dt = self.integration_time / max(T - 1, 1)
-        t_grid = torch.linspace(0.0, self.integration_time, T, device=z0.device)
+        # v19 Phase 7: prefer the registered buffer (canonical or legacy)
+        # so this forward never reconstructs the grid; downstream code can
+        # equality-test sde.t_grid against survival_head.t_grid.
+        t_grid = self.t_grid.to(device=z0.device)
 
         # Deterministic mean trajectory.
         z_traj = [z0]

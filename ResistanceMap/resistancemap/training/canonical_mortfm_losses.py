@@ -50,6 +50,9 @@ __all__ = [
     "basin_transition_loss",
     "sde_path_loss",
     "canonical_trajectory_loss",
+    "latent_future_state_loss",
+    "hitting_time_nll",
+    "survival_hitting_consistency_loss",
     "assemble_canonical_loss",
     "STAGE_LOSS_SPEC",
     "REQUIRED_SUPERVISION_PER_STAGE",
@@ -62,9 +65,13 @@ __all__ = [
 
 #: Maps each patient-level stage to the canonical loss terms it dispatches.
 #: Stages outside this dict are foundation stages and use the legacy losses.
+#: v19 Phase 7: stage F gains ``hitting_nll`` (the canonical discrete-NLL on
+#: the shared t_grid, replacing the prototype ``hitting_time_loss`` MSE) and
+#: ``surv_hit_consistency`` (the directional invariant). The legacy
+#: ``hitting`` term is kept so old configs still resolve to a valid loss.
 STAGE_LOSS_SPEC: Dict[str, tuple] = {
     "E": ("trajectory", "sde_path", "basin_transition"),
-    "F": ("survival", "hitting"),
+    "F": ("survival", "hitting", "hitting_nll", "surv_hit_consistency"),
     "G": ("basin_transition",),
     "H": ("survival",),
 }
@@ -388,6 +395,231 @@ def canonical_trajectory_loss(
     return {"loss": loss, "n_supervised": n_valid}
 
 
+def _mmd_rbf(x: torch.Tensor, y: torch.Tensor, *, sigma: float = 1.0) -> torch.Tensor:
+    """Radial-basis-function MMD^2 between two same-d_latent point sets.
+
+    Both ``x`` and ``y`` are ``(N, d)``. Symmetric, biased-but-consistent
+    estimator (no diagonal removal); we use it as a regulariser, not as a
+    statistical test, so the bias is acceptable.
+    """
+    def k(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+        d2 = (a.unsqueeze(1) - b.unsqueeze(0)).pow(2).sum(dim=-1)
+        return torch.exp(-d2 / (2.0 * sigma * sigma))
+
+    return k(x, x).mean() + k(y, y).mean() - 2.0 * k(x, y).mean()
+
+
+def latent_future_state_loss(
+    predicted_z_traj: torch.Tensor,
+    encoded_z_future: torch.Tensor,
+    delta_t_days: torch.Tensor,
+    *,
+    mmd_min_batch: int = 16,
+    mmd_sigma: float = 1.0,
+    delta_t_floor: float = 1.0,
+) -> Dict[str, Any]:
+    """Per-row L2 in latent space, normalised by per-row Δt (in days).
+
+    This is Phase 1's canonical trajectory loss. It compares the SDE-evolved
+    terminal latent against the **encoder's own** view of the follow-up
+    snapshot — the only dimensionally-consistent comparison for a latent
+    SDE. The v17 "truncate raw RNA to d_latent" path is dead.
+
+    Per-row mask: only rows with finite, positive ``delta_t_days`` and finite
+    target latents contribute. Rows that fail the mask receive zero gradient.
+
+    The optional MMD bonus is gated by ``len(batch_supervised) >= mmd_min_batch``
+    so we do not pay an O(B^2) RBF kernel on a 2-row batch.
+
+    Returns
+    -------
+    dict
+        ``{"loss_traj_latent": Tensor, "loss_traj_mmd": Tensor,
+        "loss": Tensor, "n_supervised": int}``. ``loss`` is the sum of the
+        two; the trainer multiplies it by the stage weight.
+    """
+    if predicted_z_traj.ndim != 3:
+        raise ValueError(
+            f"predicted_z_traj must be (B, T, d_latent); got "
+            f"{tuple(predicted_z_traj.shape)}"
+        )
+    if encoded_z_future.ndim != 2:
+        raise ValueError(
+            f"encoded_z_future must be (B, d_latent); got "
+            f"{tuple(encoded_z_future.shape)}"
+        )
+    pred_T = predicted_z_traj[:, -1, :]  # (B, d_latent)
+    if pred_T.shape != encoded_z_future.shape:
+        raise ValueError(
+            f"latent_future_state_loss: predicted terminal shape "
+            f"{tuple(pred_T.shape)} != encoded_z_future shape "
+            f"{tuple(encoded_z_future.shape)}. Both MUST be the same encoder's "
+            f"output."
+        )
+
+    device = predicted_z_traj.device
+    dtype = predicted_z_traj.dtype
+    zero = torch.zeros((), device=device, dtype=dtype)
+    if delta_t_days.shape != (pred_T.shape[0],):
+        raise ValueError(
+            f"delta_t_days must have shape (B,); got {tuple(delta_t_days.shape)}"
+        )
+
+    dt = delta_t_days.to(device=device, dtype=dtype)
+    valid = (
+        torch.isfinite(dt)
+        & (dt > 0.0)
+        & torch.isfinite(encoded_z_future).all(dim=-1)
+        & torch.isfinite(pred_T).all(dim=-1)
+    )
+    n_valid = int(valid.sum().item())
+    if n_valid == 0:
+        return {
+            "loss_traj_latent": zero,
+            "loss_traj_mmd": zero,
+            "loss": zero,
+            "n_supervised": 0,
+        }
+
+    pred_m = pred_T[valid]
+    targ_m = encoded_z_future[valid]
+    dt_m = dt[valid].clamp_min(delta_t_floor)
+    sq = (pred_m - targ_m).pow(2).sum(dim=-1)               # (n_valid,)
+    l2 = (sq / dt_m).mean()
+
+    if n_valid >= mmd_min_batch:
+        mmd = _mmd_rbf(pred_m, targ_m, sigma=mmd_sigma)
+    else:
+        mmd = zero
+
+    return {
+        "loss_traj_latent": l2,
+        "loss_traj_mmd": mmd,
+        "loss": l2 + mmd,
+        "n_supervised": n_valid,
+    }
+
+
+def hitting_time_nll(
+    hitting_cdf: torch.Tensor,
+    t_grid: torch.Tensor,
+    event_time: torch.Tensor,
+    event_observed: torch.Tensor,
+    *,
+    eps: float = 1e-6,
+) -> Dict[str, Any]:
+    """Discrete NLL on the empirical hitting CDF, on the shared canonical grid.
+
+    For an uncensored row with event at grid bin ``k``:
+        L = -log(F(k) - F(k-1) + eps)
+    For a censored row with last-known-event-free time at bin ``k``:
+        L = -log(1 - F(k) + eps)
+
+    This is the Phase 7 invariant: the CDF over ``t_grid`` is interpreted as
+    a true survival predictor on the *same* time axis as the survival head,
+    so the NLL is comparable across the two subsystems.
+
+    Returns
+    -------
+    dict
+        ``{"loss_hit_nll": Tensor, "loss": Tensor, "n_supervised": int}``.
+    """
+    if hitting_cdf.ndim != 2:
+        raise ValueError(
+            f"hitting_cdf must be (B, T); got {tuple(hitting_cdf.shape)}"
+        )
+    B, T = hitting_cdf.shape
+    if t_grid.numel() != T:
+        raise ValueError(
+            f"t_grid length {t_grid.numel()} != hitting_cdf T={T}; the SDE "
+            f"and survival head must share the canonical_time_grid."
+        )
+
+    device = hitting_cdf.device
+    dtype = hitting_cdf.dtype
+    zero = torch.zeros((), device=device, dtype=dtype)
+    if event_time is None or event_observed is None:
+        return {"loss_hit_nll": zero, "loss": zero, "n_supervised": 0}
+
+    et = event_time.to(device=device, dtype=dtype)
+    eo = event_observed.to(device=device, dtype=dtype)
+    valid = torch.isfinite(et)
+    n_valid = int(valid.sum().item())
+    if n_valid == 0:
+        return {"loss_hit_nll": zero, "loss": zero, "n_supervised": 0}
+
+    # Snap each row's event_time onto the nearest grid bin.
+    tg = t_grid.to(device=device, dtype=dtype)
+    diff = (et.unsqueeze(-1) - tg.unsqueeze(0)).abs()
+    k = diff.argmin(dim=-1).clamp_(0, T - 1)                    # (B,)
+
+    cdf_at_k = hitting_cdf.gather(1, k.unsqueeze(-1)).squeeze(-1)
+    k_prev = (k - 1).clamp_(min=0)
+    cdf_prev = hitting_cdf.gather(1, k_prev.unsqueeze(-1)).squeeze(-1)
+    # At k=0 there is no preceding bin; the implicit F(-1)=0.
+    cdf_prev = torch.where(k > 0, cdf_prev, torch.zeros_like(cdf_prev))
+
+    pmf_at_k = (cdf_at_k - cdf_prev).clamp_min(eps)
+    surv_at_k = (1.0 - cdf_at_k).clamp_min(eps)
+
+    nll_per_row = -(eo * pmf_at_k.log() + (1.0 - eo) * surv_at_k.log())
+    nll = nll_per_row[valid].mean()
+    return {"loss_hit_nll": nll, "loss": nll, "n_supervised": n_valid}
+
+
+def survival_hitting_consistency_loss(
+    survival_curve: torch.Tensor,
+    hitting_cdf: torch.Tensor,
+    cif_other_events: Optional[torch.Tensor] = None,
+    *,
+    margin: float = 0.0,
+) -> Dict[str, Any]:
+    """Hinge penalty enforcing ``S(t) <= 1 - F_hit(t) + sum(c_other(t))``.
+
+    The directional consistency invariant from Phase 7: a patient who is
+    still event-free at time t must not have already entered the resistant
+    basin. With competing-risk corrections allowed, the upper bound on
+    S(t) is ``1 - F_hit(t) + sum_r c_other_r(t)``.
+
+    Shape contract: both ``survival_curve`` and ``hitting_cdf`` must be
+    ``(B, T)`` on the same canonical grid. ``cif_other_events`` may be
+    ``(B, T)`` or ``(B, T, R)`` (summed over R internally).
+
+    Returns
+    -------
+    dict
+        ``{"loss_surv_hit_consistency": Tensor, "loss": Tensor,
+        "n_supervised": int}``. ``n_supervised`` is always batch size
+        because this is an unsupervised internal-consistency penalty.
+    """
+    if survival_curve.shape != hitting_cdf.shape:
+        raise ValueError(
+            f"survival_curve {tuple(survival_curve.shape)} != hitting_cdf "
+            f"{tuple(hitting_cdf.shape)} — grids unaligned. Wire both through "
+            f"the canonical_time_grid from resistancemap.mortfm.trajectory.grid."
+        )
+
+    upper = 1.0 - hitting_cdf
+    if cif_other_events is not None:
+        cif = cif_other_events.to(device=upper.device, dtype=upper.dtype)
+        if cif.dim() == 3:
+            cif = cif.sum(dim=-1)
+        if cif.shape != upper.shape:
+            raise ValueError(
+                f"cif_other_events {tuple(cif.shape)} must match "
+                f"{tuple(upper.shape)}"
+            )
+        upper = upper + cif
+
+    excess = (survival_curve - upper - margin).clamp(min=0.0)
+    loss = excess.mean()
+    return {
+        "loss_surv_hit_consistency": loss,
+        "loss": loss,
+        "n_supervised": int(survival_curve.shape[0]),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Stage-level dispatcher
 # ---------------------------------------------------------------------------
@@ -467,6 +699,23 @@ def assemble_canonical_loss(
             sub = lens_survival_loss(out, batch)
         elif term == "hitting":
             sub = hitting_time_loss(out, batch)
+        elif term == "hitting_nll":
+            # v19 Phase 7: discrete-NLL of the empirical hitting CDF on the
+            # SHARED canonical t_grid. Requires event_time + event_observed.
+            sub = hitting_time_nll(
+                out["hitting_cdf"],
+                out["t_grid"],
+                _get_field(batch, "event_time"),
+                _get_field(batch, "event_observed"),
+            ) if _get_field(batch, "event_time") is not None and _get_field(batch, "event_observed") is not None else _zero_term(out["hitting_cdf"])
+        elif term == "surv_hit_consistency":
+            # v19 Phase 7: directional invariant S(t) <= 1 - F_hit(t) + sum_c c_other(t).
+            # Always finite (no batch supervision needed).
+            cif_other = out.get("cif_per_event")
+            sub = survival_hitting_consistency_loss(
+                out["survival_curve"], out["hitting_cdf"],
+                cif_other_events=cif_other,
+            )
         elif term == "basin_transition":
             sub = basin_transition_loss(out, batch)
         elif term == "sde_path":

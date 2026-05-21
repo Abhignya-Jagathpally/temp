@@ -48,6 +48,7 @@ from resistancemap.mortfm.schemas import MORTBatch, MORTFMConfig
 from resistancemap.training.canonical_mortfm_losses import (
     STAGE_LOSS_SPEC,
     assemble_canonical_loss,
+    latent_future_state_loss,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,21 @@ __all__ = [
     "CanonicalMORTFMTrainer",
     "MissingSupervisionError",
     "CanonicalEpochMetrics",
+    "STAGE_VALIDATE_FOR_LOSS_KEY",
 ]
+
+
+#: Maps each canonical patient-level stage to the ``loss_name`` argument
+#: passed to :meth:`MORTBatch.validate_for_loss`. Stages whose required
+#: term isn't in the validator's vocabulary (e.g. ``basin_transition``)
+#: simply skip the validate call — the per-term ``n_supervised`` audit
+#: downstream still catches missing supervision.
+STAGE_VALIDATE_FOR_LOSS_KEY: Dict[str, Optional[str]] = {
+    "E": "trajectory",  # also "latent_future_state" when future_snapshot_batch is provided
+    "F": "survival",
+    "G": None,          # basin_transition has no validate_for_loss key (no labelled target)
+    "H": "survival",
+}
 
 
 @dataclass
@@ -125,6 +140,7 @@ class CanonicalMORTFMTrainer:
         device: str = "cpu",
         *,
         strict: bool = True,
+        strict_supervision: Optional[bool] = None,
         weights: Optional[Dict[str, float]] = None,
         graph_emb_fn: Optional[Callable[[MORTBatch], torch.Tensor]] = None,
     ) -> None:
@@ -134,7 +150,13 @@ class CanonicalMORTFMTrainer:
         self.val_loader = val_loader
         self.device = torch.device(device)
         self.model.to(self.device)
-        self.strict = strict
+        # ``strict_supervision`` is the v19 spec name for the v18 ``strict``
+        # flag. When both are given, the more explicit one wins.
+        if strict_supervision is not None:
+            self.strict = bool(strict_supervision)
+        else:
+            self.strict = bool(strict)
+        self.strict_supervision = self.strict  # alias for v19 callers
         self.graph_emb_fn = graph_emb_fn
 
         # Loss weights (canonical default — fall back to 1.0 if cfg lacks them).
@@ -232,6 +254,50 @@ class CanonicalMORTFMTrainer:
             clinical = torch.cat([clinical, pad], dim=-1)
         return torch.nan_to_num(clinical, nan=0.0, posinf=0.0, neginf=0.0)
 
+    def _trajectory_step(
+        self,
+        batch: MORTBatch,
+        outputs: Dict[str, torch.Tensor],
+    ) -> Dict[str, Any]:
+        """Phase 1 latent trajectory step.
+
+        Re-encodes ``batch.future_snapshot_batch`` through the SAME
+        foundation encoder used for the baseline (under ``torch.no_grad``
+        to act as a target network), then compares the SDE-evolved
+        terminal latent against it using
+        :func:`latent_future_state_loss`. Per-row Δt comes from
+        ``batch.delta_t_days``.
+
+        Returns the loss dict in the canonical
+        ``{"loss": ..., "n_supervised": ...}`` shape. If ``future_snapshot_batch``
+        or ``delta_t_days`` is missing, returns a zero-loss term with
+        ``n_supervised=0`` — the strict-supervision audit will catch persistent
+        absence.
+        """
+        z_traj = outputs["z_traj"]
+        device = z_traj.device
+        dtype = z_traj.dtype
+        zero = torch.zeros((), device=device, dtype=dtype)
+        if batch.future_snapshot_batch is None or batch.delta_t_days is None:
+            return {
+                "loss_traj_latent": zero,
+                "loss_traj_mmd": zero,
+                "loss": zero,
+                "n_supervised": 0,
+            }
+
+        future_batch = batch.future_snapshot_batch.to(device)
+        # Target-network trick: detach the encoder's view of the future so
+        # gradients flow through the SDE/drift, not back into the foundation
+        # encoder. Without this, the encoder could collapse both branches
+        # into a constant to trivially satisfy the loss.
+        with torch.no_grad():
+            future_state = self.model.forward_foundation(future_batch)
+        encoded_z_future = future_state.z0.detach().to(device=device, dtype=dtype)
+
+        delta_t = batch.delta_t_days.to(device=device, dtype=dtype)
+        return latent_future_state_loss(z_traj, encoded_z_future, delta_t)
+
     def _losses_for_batch(
         self,
         batch: MORTBatch,
@@ -254,8 +320,62 @@ class CanonicalMORTFMTrainer:
                 f"be driven by the legacy trainer."
             )
         batch = batch.to(self.device)
+
+        # v19 Bug B14 wire-up — ``MORTBatch.validate_for_loss`` fails fast
+        # when the batch lacks the supervision a loss term will consume.
+        # Strict mode propagates the error as ``MissingSupervisionError``;
+        # non-strict mode logs at INFO and lets the per-term ``n_supervised``
+        # audit downstream decide what to skip.
+        validate_key = STAGE_VALIDATE_FOR_LOSS_KEY.get(stage)
+        if validate_key is not None:
+            try:
+                batch.validate_for_loss(validate_key)
+            except ValueError as exc:
+                if self.strict:
+                    raise MissingSupervisionError(
+                        f"CanonicalMORTFMTrainer: stage {stage!r} batch failed "
+                        f"validate_for_loss({validate_key!r}): {exc}"
+                    ) from exc
+                logger.info(
+                    "CanonicalMORTFMTrainer: stage %r batch missing supervision "
+                    "for %r (%s); term will be skipped (strict=False).",
+                    stage, validate_key, exc,
+                )
+
         outputs = self._canonical_forward(batch)
+        # TODO(v19 Bug B14): replace this assemble_canonical_loss call with
+        # `LossRouter.route(stage, batch)` once LossRouter exposes a
+        # stage-aware ``route`` API. Today LossRouter only provides
+        # ``compute(outputs, batch)`` which takes a Mapping-shaped batch and
+        # does not understand the canonical STAGE_LOSS_SPEC — wiring it
+        # would require either (a) adding a MORTBatch→Mapping shim plus a
+        # `route(stage, batch)` method, or (b) refactoring the per-term
+        # dispatch in canonical_mortfm_losses.assemble_canonical_loss into
+        # LossRouter directly. Both are deferred to a focused LossRouter PR
+        # so this validate_for_loss wireup stays minimal.
         bundle = assemble_canonical_loss(stage, outputs, batch, self.weights)
+
+        # v19 Phase 1: for stage E, override the "trajectory" term with the
+        # canonical latent loss if a follow-up snapshot is available. The
+        # assembler's default trajectory term still consumes the
+        # legacy `batch.future_state` slot for backward compatibility
+        # (cell-line teacher latents); Phase 1 prefers the future-snapshot
+        # path because the canonical loss is computed entirely in the
+        # foundation encoder's latent space — no raw-RNA truncation.
+        if (
+            stage == "E"
+            and "trajectory" in bundle["components"]
+            and batch.future_snapshot_batch is not None
+            and batch.delta_t_days is not None
+        ):
+            traj_sub = self._trajectory_step(batch, outputs)
+            old_loss = bundle["components"]["trajectory"]["loss"]
+            new_loss = traj_sub["loss"]
+            weight = float(self.weights.get("trajectory", 1.0))
+            bundle["loss_total"] = bundle["loss_total"] - weight * old_loss + weight * new_loss
+            bundle["components"]["trajectory"] = traj_sub
+            bundle["per_term_n_supervised"]["trajectory"] = int(traj_sub["n_supervised"])
+
         bundle["outputs"] = outputs
         if self.strict:
             required = bundle["required_term"]

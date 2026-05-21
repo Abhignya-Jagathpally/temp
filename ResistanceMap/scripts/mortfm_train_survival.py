@@ -36,6 +36,12 @@ def main() -> int:
     ap.add_argument("--pairs", required=True)
     ap.add_argument("--init-from", default=None)
     ap.add_argument("--device", default="auto")
+    ap.add_argument(
+        "--canonical", action="store_true",
+        help="Use MORTFMTrainer.with_canonical(...) so stages F/H route through "
+             "the canonical LENS dict surface (MORTFM.forward) instead of "
+             "MORTFM.forward_legacy. Required for v19+ canonical heads.",
+    )
     args = ap.parse_args()
 
     raw = yaml.safe_load(Path(args.config).read_text())
@@ -63,8 +69,16 @@ def main() -> int:
     )
     model = MORTFM(cfg, n_pathway_proteins=500, n_drug_candidates=cfg.drug_n_drugs,
                    n_resistance_states=4)
-    trainer = MORTFMTrainer(model, cfg, train_loader=train_loader, val_loader=val_loader,
-                             device=device)
+    if args.canonical:
+        logger.info("Using canonical trainer hand-off (stages F/H → MORTFM.forward).")
+        trainer = MORTFMTrainer.with_canonical(
+            model=model, cfg=cfg,
+            train_loader=train_loader, val_loader=val_loader,
+            device=device,
+        )
+    else:
+        trainer = MORTFMTrainer(model, cfg, train_loader=train_loader, val_loader=val_loader,
+                                 device=device)
     if args.init_from:
         trainer.load_checkpoint(args.init_from)
         logger.info("Initialised from %s", args.init_from)

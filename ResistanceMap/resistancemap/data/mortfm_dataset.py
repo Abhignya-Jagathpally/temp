@@ -173,23 +173,27 @@ def _stack_optional_tensor(
     return out
 
 
-def mort_collate(batch: List[TemporalTrainingPair]) -> MORTBatch:
-    """Collate a list of pairs into a :class:`MORTBatch`.
+def _collate_modalities(
+    snapshots: Sequence[PatientCellSnapshot],
+    patient_ids: Sequence[str],
+    cell_ids: Sequence[str],
+) -> MORTBatch:
+    """Pack a list of snapshots into a partial MORTBatch carrying ONLY the
+    per-modality input tensors + presence mask + provenance.
 
-    The trainer wires this in via ``DataLoader(..., collate_fn=mort_collate)``.
+    v19 Phase 1: extracted from the body of :func:`mort_collate` so the
+    follow-up snapshots in ``pair.x_t_delta`` can be collated through the
+    same code path — guaranteeing the baseline and follow-up batches have
+    identical modality layout and so can both be encoded with
+    :meth:`MORTFM.forward_foundation`. No supervision fields are filled in
+    here; the caller is responsible for attaching event_time / future_state /
+    etc. to the *baseline* batch only.
     """
-    if not batch:
-        raise ValueError("mort_collate received an empty batch.")
-
-    snapshots = [p.x_t for p in batch]
-
     out = MORTBatch(
-        patient_ids=[s.patient_id for s in snapshots],
-        cell_ids=[s.cell_id or "" for s in snapshots],
+        patient_ids=list(patient_ids),
+        cell_ids=list(cell_ids),
         modality_mask={},
     )
-
-    # Stack each modality tensor + mask.
     for m in MODALITY_ORDER:
         if m == ModalityName.DRUG:
             packed = _stack_drug(snapshots)
@@ -200,14 +204,29 @@ def mort_collate(batch: List[TemporalTrainingPair]) -> MORTBatch:
         values, presence = packed
         setattr(out, m.value, values)
         out.modality_mask[m.value] = presence
-
-    # Time vector for the baseline snapshot.
     times = [s.timepoint for s in snapshots]
     if any(t is not None for t in times):
         out.time = torch.tensor(
             [t if t is not None else float("nan") for t in times],
             dtype=torch.float32,
         )
+    return out
+
+
+def mort_collate(batch: List[TemporalTrainingPair]) -> MORTBatch:
+    """Collate a list of pairs into a :class:`MORTBatch`.
+
+    The trainer wires this in via ``DataLoader(..., collate_fn=mort_collate)``.
+    """
+    if not batch:
+        raise ValueError("mort_collate received an empty batch.")
+
+    snapshots = [p.x_t for p in batch]
+    patient_ids = [s.patient_id for s in snapshots]
+    cell_ids = [s.cell_id or "" for s in snapshots]
+
+    # Stack baseline modalities + mask + time.
+    out = _collate_modalities(snapshots, patient_ids, cell_ids)
 
     # Supervision targets.
     outcomes = [p.outcome for p in batch]
@@ -232,17 +251,46 @@ def mort_collate(batch: List[TemporalTrainingPair]) -> MORTBatch:
     drug_responses = [o.drug_response for o in outcomes]
     out.drug_response = _stack_optional_tensor(drug_responses)
 
+    # Optional precomputed future-state latent (cell-line / oracle path only).
+    # v19 Phase 1: the RAW-RNA fallback that used to live here is DELETED.
+    # The trainer no longer truncates raw RNA into the latent slot; instead
+    # we attach the entire follow-up snapshot as `future_snapshot_batch` and
+    # let the canonical trainer encode it through the same foundation
+    # encoder. The legacy `future_state` slot remains for explicitly-provided
+    # teacher latents but is NEVER constructed from x_t_delta.
     future_states = [o.future_state for o in outcomes]
-    # If outcome doesn't carry a future_state but x_t_delta does, use the
-    # follow-up snapshot's RNA (or fused modality if available) as the target.
-    # The trainer is free to overwrite this with the encoded latent of x_t_delta.
-    for i, pair in enumerate(batch):
-        if future_states[i] is None and pair.x_t_delta is not None:
-            tdelta = pair.x_t_delta.rna
-            if tdelta is not None:
-                future_states[i] = (
-                    tdelta.values.mean(dim=0) if tdelta.values.ndim == 2 else tdelta.values[0]
-                )
     out.future_state = _stack_optional_tensor(future_states)
+
+    # v19 Phase 1: build the follow-up MORTBatch when any pair has one.
+    # Length matches the parent batch B; rows without an x_t_delta are
+    # padded with the baseline snapshot (carried through so feature_dim is
+    # consistent). Per-row delta_t_days is NaN for those rows so the
+    # canonical loss masks them out — the trainer never trains on a fake
+    # follow-up target.
+    any_follow = any(p.x_t_delta is not None for p in batch)
+    if any_follow:
+        follow_snaps = [
+            (p.x_t_delta if p.x_t_delta is not None else p.x_t) for p in batch
+        ]
+        follow_pids = [p.x_t.patient_id for p in batch]
+        follow_cells = [
+            ((p.x_t_delta.cell_id if p.x_t_delta is not None else p.x_t.cell_id) or "")
+            for p in batch
+        ]
+        out.future_snapshot_batch = _collate_modalities(
+            follow_snaps, follow_pids, follow_cells,
+        )
+        dts: List[float] = []
+        for p in batch:
+            if p.x_t_delta is None:
+                dts.append(float("nan"))
+                continue
+            t_now = p.x_t.timepoint
+            t_later = p.x_t_delta.timepoint
+            if t_now is None or t_later is None:
+                dts.append(float("nan"))
+            else:
+                dts.append(float(t_later - t_now))
+        out.delta_t_days = torch.tensor(dts, dtype=torch.float32)
 
     return out

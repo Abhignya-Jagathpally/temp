@@ -142,15 +142,34 @@ class MORTFM(nn.Module):
         # time. Hyperparameters mirror what mortfm_train_lens_resistance.py
         # actually used (n_basins=5, n_time_grid=config.n_time_grid).
         # ------------------------------------------------------------------
+        # v19 Phase 7 — share ONE canonical time grid between the SDE and
+        # the competing-risk head. config.integration_time is in months;
+        # n_time_grid is the canonical step count. The legacy SDE default
+        # of integration_time=1.0 (unitless rollout) is replaced with the
+        # config value so the SDE and survival head live on the same axis.
+        from resistancemap.mortfm.trajectory.grid import CanonicalTimeGridConfig
+        self._canonical_time_grid_config = CanonicalTimeGridConfig(
+            t_max_months=float(config.integration_time),
+            n_steps=int(config.n_time_grid),
+        )
+
+        # v19 Bug B19 — explicit d_graph contract.
+        # GraphEnergyResistanceSDE consumes a (B, d_graph) embedding from
+        # the GraphConditionedDrift's first-layer Linear. LatentToGraphProjector
+        # must emit the SAME d_graph. Both default to 16 today; we pin them
+        # to a single local constant so any future tweak (e.g. d_graph=32
+        # for richer graph context) updates them in lock-step instead of
+        # leaving them silently de-synced. The pin is asserted at the end
+        # of __init__ to fail fast at construction time.
+        _D_GRAPH = 16
         self.lens_sde = GraphEnergyResistanceSDE(
             d_latent=config.d_latent,
-            d_graph=16,
+            d_graph=_D_GRAPH,
             d_drug=8,
             d_clinical=5,
             n_basins=5,
-            integration_time=1.0,
-            n_time_grid=config.n_time_grid,
             n_mc_samples=4,
+            time_grid_config=self._canonical_time_grid_config,
         )
         self.lens_basin = ResistanceBasin(
             d_latent=config.d_latent, n_basins=5,
@@ -160,12 +179,28 @@ class MORTFM(nn.Module):
             self.lens_basin, resistant_basin_index=4, prob_threshold=0.3,
         )
         self.lens_graph_projector = LatentToGraphProjector(
-            d_latent=config.d_latent, d_graph=16,
+            d_latent=config.d_latent, d_graph=_D_GRAPH,
+        )
+        # v19 Bug B19 verification: SDE consumes the projector's output, so
+        # they MUST agree. The drift's first Linear has in_features =
+        # d_latent + d_graph + d_drug + d_clinical; we read its actual
+        # in_features and back out the SDE's runtime d_graph as a sanity
+        # check, then equality-test against the projector's last Linear
+        # out_features (also LayerNorm normalized_shape).
+        _sde_in = self.lens_sde.drift.net[0].in_features
+        _sde_d_graph = _sde_in - config.d_latent - 8 - 5
+        _proj_out = self.lens_graph_projector.net[-1].out_features
+        assert _sde_d_graph == _D_GRAPH == _proj_out, (
+            f"v19 Bug B19 — GraphEnergyResistanceSDE expects d_graph="
+            f"{_sde_d_graph} but LatentToGraphProjector emits d_graph="
+            f"{_proj_out}. The shared local constant _D_GRAPH={_D_GRAPH} "
+            f"must propagate to BOTH constructors."
         )
         self.lens_competing_risk = CompetingRiskHead(
             d_latent=config.d_latent,
             n_bins=config.survival_n_bins,
             event_names=["progression"],
+            time_grid_config=self._canonical_time_grid_config,
         )
 
     # ------------------------------------------------------------------

@@ -208,6 +208,60 @@ class MORTFMTrainer:
         self.canonical_trainer: Optional[Any] = None
 
     # ------------------------------------------------------------------
+    # v19 — canonical-trainer factory
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def with_canonical(
+        cls,
+        model: MORTFM,
+        cfg: MORTFMConfig,
+        train_loader: DataLoader,
+        val_loader: Optional[DataLoader] = None,
+        device: Any = "cpu",
+        *,
+        strict_supervision: bool = True,
+        graph: Any = None,
+        **canonical_kwargs: Any,
+    ) -> "MORTFMTrainer":
+        """Construct a MORTFMTrainer with a CanonicalMORTFMTrainer attached.
+
+        Stages E/F/G/H will route through ``model.forward()`` (canonical
+        LENS dict surface) via :class:`CanonicalMORTFMTrainer`. Stages
+        A/B/C/D still use the legacy curriculum (the foundation encoder
+        does not yet have a canonical-only path).
+
+        This factory closes the "self.canonical_trainer = None" gap the
+        v19 roadmap flagged: the legacy trainer exposed a shim gated on
+        ``self.canonical_trainer is not None`` but no production path
+        actually constructed a :class:`CanonicalMORTFMTrainer` to attach.
+        """
+        from .canonical_trainer import CanonicalMORTFMTrainer
+
+        # Normalise device — the legacy MORTFMTrainer accepts torch.device,
+        # the canonical accepts a string.
+        if isinstance(device, str):
+            torch_device = torch.device(device)
+            device_str = device
+        else:
+            torch_device = device
+            device_str = str(device)
+
+        trainer = cls(
+            model=model, config=cfg,
+            train_loader=train_loader, val_loader=val_loader,
+            graph=graph, device=torch_device,
+        )
+        trainer.canonical_trainer = CanonicalMORTFMTrainer(
+            model=model, cfg=cfg,
+            train_loader=train_loader, val_loader=val_loader,
+            device=device_str,
+            strict_supervision=strict_supervision,
+            **canonical_kwargs,
+        )
+        return trainer
+
+    # ------------------------------------------------------------------
     # Per-batch loss assembly
     # ------------------------------------------------------------------
 
@@ -304,14 +358,53 @@ class MORTFMTrainer:
                 )
 
         # ---- E: trajectory ----
-        if "trajectory" in weights and batch.future_state is not None:
-            # Predicted future = mean predicted trajectory at terminal time.
-            pred_T = prediction.trajectory_mean[-1] if prediction.trajectory_mean is not None else prediction.z_path[-1]
-            # Project to whatever d_output we set the head to (currently d_latent).
+        # v19 Phase 1: prefer the encoder-consistent future_snapshot_batch
+        # path when a follow-up snapshot is collated; fall back to the legacy
+        # future_state slot (cell-line / oracle teacher latents) otherwise.
+        # The raw-RNA auto-fill that used to live in mort_collate has been
+        # DELETED — silent fabrication is no longer possible.
+        if "trajectory" in weights and batch.future_snapshot_batch is not None:
+            # Encode the follow-up snapshot through the SAME foundation
+            # encoder used for the baseline; detach as a target network so
+            # gradients update the dynamics, not the encoder. This is the
+            # latent-vs-latent loss the canonical path computes.
+            future_batch = batch.future_snapshot_batch.to(self.device)
+            with torch.no_grad():
+                future_state = self.model.forward_foundation(future_batch)
+            encoded_future = future_state.z0.detach()             # (B, d_latent)
+
+            # v19 Bug B1 — axis-order audit on the LEGACY path.
+            #
+            # TrajectorySampler.sample_paths returns mean_path with shape
+            # (T, N, d), even though the TrajectoryPrediction dataclass
+            # docstring documents it as (N, T, d_latent). The trajectory
+            # head preserves leading dims so prediction.trajectory_mean is
+            # also (T, N, d). Indexing `[-1]` picks the last TIMESTEP (axis
+            # 0 is T here, not N) — which is what we want. The canonical
+            # v18 forward()/canonical_trainer path uses (B, T, d_latent)
+            # explicitly via `z_traj[:, -1, :]` and sidesteps the ambiguity.
+            if prediction.trajectory_mean is not None:
+                pred_T = prediction.trajectory_mean[-1]           # (N, d_out)
+            else:
+                pred_T = prediction.z_path[-1]                    # (N, d_latent)
+            if pred_T.shape != encoded_future.shape:
+                # Project encoded_future down to d_out if the head has a
+                # narrower output dim — but ONLY for the encoder's own latent
+                # (this is still dimensionally consistent, unlike raw-RNA
+                # truncation).
+                encoded_future = encoded_future[..., : pred_T.shape[-1]]
+            components["trajectory"] = trajectory_distribution_loss(
+                pred_T, encoded_future, metric="mmd",
+            )
+        elif "trajectory" in weights and batch.future_state is not None:
+            # Legacy oracle/teacher path: a precomputed future-state latent
+            # was provided directly (e.g. cell-line CCLE+GDSC pipeline).
+            if prediction.trajectory_mean is not None:
+                pred_T = prediction.trajectory_mean[-1]
+            else:
+                pred_T = prediction.z_path[-1]
             target = batch.future_state
             if target.shape[-1] != pred_T.shape[-1]:
-                # Project target via a learned linear (unsupervised);
-                # placeholder: use mean of the modality's first d_latent dims.
                 target = target[..., : pred_T.shape[-1]]
             components["trajectory"] = trajectory_distribution_loss(pred_T, target, metric="mmd")
 

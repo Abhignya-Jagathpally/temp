@@ -425,6 +425,23 @@ class MORTBatch:
     pathway_targets: Optional[Tensor] = None
     drug_response: Optional[Tensor] = None
 
+    # --- v19 Phase 1: latent-target follow-up snapshot --------------------
+    #
+    # When the dataloader has paired follow-up snapshots (x_t and x_t_delta
+    # on the same patient), the collate function constructs a SECOND
+    # MORTBatch from the follow-up modality tensors and attaches it here.
+    # The canonical trainer encodes this through the SAME ``forward_foundation``
+    # call as the baseline, producing an encoder-consistent target latent.
+    # NEVER populated from raw RNA; if no follow-up exists the field is None
+    # and the trainer skips the trajectory term (consistent with the v18.2
+    # strict-supervision policy reporting n_supervised=0).
+    future_snapshot_batch: Optional["MORTBatch"] = None
+    # (B,) float tensor of day-difference between baseline and follow-up.
+    # NaN entries flag rows that have no follow-up. Used to normalise the
+    # per-row latent L2 (short-horizon predictions should not dominate the
+    # gradient).
+    delta_t_days: Optional[Tensor] = None
+
     # Optional graph payload (PyG HeteroData is opaque to schemas).
     graph: Any = None
 
@@ -492,6 +509,25 @@ class MORTBatch:
             if self.drug_response is None:
                 raise ValueError(
                     "Drug-response loss requires MORTBatch.drug_response."
+                )
+        elif loss_name == "latent_future_state":
+            # v19 Phase 1 — canonical latent trajectory loss. Requires both
+            # a re-encodable follow-up snapshot AND per-row Δt; if either
+            # is missing the trainer must skip this batch (it should report
+            # n_supervised=0 via the strict-supervision audit, NOT silently
+            # train on a fabricated target).
+            if self.future_snapshot_batch is None:
+                raise ValueError(
+                    "Latent future-state loss requires "
+                    "MORTBatch.future_snapshot_batch (a MORTBatch holding the "
+                    "follow-up snapshot's encoded inputs). Got None. "
+                    "Refusing to fabricate a target from raw RNA."
+                )
+            if self.delta_t_days is None:
+                raise ValueError(
+                    "Latent future-state loss requires MORTBatch.delta_t_days "
+                    "(per-row day-difference between baseline and follow-up). "
+                    "Got None. Refusing to fabricate."
                 )
         # Other losses (recon, masked-omics, contrastive) work without labels.
 

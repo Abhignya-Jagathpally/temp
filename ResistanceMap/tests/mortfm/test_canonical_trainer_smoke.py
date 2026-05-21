@@ -177,3 +177,69 @@ def test_strict_mode_raises_on_missing_supervision(tmp_path):
     batch.event_observed = None
     with pytest.raises(MissingSupervisionError):
         trainer._losses_for_batch(batch, "F")
+
+
+# --------------------------------------------------------------------------
+# v19 Bug-B6 — MORTFMTrainer.with_canonical(...) factory wireup
+# --------------------------------------------------------------------------
+
+
+def test_with_canonical_factory_attaches_canonical_trainer(tmp_path):
+    """MORTFMTrainer.with_canonical(...) must attach a CanonicalMORTFMTrainer
+    so the trainer's E/F/G/H hand-off shim activates."""
+    from resistancemap.mortfm.canonical_trainer import CanonicalMORTFMTrainer
+    from resistancemap.mortfm.trainer import MORTFMTrainer
+
+    torch.manual_seed(0)
+    cfg = _debug_cfg(tmp_path)
+    pairs = _cohort()
+    _, train_loader, val_loader, _ = make_data_module(pairs, batch_size=2)
+    torch.manual_seed(0)
+    model = MORTFM(cfg, n_pathway_proteins=20, n_drug_candidates=5, n_resistance_states=4)
+
+    trainer = MORTFMTrainer.with_canonical(
+        model=model, cfg=cfg,
+        train_loader=train_loader, val_loader=val_loader,
+        device="cpu", strict_supervision=False,
+    )
+    assert trainer.canonical_trainer is not None
+    assert isinstance(trainer.canonical_trainer, CanonicalMORTFMTrainer)
+
+
+def test_with_canonical_stage_E_never_calls_forward_legacy(tmp_path, monkeypatch):
+    """The decisive contract: when ``canonical_trainer`` is attached,
+    stage E's ``_losses_for_batch`` routes through MORTFM.forward (the
+    canonical path) and never invokes ``MORTFM.forward_legacy``.
+    """
+    from resistancemap.mortfm.trainer import MORTFMTrainer
+
+    torch.manual_seed(0)
+    cfg = _debug_cfg(tmp_path)
+    pairs = _cohort()
+    _, train_loader, val_loader, _ = make_data_module(pairs, batch_size=2)
+    torch.manual_seed(0)
+    model = MORTFM(cfg, n_pathway_proteins=20, n_drug_candidates=5, n_resistance_states=4)
+
+    trainer = MORTFMTrainer.with_canonical(
+        model=model, cfg=cfg,
+        train_loader=train_loader, val_loader=val_loader,
+        device="cpu", strict_supervision=False,
+    )
+
+    called = {"n": 0}
+
+    def _spy(*args, **kwargs):
+        called["n"] += 1
+        raise AssertionError(
+            "MORTFMTrainer.with_canonical(...) routed stage E through forward_legacy"
+        )
+
+    monkeypatch.setattr(model, "forward_legacy", _spy)
+
+    batch = next(iter(train_loader))
+    components, weights = trainer._losses_for_batch(batch, "E")
+
+    assert called["n"] == 0, f"forward_legacy was called {called['n']} time(s)"
+    # Canonical bundle was unpacked into (components, weights) by the shim.
+    assert isinstance(components, dict)
+    assert isinstance(weights, dict)

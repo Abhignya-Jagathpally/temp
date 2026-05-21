@@ -18,7 +18,9 @@ already produced.
 
 from __future__ import annotations
 
+import hashlib
 import logging
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
@@ -30,6 +32,32 @@ import torch
 logger = logging.getLogger(__name__)
 
 InterventionType = Literal["knockout", "amplify", "identity"]
+
+
+def _deterministic_edge_seed(eid: str) -> int:
+    """Map an edge_id to a deterministic 64-bit seed.
+
+    Uses SHA-256 truncated to 16 hex digits (64 bits). Deterministic across
+    processes; not affected by PYTHONHASHSEED. This replaces the
+    process-randomised ``hash(eid)`` previously used here.
+    """
+    return int(hashlib.sha256(eid.encode("utf-8")).hexdigest()[:16], 16)
+
+
+def deterministic_edge_basis(eid: str, d_graph: int) -> torch.Tensor:
+    """Return the deterministic per-edge basis vector for ``eid``.
+
+    Same formula the loader uses inside :meth:`InterventionGraph._load`:
+    a cosine pattern seeded by a SHA-256 truncation of the edge_id, then
+    L2-normalised so each edge contributes a unit-norm vector.
+    Deterministic across processes; not affected by PYTHONHASHSEED.
+    """
+    h = _deterministic_edge_seed(eid)
+    vec = torch.zeros(d_graph)
+    for d in range(d_graph):
+        vec[d] = math.cos((h % (1 << 16) + d * 17) * 0.01)
+    norm = vec.norm().clamp(min=1e-6)
+    return vec / norm
 
 
 @dataclass
@@ -50,8 +78,9 @@ class InterventionGraph:
     nodes_csv : path to data/processed/graphs/protein_nodes.csv (UniProt side)
     d_graph : output embedding dimension
     seed_emb : deterministic linear projection seeded by edge_id; never
-        random. We hash each edge_id with a fixed projection that depends
-        only on the on-disk graph topology, not on a random number generator.
+        random. Each edge_id is hashed with SHA-256 (truncated to 64 bits)
+        and the digest seeds a fixed cosine pattern. Deterministic across
+        processes; not affected by PYTHONHASHSEED.
     """
 
     def __init__(
@@ -102,7 +131,9 @@ class InterventionGraph:
         n = len(edge_ids)
         basis = torch.zeros(n, self.d_graph)
         for i, eid in enumerate(edge_ids):
-            h = abs(hash(eid))
+            # SHA-256 truncated to 64 bits — deterministic across processes;
+            # not affected by PYTHONHASHSEED.
+            h = _deterministic_edge_seed(eid)
             for d in range(self.d_graph):
                 basis[i, d] = math.cos((h % (1 << 16) + d * 17) * 0.01)
         # Normalise per-row so each edge contributes a unit-norm vector.
@@ -168,6 +199,3 @@ class InterventionGraph:
             elif iv.intervention == "identity":
                 pass
         return base_emb + delta
-
-
-import math  # at bottom to keep top imports clean

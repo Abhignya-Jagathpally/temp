@@ -27,10 +27,16 @@ trajectory, not by stacking extra per-bin parameters.
 
 from __future__ import annotations
 
+import warnings
 from typing import Iterable, List, Optional
 
 import torch
 import torch.nn as nn
+
+from resistancemap.mortfm.trajectory.grid import (
+    CanonicalTimeGridConfig,
+    canonical_time_grid,
+)
 
 
 def discrete_time_grid(t_max_days: float, n_bins: int) -> torch.Tensor:
@@ -58,15 +64,42 @@ class CompetingRiskHead(nn.Module):
         d_latent: int,
         n_bins: int = 8,
         event_names: Optional[List[str]] = None,
+        time_grid_config: Optional[CanonicalTimeGridConfig] = None,
     ) -> None:
         super().__init__()
         self.d_latent = d_latent
-        self.n_bins = n_bins
         self.event_names = list(event_names or ["progression"])
         self.n_events = len(self.event_names)
+
+        # v19 Phase 7: when a CanonicalTimeGridConfig is supplied, the
+        # number of hazard bins is forced to match the canonical grid so
+        # the survival curve and the SDE hitting CDF are computed on the
+        # SAME time axis. Without a config we keep the legacy n_bins value
+        # but warn — the directional-consistency invariant cannot be
+        # evaluated in dual-grid mode.
+        if time_grid_config is not None:
+            self.n_bins = int(time_grid_config.n_steps)
+            grid = time_grid_config.build()
+            self.register_buffer("t_grid", grid, persistent=False)
+            self._uses_canonical_grid = True
+        else:
+            warnings.warn(
+                "CompetingRiskHead constructed without time_grid_config; "
+                f"defaulting to n_bins={n_bins} legacy bins with no shared "
+                "time axis. survival_hitting_consistency_loss will be "
+                "syntactically invalid because grids will not align.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self.n_bins = n_bins
+            # No grid buffer to register — downstream code that asks for
+            # t_grid will trip a clear AttributeError instead of silently
+            # using an arbitrary grid.
+            self._uses_canonical_grid = False
+
         # One linear per event: scores per time bin.
         self.event_heads = nn.ModuleList([
-            nn.Linear(d_latent, n_bins) for _ in self.event_names
+            nn.Linear(d_latent, self.n_bins) for _ in self.event_names
         ])
 
     def forward(self, z: torch.Tensor) -> dict:
