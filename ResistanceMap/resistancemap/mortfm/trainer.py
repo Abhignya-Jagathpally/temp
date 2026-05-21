@@ -202,6 +202,11 @@ class MORTFMTrainer:
         self.history: List[TrainingMetrics] = []
         Path(config.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
+        # v19 — optional hand-off to the canonical trainer. When set,
+        # stages E/F/G/H route through CanonicalMORTFMTrainer._losses_for_batch
+        # instead of the legacy forward_legacy() path below.
+        self.canonical_trainer: Optional[Any] = None
+
     # ------------------------------------------------------------------
     # Per-batch loss assembly
     # ------------------------------------------------------------------
@@ -212,6 +217,21 @@ class MORTFMTrainer:
         stage: str,
     ) -> Tuple[Dict[str, torch.Tensor], Dict[str, float]]:
         """Return (loss_components, weight_overrides) for one batch + stage."""
+        # v19 hand-off — if the user attached a CanonicalMORTFMTrainer to this
+        # legacy trainer, patient-level stages (E/F/G/H) route through the
+        # canonical LENS dict path instead of forward_legacy(). The legacy
+        # body below this guard is reached only when canonical_trainer is None
+        # or when the stage is foundation (A/B/C/D).
+        if getattr(self, "canonical_trainer", None) is not None and stage in ("E", "F", "G", "H"):
+            bundle = self.canonical_trainer._losses_for_batch(batch, stage)
+            # Flatten the canonical bundle into the legacy (components, weights)
+            # tuple shape so assemble_total_loss can sum it.
+            canonical_components: Dict[str, torch.Tensor] = {
+                name: sub["loss"] for name, sub in bundle["components"].items()
+            }
+            canonical_weights: Dict[str, float] = dict(self.canonical_trainer.weights)
+            return canonical_components, canonical_weights
+
         batch = batch.to(self.device)
         weights = stage_weight_overrides(stage, self.config)
         components: Dict[str, torch.Tensor] = {}
