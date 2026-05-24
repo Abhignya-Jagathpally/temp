@@ -21,9 +21,13 @@ import subprocess
 import textwrap
 from pathlib import Path
 
-from airflow import DAG
-from airflow.datasets import Dataset
-from airflow.operators.python import PythonOperator
+try:
+    from airflow import DAG
+    from airflow.datasets import Dataset
+    from airflow.operators.python import PythonOperator
+    HAS_AIRFLOW = True
+except ImportError:
+    HAS_AIRFLOW = False
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -36,20 +40,21 @@ LOG_DIR = ROOT / "logs" / "airflow"
 # ---------------------------------------------------------------------------
 # Airflow Dataset URIs — artifact-driven scheduling
 # ---------------------------------------------------------------------------
-DS_RAW_DATA       = Dataset("file://ResistanceMap/data/raw")
-DS_HARMONIZED     = Dataset("file://ResistanceMap/data/harmonized")
-DS_LONGITUDINAL   = Dataset("file://ResistanceMap/data/longitudinal")
-DS_MMRF_PREPARED  = Dataset("file://ResistanceMap/data/mmrf_prepared")
-DS_AUDIT_REPORT   = Dataset("file://ResistanceMap/results/longitudinal_audit")
-DS_FOUNDATION_CKP = Dataset("file://ResistanceMap/checkpoints/foundation")
-DS_STATE_ENCODER  = Dataset("file://ResistanceMap/checkpoints/state_encoder")
-DS_LENS_CKP       = Dataset("file://ResistanceMap/checkpoints/lens_resistance")
-DS_SURVIVAL_CKP   = Dataset("file://ResistanceMap/checkpoints/survival")
-DS_BASELINES      = Dataset("file://ResistanceMap/results/baseline_comparison")
-DS_CAUSAL         = Dataset("file://ResistanceMap/results/causal_evidence")
-DS_GATE_REPORT    = Dataset("file://ResistanceMap/results/gate_report")
-DS_FIGURES        = Dataset("file://ResistanceMap/results/figures")
-DS_PUB_BUNDLE     = Dataset("file://ResistanceMap/results/publication_bundle")
+if HAS_AIRFLOW:
+    DS_RAW_DATA       = Dataset("file://ResistanceMap/data/raw")
+    DS_HARMONIZED     = Dataset("file://ResistanceMap/data/harmonized")
+    DS_LONGITUDINAL   = Dataset("file://ResistanceMap/data/longitudinal")
+    DS_MMRF_PREPARED  = Dataset("file://ResistanceMap/data/mmrf_prepared")
+    DS_AUDIT_REPORT   = Dataset("file://ResistanceMap/results/longitudinal_audit")
+    DS_FOUNDATION_CKP = Dataset("file://ResistanceMap/checkpoints/foundation")
+    DS_STATE_ENCODER  = Dataset("file://ResistanceMap/checkpoints/state_encoder")
+    DS_LENS_CKP       = Dataset("file://ResistanceMap/checkpoints/lens_resistance")
+    DS_SURVIVAL_CKP   = Dataset("file://ResistanceMap/checkpoints/survival")
+    DS_BASELINES      = Dataset("file://ResistanceMap/results/baseline_comparison")
+    DS_CAUSAL         = Dataset("file://ResistanceMap/results/causal_evidence")
+    DS_GATE_REPORT    = Dataset("file://ResistanceMap/results/gate_report")
+    DS_FIGURES        = Dataset("file://ResistanceMap/results/figures")
+    DS_PUB_BUNDLE     = Dataset("file://ResistanceMap/results/publication_bundle")
 
 # ---------------------------------------------------------------------------
 # Helper: run a script via subprocess
@@ -221,6 +226,9 @@ default_args = {
     "retries": 0,
     "execution_timeout": datetime.timedelta(hours=12),
 }
+
+if not HAS_AIRFLOW:
+    raise SystemExit(0)
 
 with DAG(
     dag_id="mortfm_evidence_pipeline",
