@@ -136,23 +136,39 @@ def audit_leakage_and_temporal_validity(**ctx):
     )
 
 
-def _build_pairs_if_needed():
-    """Build temporal pairs pickle if it doesn't exist yet."""
-    pairs_pkl = ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl"
-    if not pairs_pkl.exists():
-        _run_script(
-            SCRIPTS_TOP / "mortfm_build_temporal_pairs.py",
-            "--snapshots", str(ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"),
-            "--outcomes", str(ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"),
-            "--out", str(pairs_pkl),
-            "--include-unlabelled",
-            task_id="_build_pairs",
-        )
+def _find_pairs_pkl():
+    """Locate or build temporal pairs pickle for pretrain/survival scripts."""
+    candidates = [
+        ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl",
+        ROOT / "data" / "processed" / "longitudinal" / "temporal_pairs.pkl",
+    ]
+    for p in candidates:
+        if p.exists():
+            return str(p)
+    # Build from outcomes using a tiny inline script (no separate subprocess)
+    pairs_pkl = candidates[0]
+    pairs_pkl.parent.mkdir(parents=True, exist_ok=True)
+    build_script = textwrap.dedent(f"""\
+        import pickle, sys
+        sys.path.insert(0, "{ROOT}")
+        from resistancemap.data.trajectory_pair_builder import build_temporal_pairs
+        from resistancemap.data.clinical_outcome_loader import load_mortfm_outcomes
+        outcomes = load_mortfm_outcomes("{ROOT / 'data' / 'raw' / 'mmrf_commpass'}")
+        pairs = build_temporal_pairs([], outcomes, include_survival_only=True, include_unlabelled=True)
+        with open("{pairs_pkl}", "wb") as f:
+            pickle.dump(pairs, f)
+        print(f"Built {{len(pairs)}} pairs -> {pairs_pkl}")
+    """)
+    subprocess.run(
+        ["python", "-c", build_script],
+        cwd=str(ROOT), check=True,
+        env={**os.environ, "PYTHONUNBUFFERED": "1"},
+    )
     return str(pairs_pkl)
 
 
 def pretrain_foundation(**ctx):
-    pairs_pkl = _build_pairs_if_needed()
+    pairs_pkl = _find_pairs_pkl()
     _run_script(
         SCRIPTS / "04_pretrain_foundation.py",
         "--pairs", pairs_pkl,
@@ -172,7 +188,7 @@ def train_lens_resistance(**ctx):
 
 
 def train_survival(**ctx):
-    pairs_pkl = _build_pairs_if_needed()
+    pairs_pkl = _find_pairs_pkl()
     _run_script(
         SCRIPTS / "07_train_survival.py",
         "--pairs", pairs_pkl,
