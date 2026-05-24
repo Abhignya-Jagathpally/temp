@@ -192,7 +192,7 @@ def train_state_encoder(**ctx):
 
 def train_lens_resistance(**ctx):
     _run_script(
-        SCRIPTS / "06_train_lens_resistance.py", "--canonical",
+        SCRIPTS / "06_train_lens_resistance.py",
         task_id="train_lens_resistance",
     )
 
@@ -218,7 +218,7 @@ def train_survival(**ctx):
 
 def run_baselines(**ctx):
     _run_script(
-        SCRIPTS / "10_run_baselines.py", "--real-run",
+        SCRIPTS / "10_run_baselines.py",
         task_id="run_baselines",
     )
 
