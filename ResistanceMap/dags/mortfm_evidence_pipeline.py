@@ -136,7 +136,14 @@ def train_state_encoder(**ctx):
 # Phase 5: Block D — ESM-2 embeddings + CRISPR external evidence
 # ───────────────────────────────────────────────────────────────────────
 def compute_esm2_embeddings(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_compute_esm2_embeddings.py", task_id="compute_esm2_embeddings")
+    uniprot_dir = ROOT / "data" / "raw_public" / "uniprot"
+    if not uniprot_dir.exists():
+        uniprot_dir = ROOT / "data" / "raw" / "uniprot"
+    _run_script(
+        SCRIPTS_TOP / "mortfm_compute_esm2_embeddings.py",
+        "--uniprot-dir", str(uniprot_dir),
+        task_id="compute_esm2_embeddings",
+    )
 
 def ingest_crispr(**ctx):
     _run_script(SCRIPTS_TOP / "mortfm_ingest_crispr.py", task_id="ingest_crispr")
@@ -158,12 +165,30 @@ def build_longitudinal_dataset(**ctx):
     _run_script(SCRIPTS / "02_build_longitudinal_dataset.py", task_id="build_longitudinal_dataset")
 
 def build_temporal_pairs(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_build_temporal_pairs.py",
-        "--snapshots", str(ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"),
-        "--outcomes", str(ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"),
-        "--out", str(ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl"),
-        "--include-unlabelled",
-        task_id="build_temporal_pairs",
+    """Build temporal pairs from outcomes. Survival-only mode when no RNA snapshots."""
+    import pickle
+    pairs_pkl = ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl"
+    outcomes_pkl = ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"
+    if not outcomes_pkl.exists():
+        import logging
+        logging.getLogger("airflow.task").warning("No outcomes.pkl — skipping build_temporal_pairs.")
+        return
+    # Build survival-only pairs inline (no snapshots needed)
+    build_script = textwrap.dedent(f"""\
+        import pickle, sys
+        sys.path.insert(0, "{ROOT}")
+        from resistancemap.data.trajectory_pair_builder import build_temporal_pairs
+        with open("{outcomes_pkl}", "rb") as f:
+            outcomes = pickle.load(f)
+        pairs = build_temporal_pairs([], outcomes, include_survival_only=True, include_unlabelled=True)
+        with open("{pairs_pkl}", "wb") as f:
+            pickle.dump(pairs, f)
+        print(f"Built {{len(pairs)}} survival-only pairs -> {pairs_pkl}")
+    """)
+    subprocess.run(
+        ["python", "-c", build_script],
+        cwd=str(ROOT), check=True,
+        env={**os.environ, "PYTHONUNBUFFERED": "1"},
     )
 
 def audit_leakage(**ctx):
