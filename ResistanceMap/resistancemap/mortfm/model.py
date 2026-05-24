@@ -63,6 +63,12 @@ from resistancemap.mortfm.trajectory import (  # noqa: E402
 )
 from resistancemap.mortfm.survival import CompetingRiskHead  # noqa: E402
 
+# v19 Phase 2+3 — causal / pathway attribution imports.
+# Guarded by the has_intervention_graph flag set in __init__; never
+# imported from legacy namespace.
+from resistancemap.mortfm.causal.intervention_graph import InterventionGraph
+from resistancemap.mortfm.causal.counterfactual_runner import CounterfactualRunner
+
 
 class MORTFM(nn.Module):
     """End-to-end MORT-FM."""
@@ -77,9 +83,17 @@ class MORTFM(nn.Module):
         n_drug_candidates: int = 11,
         n_resistance_states: int = 4,
         return_attention: bool = False,
+        intervention_graph: Optional[InterventionGraph] = None,
     ) -> None:
         super().__init__()
         self.config = config
+
+        # v19 Phase 2+3 — optional causal attribution graph.
+        # When wired, forward() can compute protein_scores, edge_scores,
+        # pathway_scores, and counterfactual_rankings. When None,
+        # those outputs are returned as None with zero overhead.
+        self.intervention_graph = intervention_graph
+        self.has_intervention_graph: bool = intervention_graph is not None
 
         # Encoder + fusion.
         self.fusion = MultiOmicFoundationFusion(config, return_attention=return_attention)
@@ -203,6 +217,18 @@ class MORTFM(nn.Module):
             time_grid_config=self._canonical_time_grid_config,
         )
 
+        # v19 Phase 2+3 — CounterfactualRunner (only usable when an
+        # InterventionGraph is wired). Non-None self.counterfactual_runner
+        # gates the causal outputs in forward().
+        self.counterfactual_runner: Optional[CounterfactualRunner] = None
+        if self.has_intervention_graph:
+            self.counterfactual_runner = CounterfactualRunner(
+                sde=self.lens_sde,
+                basin=self.lens_basin,
+                hitting=self.lens_hitting,
+                intervention_graph=self.intervention_graph,
+            )
+
     # ------------------------------------------------------------------
     # Sub-graph forward passes (used by the trainer for stage selection).
     # ------------------------------------------------------------------
@@ -282,6 +308,102 @@ class MORTFM(nn.Module):
         return prediction
 
     # ------------------------------------------------------------------
+    # v19 Phase 2+3 helpers: pathway attribution + counterfactuals
+    # ------------------------------------------------------------------
+
+    def _compute_protein_scores(
+        self,
+        z0: torch.Tensor,
+        graph_emb: torch.Tensor,
+        drug: torch.Tensor,
+        clinical: torch.Tensor,
+    ) -> Optional[torch.Tensor]:
+        """Per-protein attribution: gradient of soft resistance-basin
+        probability w.r.t. graph_emb.
+
+        The HittingTime CDF uses hard thresholding (argmax, cummax) and is
+        not differentiable. Instead we use the *soft* basin probability of
+        the designated resistant basin (index 4) at every SDE timepoint,
+        averaged over MC samples and time steps. This is a differentiable
+        proxy for "how much does each graph_emb dimension affect the
+        probability of landing in the resistant basin".
+
+        Returns (B, d_graph) or None if the backward pass yields no gradient.
+        Uses ``torch.enable_grad()`` to ensure the local gradient tape works
+        even when called from an outer ``torch.no_grad()`` context. All
+        inputs are ``.detach()``-ed so gradients do not leak into the caller.
+        """
+        graph_emb_var = graph_emb.detach().requires_grad_(True)
+        with torch.enable_grad():
+            sde_out = self.lens_sde(
+                z0.detach(), graph_emb_var, drug.detach(), clinical.detach(),
+                return_samples=True,
+            )
+            # z_samples: (S, B, T, D)
+            z_samples = sde_out["z_samples"]
+            S, B, T, D = z_samples.shape
+            # Soft basin probs via ResistanceBasin (differentiable softmax).
+            flat = z_samples.reshape(S * B * T, D)
+            probs = self.lens_basin(flat).reshape(S, B, T, -1)  # (S, B, T, K)
+            # Resistant basin probability, averaged over samples and time.
+            resist_idx = self.lens_hitting.resistant_basin_index
+            p_resist = probs[..., resist_idx].mean(dim=(0, 2))  # (B,)
+            scalar = p_resist.sum()
+            scalar.backward()
+        # (B, d_graph) — per-protein sensitivity
+        return graph_emb_var.grad.detach() if graph_emb_var.grad is not None else None
+
+    def _compute_edge_scores(
+        self,
+        protein_scores: torch.Tensor,
+    ) -> Optional[torch.Tensor]:
+        """Per-edge attribution from InterventionGraph basis + protein_scores.
+
+        Projects the (B, d_graph) protein_scores onto the edge basis to
+        get a (B, n_edges) attribution. Returns None if intervention_graph
+        has no loaded edge basis.
+        """
+        if (
+            self.intervention_graph is None
+            or self.intervention_graph._edge_basis is None
+        ):
+            return None
+        # edge_basis: (n_edges, d_graph), protein_scores: (B, d_graph)
+        edge_basis = self.intervention_graph._edge_basis.to(protein_scores.device)
+        # (B, n_edges) = matmul of (B, d_graph) x (d_graph, n_edges)
+        return torch.matmul(protein_scores, edge_basis.t())
+
+    @staticmethod
+    def _compute_pathway_scores_from_protein(
+        protein_scores: torch.Tensor,
+        n_pathways: int,
+    ) -> torch.Tensor:
+        """Aggregate protein-level scores into pathway-level scores.
+
+        Uses a simple chunk-based aggregation: d_graph features are
+        partitioned into ``n_pathways`` equal-width bins and the mean
+        absolute attribution per bin gives a pathway-level score.
+
+        Returns (B, n_pathways).
+        """
+        B, D = protein_scores.shape
+        if n_pathways <= 0:
+            n_pathways = 1
+        # Pad D to be divisible by n_pathways for clean chunking.
+        chunk = max(D // n_pathways, 1)
+        scores = protein_scores.abs()
+        pathway_list = []
+        for i in range(n_pathways):
+            start = i * chunk
+            end = min(start + chunk, D)
+            if start >= D:
+                # More pathways than features — pad with zeros.
+                pathway_list.append(scores.new_zeros(B))
+            else:
+                pathway_list.append(scores[:, start:end].mean(dim=-1))
+        return torch.stack(pathway_list, dim=-1)  # (B, n_pathways)
+
+    # ------------------------------------------------------------------
     # CANONICAL v18 forward — the SINGLE OFFICIAL patient-level path.
     # Calls the v16/v17 LENS modules directly. Returns a dict (not a
     # dataclass) to discourage drift back to the legacy TrajectoryPrediction
@@ -296,6 +418,7 @@ class MORTFM(nn.Module):
         drug: Optional[torch.Tensor] = None,
         graph_emb: Optional[torch.Tensor] = None,
         use_graph_projector: bool = True,
+        compute_pathway_scores: bool = False,
     ) -> dict:
         """LENS-style forward: SDE rollout + competing-risk hazard + basin probs.
 
@@ -308,13 +431,21 @@ class MORTFM(nn.Module):
         graph_emb : (B, 16) precomputed biological graph embedding, or
                     None — in which case use_graph_projector decides
                     whether to learn graph_emb = projector(z0) or feed zeros.
+        compute_pathway_scores : if True, compute protein_scores,
+                    edge_scores, pathway_scores, and counterfactual_rankings.
+                    Default False to avoid extra backward-pass overhead
+                    during training.
 
         Returns
         -------
         dict with keys:
             z0, z_traj, z_samples, t_grid, hazard, survival_curve,
             cif_per_event, basin_probs, hitting_cdf, hitting_mean_tau,
-            hitting_frac_hit
+            hitting_frac_hit,
+            protein_scores, edge_scores, pathway_scores,
+            counterfactual_rankings
+        The last four are None when compute_pathway_scores is False or
+        when the required causal modules are not available.
         """
         state = self.encode(batch)
         z0 = state.z0
@@ -334,6 +465,44 @@ class MORTFM(nn.Module):
         head_out = self.lens_competing_risk(z_final)
         basin_probs = self.lens_basin.trajectory_probs(sde_out["z_traj"])
         hit_out = self.lens_hitting(sde_out["z_samples"], sde_out["t_grid"])
+
+        # ----- v19 Phase 2+3: optional causal / pathway attribution -----
+        protein_scores: Optional[torch.Tensor] = None
+        edge_scores: Optional[torch.Tensor] = None
+        pathway_scores: Optional[torch.Tensor] = None
+        counterfactual_rankings = None
+
+        if compute_pathway_scores:
+            # Protein-level attribution via gradient of hitting_cdf w.r.t.
+            # graph_emb. Always available (uses the projector output).
+            protein_scores = self._compute_protein_scores(
+                z0, graph_emb, drug, clinical,
+            )
+
+            if protein_scores is not None:
+                # Edge-level attribution (requires InterventionGraph).
+                if self.has_intervention_graph:
+                    edge_scores = self._compute_edge_scores(protein_scores)
+
+                # Pathway-level aggregation (always available from protein_scores).
+                pathway_scores = self._compute_pathway_scores_from_protein(
+                    protein_scores, n_pathways=50,
+                )
+
+            # Counterfactual rankings (requires CounterfactualRunner + graph).
+            if self.counterfactual_runner is not None and self.has_intervention_graph:
+                edge_ids = self.intervention_graph.list_edges(limit=50)
+                if edge_ids:
+                    cf_df = self.counterfactual_runner.run(
+                        z0, drug, clinical, edge_ids=edge_ids,
+                    )
+                    # Convert to list of (edge_id, delta_resistance) tuples,
+                    # ranked by absolute delta descending.
+                    counterfactual_rankings = [
+                        (row.edge_id, float(row.delta))
+                        for row in cf_df.itertuples(index=False)
+                    ]
+
         return {
             "z0": z0,
             "z_traj": sde_out["z_traj"],
@@ -346,4 +515,9 @@ class MORTFM(nn.Module):
             "hitting_cdf": hit_out["cdf"],
             "hitting_mean_tau": hit_out["mean_tau"],
             "hitting_frac_hit": hit_out["frac_hit"],
+            # v19 Phase 2+3 — causal / pathway attribution (None when disabled)
+            "protein_scores": protein_scores,
+            "edge_scores": edge_scores,
+            "pathway_scores": pathway_scores,
+            "counterfactual_rankings": counterfactual_rankings,
         }

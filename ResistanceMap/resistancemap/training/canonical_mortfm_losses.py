@@ -53,6 +53,9 @@ __all__ = [
     "latent_future_state_loss",
     "hitting_time_nll",
     "survival_hitting_consistency_loss",
+    "pathway_attribution_loss",
+    "counterfactual_consistency_loss",
+    "pathway_evidence_regularizer",
     "assemble_canonical_loss",
     "STAGE_LOSS_SPEC",
     "REQUIRED_SUPERVISION_PER_STAGE",
@@ -72,14 +75,19 @@ __all__ = [
 STAGE_LOSS_SPEC: Dict[str, tuple] = {
     "E": ("trajectory", "sde_path", "basin_transition"),
     "F": ("survival", "hitting", "hitting_nll", "surv_hit_consistency"),
-    "G": ("basin_transition",),
-    "H": ("survival",),
+    "G": ("basin_transition", "pathway_attribution", "pathway_evidence"),
+    "H": ("survival", "counterfactual_consistency"),
 }
 
 
 #: Which loss terms must have ``n_supervised > 0`` for the stage to count as
 #: supervised under the v18.2 strict policy. A stage may dispatch *more*
 #: losses than it requires; only the listed terms gate the strict check.
+#: Note: ``pathway_attribution`` and ``counterfactual_consistency`` are
+#: optional enrichment terms — they do NOT gate their stages because the
+#: required labels (``pathway_targets``, ``counterfactual_rankings``) are
+#: not available in every dataset. The strict gating remains on the core
+#: terms (``basin_transition`` for G, ``survival`` for H).
 REQUIRED_SUPERVISION_PER_STAGE: Dict[str, str] = {
     "E": "trajectory",
     "F": "survival",
@@ -621,6 +629,261 @@ def survival_hitting_consistency_loss(
 
 
 # ---------------------------------------------------------------------------
+# Pathway & counterfactual losses (v19 Phase 8)
+# ---------------------------------------------------------------------------
+
+
+def pathway_attribution_loss(
+    out: Mapping[str, Any],
+    batch: Any,
+    *,
+    sparsity_weight: float = 1e-3,
+) -> Dict[str, Any]:
+    """BCE + L1 sparsity on ``protein_scores`` vs ``pathway_targets``.
+
+    Reads:
+        out['protein_scores']    : (B, n_proteins) — sigmoid-ready attribution
+                                   logits from the pathway head.
+        batch.pathway_targets    : (B, n_proteins) — binary 0/1 labels
+                                   indicating known pathway membership.
+
+    When ``pathway_targets`` is absent or all-NaN the loss returns zero with
+    ``n_supervised=0`` (no exception).
+
+    Returns
+    -------
+    dict
+        ``{"loss": Tensor, "loss_bce": Tensor, "loss_sparsity": Tensor,
+        "n_supervised": int}``.
+    """
+    scores = out.get("protein_scores")
+    if scores is None:
+        # Model head not wired — return a zero term anchored to z_traj.
+        return _zero_term(out["z_traj"])
+
+    targets = _get_field(batch, "pathway_targets")
+    if targets is None:
+        return _zero_term(scores)
+
+    targets = targets.to(device=scores.device, dtype=scores.dtype)
+
+    # Mask out rows where targets are entirely NaN (unsupervised patients).
+    finite_mask = torch.isfinite(targets)
+    row_valid = finite_mask.any(dim=-1)                     # (B,)
+    n_valid = int(row_valid.sum().item())
+    if n_valid == 0:
+        return _zero_term(scores)
+
+    s_valid = scores[row_valid]
+    t_valid = targets[row_valid]
+    # Per-element finite mask (some proteins may lack labels in some rows).
+    elem_mask = torch.isfinite(t_valid)
+    # Replace NaN targets with 0 for the BCE call (masked out below).
+    t_safe = torch.where(elem_mask, t_valid, torch.zeros_like(t_valid))
+
+    bce_unreduced = F.binary_cross_entropy_with_logits(
+        s_valid, t_safe, reduction="none",
+    )
+    # Zero out elements where the target was NaN.
+    bce_unreduced = bce_unreduced * elem_mask.float()
+    n_elems = elem_mask.sum().clamp_min(1)
+    bce = bce_unreduced.sum() / n_elems.float()
+
+    # L1 sparsity on the raw logits — encourages the model to zero out
+    # proteins that are NOT pathway members instead of hedging.
+    sparsity = s_valid.abs().mean()
+
+    loss = bce + sparsity_weight * sparsity
+    return {
+        "loss": loss,
+        "loss_bce": bce,
+        "loss_sparsity": sparsity,
+        "n_supervised": n_valid,
+    }
+
+
+def counterfactual_consistency_loss(
+    out: Mapping[str, Any],
+    batch: Any,
+    *,
+    margin: float = 0.1,
+) -> Dict[str, Any]:
+    """Pairwise margin loss on predicted vs known drug-target rankings.
+
+    Reads:
+        out['counterfactual_pred'] : (B, n_drugs) — predicted efficacy scores
+                                      (higher = more effective).
+        batch.counterfactual_rankings : (B, n_drugs) — ordinal ranking labels
+                                        (lower rank = more effective, i.e.
+                                        rank 1 > rank 2). NaN indicates an
+                                        unlabelled drug for that patient.
+
+    For every ordered pair ``(i, j)`` of drugs within a row where
+    ``rank_i < rank_j`` (drug *i* is more effective), we enforce::
+
+        pred_i - pred_j >= margin
+
+    via a hinge loss. This loss is *not* supervision-gated in the strict
+    sense — when ``counterfactual_rankings`` is absent, it returns zero with
+    ``n_supervised=0``.
+
+    Returns
+    -------
+    dict
+        ``{"loss": Tensor, "n_supervised": int, "n_pairs": int}``.
+    """
+    pred = out.get("counterfactual_pred")
+    if pred is None:
+        return _zero_term(out["z_traj"])
+
+    rankings = _get_field(batch, "counterfactual_rankings")
+    if rankings is None:
+        return _zero_term(pred)
+
+    rankings = rankings.to(device=pred.device, dtype=pred.dtype)
+
+    B, D = pred.shape
+    total_loss = torch.zeros((), device=pred.device, dtype=pred.dtype)
+    total_pairs = 0
+    n_supervised = 0
+
+    for b in range(B):
+        r = rankings[b]                                     # (D,)
+        valid_drugs = torch.isfinite(r)
+        if valid_drugs.sum() < 2:
+            continue
+        n_supervised += 1
+        idx = torch.where(valid_drugs)[0]
+        r_valid = r[idx]
+        p_valid = pred[b, idx]
+        # All ordered pairs: i beats j iff r_valid[i] < r_valid[j].
+        # Expand into pairwise comparison matrices.
+        r_i = r_valid.unsqueeze(1)                          # (m, 1)
+        r_j = r_valid.unsqueeze(0)                          # (1, m)
+        pair_mask = (r_i < r_j)                             # i is better
+        if pair_mask.sum() == 0:
+            continue
+        p_i = p_valid.unsqueeze(1).expand_as(pair_mask)
+        p_j = p_valid.unsqueeze(0).expand_as(pair_mask)
+        # Hinge: want pred_i - pred_j >= margin
+        hinge = (margin - (p_i - p_j)).clamp_min(0.0)
+        total_loss = total_loss + hinge[pair_mask].sum()
+        total_pairs += int(pair_mask.sum().item())
+
+    if total_pairs == 0:
+        return _zero_term(pred)
+
+    loss = total_loss / float(total_pairs)
+    return {"loss": loss, "n_supervised": n_supervised, "n_pairs": total_pairs}
+
+
+def pathway_evidence_regularizer(
+    out: Mapping[str, Any],
+    batch: Any,
+    *,
+    top_k: int = 20,
+    target_overlap_weight: float = 1.0,
+    crispr_overlap_weight: float = 0.5,
+) -> Dict[str, Any]:
+    """Soft penalty encouraging top-k attributed proteins to overlap with
+    known drug targets and CRISPR-essential genes.
+
+    Reads:
+        out['protein_scores']          : (B, n_proteins) — attribution logits.
+        batch.drug_target_mask         : (B, n_proteins) — binary 0/1 indicating
+                                          known direct drug targets.
+        batch.crispr_essential_mask    : (B, n_proteins) — binary 0/1 indicating
+                                          CRISPR-essential genes.
+
+    When neither mask is present, returns a small zero-gradient term so the
+    loss is always finite.
+
+    The penalty is ``1 - mean_overlap`` where ``mean_overlap`` is the
+    soft-Jaccard between the top-k proteins (by attribution score) and the
+    union of drug-target / CRISPR-essential masks. This encourages — but does
+    not force — the model to attribute resistance to biologically plausible
+    proteins.
+
+    Returns
+    -------
+    dict
+        ``{"loss": Tensor, "loss_target_overlap": Tensor,
+        "loss_crispr_overlap": Tensor, "n_supervised": int}``.
+    """
+    scores = out.get("protein_scores")
+    if scores is None:
+        return _zero_term(out["z_traj"])
+
+    device = scores.device
+    dtype = scores.dtype
+    zero = torch.zeros((), device=device, dtype=dtype)
+    B, P = scores.shape
+
+    drug_targets = _get_field(batch, "drug_target_mask")
+    crispr_mask = _get_field(batch, "crispr_essential_mask")
+
+    has_drug = drug_targets is not None
+    has_crispr = crispr_mask is not None
+
+    if not has_drug and not has_crispr:
+        # No evidence masks in batch — return zero loss, always finite.
+        return {
+            "loss": zero,
+            "loss_target_overlap": zero,
+            "loss_crispr_overlap": zero,
+            "n_supervised": 0,
+        }
+
+    # Soft top-k selection via sigmoid on scores (differentiable proxy).
+    # Use a temperature-scaled sigmoid so that the top-k selection is smooth.
+    # First, compute the k-th largest score per row as a soft threshold.
+    k = min(top_k, P)
+    # topk returns values in descending order.
+    topk_vals, _ = scores.topk(k, dim=-1)                    # (B, k)
+    threshold = topk_vals[:, -1:]                             # (B, 1)
+    # Soft indicator: proteins above the threshold get weight ~1.
+    soft_topk = torch.sigmoid(scores - threshold)             # (B, P)
+
+    loss_target = zero
+    loss_crispr = zero
+    n_supervised = 0
+
+    if has_drug:
+        dt = drug_targets.to(device=device, dtype=dtype)
+        # Mask NaN rows.
+        dt_valid = torch.isfinite(dt).all(dim=-1)
+        if dt_valid.sum() > 0:
+            s = soft_topk[dt_valid]
+            d = dt[dt_valid]
+            # Soft overlap: sum(min(s, d)) / sum(max(s, d)) per row, averaged.
+            intersection = torch.min(s, d).sum(dim=-1)
+            union = torch.max(s, d).sum(dim=-1).clamp_min(1e-8)
+            overlap = (intersection / union).mean()
+            loss_target = 1.0 - overlap
+            n_supervised += int(dt_valid.sum().item())
+
+    if has_crispr:
+        cm = crispr_mask.to(device=device, dtype=dtype)
+        cm_valid = torch.isfinite(cm).all(dim=-1)
+        if cm_valid.sum() > 0:
+            s = soft_topk[cm_valid]
+            c = cm[cm_valid]
+            intersection = torch.min(s, c).sum(dim=-1)
+            union = torch.max(s, c).sum(dim=-1).clamp_min(1e-8)
+            overlap = (intersection / union).mean()
+            loss_crispr = 1.0 - overlap
+            n_supervised += int(cm_valid.sum().item())
+
+    loss = target_overlap_weight * loss_target + crispr_overlap_weight * loss_crispr
+    return {
+        "loss": loss,
+        "loss_target_overlap": loss_target if isinstance(loss_target, torch.Tensor) else zero,
+        "loss_crispr_overlap": loss_crispr if isinstance(loss_crispr, torch.Tensor) else zero,
+        "n_supervised": n_supervised,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Stage-level dispatcher
 # ---------------------------------------------------------------------------
 
@@ -722,6 +985,12 @@ def assemble_canonical_loss(
             sub = sde_path_loss(out, batch)
         elif term == "trajectory":
             sub = _trajectory_term_from_dict(out, batch)
+        elif term == "pathway_attribution":
+            sub = pathway_attribution_loss(out, batch)
+        elif term == "pathway_evidence":
+            sub = pathway_evidence_regularizer(out, batch)
+        elif term == "counterfactual_consistency":
+            sub = counterfactual_consistency_loss(out, batch)
         else:  # defensive — STAGE_LOSS_SPEC must agree with this dispatcher
             raise ValueError(f"assemble_canonical_loss: unknown term {term!r}")
 

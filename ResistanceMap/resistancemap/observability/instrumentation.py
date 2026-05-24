@@ -64,6 +64,17 @@ class TraceContext:
     tokens_out: int = 0
     span_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
+    # -- Airflow / pipeline provenance fields (optional, purely additive) --
+    airflow_dag_id: Optional[str] = None
+    airflow_task_id: Optional[str] = None
+    git_sha: Optional[str] = None
+    data_manifest_hash: Optional[str] = None
+    split_id: Optional[str] = None
+    patient_split_hash: Optional[str] = None
+    endpoint: Optional[str] = None
+    claim_level: Optional[str] = None
+    artifact_uri: Optional[str] = None
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize for JSONL (matches asdict semantics)."""
         return asdict(self)

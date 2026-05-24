@@ -24,7 +24,7 @@ import json
 import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,9 @@ class EndpointSpec:
     allowed_claims: List[str] = field(default_factory=list)
     forbidden_claims: List[str] = field(default_factory=list)
     notes: str = ""
+    requires_temporal_holdout: bool = False
+    requires_external_validation: bool = False
+    min_events: Optional[int] = None
 
 
 # Canonical endpoints. Names are lowercase; lookup is case-insensitive.
@@ -65,6 +68,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "survival_prediction", "patient_level_clinical_prediction",
         ],
         notes="Static cell-line IC50. NOT a resistance endpoint.",
+        requires_temporal_holdout=False,
+        requires_external_validation=False,
+        min_events=None,
     ),
     "auc": EndpointSpec(
         endpoint_name="auc",
@@ -77,6 +83,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "survival_prediction", "patient_level_clinical_prediction",
         ],
         notes="Ex vivo AUC (BeatAML / PRISM). Specimen-level static response only.",
+        requires_temporal_holdout=False,
+        requires_external_validation=False,
+        min_events=None,
     ),
     # --- Survival -----------------------------------------------------------
     "overall_survival": EndpointSpec(
@@ -95,6 +104,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "technical validation only — any time-to-resistance or "
             "resistance-emergence claim built on OS alone is forbidden."
         ),
+        requires_temporal_holdout=True,
+        requires_external_validation=True,
+        min_events=30,
     ),
     "progression_free_survival": EndpointSpec(
         endpoint_name="progression_free_survival",
@@ -107,6 +119,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
         ],
         forbidden_claims=["longitudinal_trajectory"],
         notes="PFS supports time-to-resistance under competing-risk framing.",
+        requires_temporal_holdout=True,
+        requires_external_validation=True,
+        min_events=25,
     ),
     "relapse_time": EndpointSpec(
         endpoint_name="relapse_time",
@@ -118,6 +133,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "resistance_emergence",
         ],
         forbidden_claims=["longitudinal_trajectory"],
+        requires_temporal_holdout=True,
+        requires_external_validation=False,
+        min_events=20,
     ),
     "refractory_status": EndpointSpec(
         endpoint_name="refractory_status",
@@ -128,6 +146,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "technical", "patient_level_clinical_prediction", "resistance_emergence",
         ],
         forbidden_claims=["longitudinal_trajectory"],
+        requires_temporal_holdout=False,
+        requires_external_validation=True,
+        min_events=15,
     ),
     "mrd_conversion": EndpointSpec(
         endpoint_name="mrd_conversion",
@@ -138,6 +159,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "technical", "patient_level_clinical_prediction", "resistance_emergence",
         ],
         forbidden_claims=["longitudinal_trajectory"],
+        requires_temporal_holdout=False,
+        requires_external_validation=True,
+        min_events=20,
     ),
     # --- Ex-vivo molecular shift -------------------------------------------
     "ex_vivo_resistance_shift": EndpointSpec(
@@ -149,6 +173,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "Pre→post drug treatment IC50 shift on paired specimens. Allowed "
             "for resistance_emergence when paired ex-vivo measurements exist."
         ),
+        requires_temporal_holdout=False,
+        requires_external_validation=False,
+        min_events=10,
     ),
     # --- Longitudinal molecular --------------------------------------------
     "longitudinal_molecular_state": EndpointSpec(
@@ -160,6 +187,9 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "True same-patient baseline-and-followup molecular pairs. "
             "Requires real calendar-time labels — pseudotime is forbidden."
         ),
+        requires_temporal_holdout=True,
+        requires_external_validation=False,
+        min_events=15,
     ),
     # --- Pseudotime stage (NOT calendar time) ------------------------------
     "disease_stage_pseudotime": EndpointSpec(
@@ -174,6 +204,25 @@ CANONICAL_ENDPOINTS: Dict[str, EndpointSpec] = {
             "Ordinal disease stage (HD < MGUS < SMM < MM). NEVER use as "
             "calendar time. NEVER source a trajectory claim from this."
         ),
+        requires_temporal_holdout=False,
+        requires_external_validation=False,
+        min_events=None,
+    ),
+    # --- Time-to-second-line (TT2L) ------------------------------------------
+    "time_to_second_line": EndpointSpec(
+        endpoint_name="time_to_second_line",
+        endpoint_type="relapse",
+        event_time_column="tt2l_time",
+        event_observed_column="tt2l_event",
+        allowed_claims=[
+            "technical", "survival_prediction", "patient_level_clinical_prediction",
+            "resistance_emergence",
+        ],
+        forbidden_claims=["longitudinal_trajectory"],
+        notes="Time to second line of therapy. Requires >= 20 observed events.",
+        requires_temporal_holdout=True,
+        requires_external_validation=True,
+        min_events=20,
     ),
 }
 
@@ -184,6 +233,82 @@ def lookup_endpoint(name: str) -> Optional[EndpointSpec]:
     if not name:
         return None
     return CANONICAL_ENDPOINTS.get(name.strip().lower())
+
+
+def validate_endpoint_for_claim(
+    endpoint_name: str, claim_level: str
+) -> Tuple[bool, str]:
+    """Check whether *endpoint_name* is allowed for *claim_level*.
+
+    Enforces three layers of policy:
+
+    1. **Existence** -- the endpoint must be registered.
+    2. **Explicit allow/forbid lists** from :class:`EndpointSpec`.
+    3. **Hard blocks** that override allow-lists:
+       - OS is BLOCKED for ``resistance_emergence`` and
+         ``patient_level_clinical_prediction`` regardless of allow-list.
+       - Pseudotime (``disease_stage_ordinal`` type) is BLOCKED for
+         ``longitudinal_trajectory``, ``resistance_emergence``,
+         ``survival_prediction``, and ``patient_level_clinical_prediction``.
+
+    Returns
+    -------
+    (allowed, reason) : Tuple[bool, str]
+        ``allowed`` is True when the claim is permitted; ``reason`` is a
+        human-readable explanation of the decision.
+    """
+    spec = lookup_endpoint(endpoint_name)
+    if spec is None:
+        return False, (
+            f"Endpoint '{endpoint_name}' is not registered. "
+            "All endpoints must be registered before any claim is allowed."
+        )
+
+    claim = claim_level.strip().lower()
+
+    # --- Hard block: OS must never support resistance or patient-clinical ---
+    _OS_BLOCKED_CLAIMS = {"resistance_emergence", "patient_level_clinical_prediction"}
+    if spec.endpoint_type == "overall_survival" and claim in _OS_BLOCKED_CLAIMS:
+        return False, (
+            f"HARD BLOCK: Overall survival endpoint '{spec.endpoint_name}' "
+            f"is categorically blocked for claim '{claim}'. OS conflates "
+            "all-cause mortality with treatment resistance; use PFS, relapse, "
+            "or refractory endpoints instead."
+        )
+
+    # --- Hard block: pseudotime must never pose as calendar-time claims -----
+    _PSEUDOTIME_BLOCKED_CLAIMS = {
+        "longitudinal_trajectory",
+        "resistance_emergence",
+        "survival_prediction",
+        "patient_level_clinical_prediction",
+    }
+    if spec.endpoint_type == "disease_stage_ordinal" and claim in _PSEUDOTIME_BLOCKED_CLAIMS:
+        return False, (
+            f"HARD BLOCK: Pseudotime endpoint '{spec.endpoint_name}' "
+            f"is categorically blocked for claim '{claim}'. Disease-stage "
+            "ordinal pseudo-progression is NOT calendar time and must never "
+            "be used for trajectory, survival, or clinical-prediction claims."
+        )
+
+    # --- Explicit forbid list (checked before allow list) -------------------
+    if claim in [c.strip().lower() for c in spec.forbidden_claims]:
+        return False, (
+            f"Endpoint '{spec.endpoint_name}' explicitly forbids claim "
+            f"'{claim}' per its forbidden_claims list."
+        )
+
+    # --- Explicit allow list ------------------------------------------------
+    if claim not in [c.strip().lower() for c in spec.allowed_claims]:
+        return False, (
+            f"Claim '{claim}' is not in the allowed_claims list for "
+            f"endpoint '{spec.endpoint_name}'. Allowed claims: "
+            f"{spec.allowed_claims}."
+        )
+
+    return True, (
+        f"Endpoint '{spec.endpoint_name}' permits claim '{claim}'."
+    )
 
 
 def write_endpoint_registry(

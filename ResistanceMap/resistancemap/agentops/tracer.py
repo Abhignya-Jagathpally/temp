@@ -8,6 +8,8 @@ Tracks spans (units of work), traces (full pipeline executions), and provides me
 - Critical path analysis
 """
 
+import os
+import subprocess
 import threading
 import time
 import uuid
@@ -15,6 +17,32 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import ClassVar, Dict, List, Optional
+
+# ---------------------------------------------------------------------------
+# Cached git SHA (resolved once per process)
+# ---------------------------------------------------------------------------
+_git_sha_cache: Optional[str] = None
+_git_sha_resolved: bool = False
+
+
+def _get_git_sha() -> Optional[str]:
+    """Return short git SHA, cached after first call."""
+    global _git_sha_cache, _git_sha_resolved
+    if _git_sha_resolved:
+        return _git_sha_cache
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            _git_sha_cache = result.stdout.strip() or None
+    except Exception:
+        pass
+    _git_sha_resolved = True
+    return _git_sha_cache
 
 
 @dataclass
@@ -34,6 +62,17 @@ class Span:
 
     metadata: Dict = field(default_factory=dict)
     children: List['Span'] = field(default_factory=list)
+
+    # -- Airflow / pipeline provenance fields (optional, purely additive) --
+    airflow_dag_id: Optional[str] = None
+    airflow_task_id: Optional[str] = None
+    git_sha: Optional[str] = None
+    data_manifest_hash: Optional[str] = None
+    split_id: Optional[str] = None
+    patient_split_hash: Optional[str] = None
+    endpoint: Optional[str] = None
+    claim_level: Optional[str] = None
+    artifact_uri: Optional[str] = None
 
     def __post_init__(self):
         """Ensure start_time is set if not provided."""
@@ -75,6 +114,16 @@ class Span:
             "cost_usd": self.cost_usd,
             "token_count": self.token_count,
             "num_children": len(self.children),
+            # Airflow / pipeline provenance
+            "airflow_dag_id": self.airflow_dag_id,
+            "airflow_task_id": self.airflow_task_id,
+            "git_sha": self.git_sha,
+            "data_manifest_hash": self.data_manifest_hash,
+            "split_id": self.split_id,
+            "patient_split_hash": self.patient_split_hash,
+            "endpoint": self.endpoint,
+            "claim_level": self.claim_level,
+            "artifact_uri": self.artifact_uri,
         }
 
 
@@ -198,6 +247,11 @@ class Trace:
 
     def to_dict(self) -> Dict:
         """Serialize trace to dictionary."""
+        # Collect unique Airflow context seen across spans
+        dag_ids = {s.airflow_dag_id for s in self.spans.values() if s.airflow_dag_id}
+        task_ids = {s.airflow_task_id for s in self.spans.values() if s.airflow_task_id}
+        git_shas = {s.git_sha for s in self.spans.values() if s.git_sha}
+
         return {
             "trace_id": self.trace_id,
             "start_time": self.start_time,
@@ -207,6 +261,10 @@ class Trace:
             "total_tokens": self.total_tokens,
             "num_spans": len(self.spans),
             "spans": {sid: s.to_dict() for sid, s in self.spans.items()},
+            # Propagated provenance summary
+            "airflow_dag_ids": sorted(dag_ids) if dag_ids else None,
+            "airflow_task_ids": sorted(task_ids) if task_ids else None,
+            "git_shas": sorted(git_shas) if git_shas else None,
         }
 
 
@@ -285,6 +343,9 @@ class Tracer:
                 agent_name=agent_name,
                 operation=operation,
                 parent_id=parent_span_id,
+                airflow_dag_id=os.environ.get("AIRFLOW_CTX_DAG_ID"),
+                airflow_task_id=os.environ.get("AIRFLOW_CTX_TASK_ID"),
+                git_sha=_get_git_sha(),
             )
 
             trace.spans[span.span_id] = span
@@ -379,6 +440,23 @@ class Tracer:
             k: sum(v) / len(v) for k, v in all_tool_latencies.items()
         }
 
+        # -- Airflow integration summary --
+        spans_with_airflow = 0
+        spans_without_airflow = 0
+        airflow_dag_ids: set = set()
+        airflow_task_ids: set = set()
+
+        for trace in self.completed_traces:
+            for span in trace.spans.values():
+                if span.airflow_dag_id or span.airflow_task_id:
+                    spans_with_airflow += 1
+                    if span.airflow_dag_id:
+                        airflow_dag_ids.add(span.airflow_dag_id)
+                    if span.airflow_task_id:
+                        airflow_task_ids.add(span.airflow_task_id)
+                else:
+                    spans_without_airflow += 1
+
         return {
             "total_traces": total_traces,
             "total_spans": total_spans,
@@ -391,6 +469,12 @@ class Tracer:
             "agent_handoff_latencies_ms": avg_handoff_latencies,
             "tool_execution_latencies_ms": avg_tool_latencies,
             "timestamp": datetime.utcnow().isoformat(),
+            "airflow_integration": {
+                "spans_with_airflow_context": spans_with_airflow,
+                "spans_without_airflow_context": spans_without_airflow,
+                "unique_dag_ids": sorted(airflow_dag_ids),
+                "unique_task_ids": sorted(airflow_task_ids),
+            },
         }
 
     def get_active_trace_ids(self) -> List[str]:

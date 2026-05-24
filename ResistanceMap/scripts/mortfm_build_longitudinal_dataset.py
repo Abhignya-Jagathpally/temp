@@ -59,8 +59,34 @@ def main() -> int:
                     default="data/processed/longitudinal/temporal_pairs.parquet")
     ap.add_argument("--out-report",
                     default="logs/mortfm/longitudinal_data_report.json")
+    ap.add_argument("--engine", choices=["pandas", "spark"], default="pandas",
+                    help="Processing engine (default: pandas). Use 'spark' for "
+                         "large-scale runs via PySpark.")
     args = ap.parse_args()
 
+    # ----- Spark engine path ------------------------------------------------
+    if args.engine == "spark":
+        from resistancemap.data.spark_longitudinal import (
+            build_longitudinal_panel_spark,
+        )
+        try:
+            from pyspark.sql import SparkSession
+        except ImportError:
+            logger.error(
+                "PySpark is required for --engine spark. "
+                "Install with:  pip install 'pyspark>=3.4'"
+            )
+            return 1
+        spark = SparkSession.builder.appName(
+            "mortfm_build_longitudinal_dataset"
+        ).getOrCreate()
+        data_dir = str(Path(args.paired).parent)
+        build_longitudinal_panel_spark(spark, data_dir, args.out_parquet)
+        logger.info("Spark engine: wrote panel -> %s", args.out_parquet)
+        spark.stop()
+        return 0
+
+    # ----- Pandas engine path (default) ------------------------------------
     pairs = build_pairs_from_mmrf(paired_tsv=args.paired, outcomes_tsv=args.outcomes)
     ds = LongitudinalDataset(pairs)
     ds.to_parquet(args.out_parquet)

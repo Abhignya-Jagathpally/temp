@@ -8,10 +8,16 @@ and complete audit trails.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import logging
+import os
+import subprocess
 import time
+import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from resistancemap.agents.base import BaseAgent, AgentState, AgentResult
@@ -189,6 +195,161 @@ class Orchestrator:
         self._trace_id: str | None = None
         self._guardrail_violations: list[dict[str, Any]] = []
 
+    # ------------------------------------------------------------------
+    # Run-manifest helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _generate_run_id() -> str:
+        """Generate a unique run ID combining a UTC timestamp and UUID4 suffix.
+
+        Returns:
+            String like ``20260523T143012Z-a1b2c3d4``
+        """
+        ts = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+        short_uuid = uuid.uuid4().hex[:8]
+        return f"{ts}-{short_uuid}"
+
+    @staticmethod
+    def _get_git_sha() -> str:
+        """Return the current HEAD commit SHA via ``git rev-parse HEAD``.
+
+        Returns ``"unknown"`` when git is unavailable or the working
+        directory is not inside a repository.
+        """
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                return result.stdout.strip()
+        except Exception:
+            logger.debug("_get_git_sha: git rev-parse failed")
+        return "unknown"
+
+    @staticmethod
+    def _compute_config_hash(config: ResistanceMapConfig) -> str:
+        """SHA-256 of the frozen (JSON-serialised) config.
+
+        Falls back to hashing ``repr(config)`` when JSON serialisation
+        is not available on the config object.
+        """
+        try:
+            # ResistanceMapConfig may expose .to_dict() or similar
+            if hasattr(config, "to_dict"):
+                blob = json.dumps(config.to_dict(), sort_keys=True)
+            elif hasattr(config, "__dict__"):
+                blob = json.dumps(
+                    {k: repr(v) for k, v in sorted(vars(config).items())}
+                )
+            else:
+                blob = repr(config)
+        except Exception:
+            blob = repr(config)
+        return hashlib.sha256(blob.encode()).hexdigest()
+
+    @staticmethod
+    def _compute_file_hash(path: str | Path) -> str:
+        """SHA-256 of an on-disk file.  Returns ``"missing"`` if the file
+        does not exist or cannot be read.
+        """
+        try:
+            p = Path(path)
+            if not p.exists():
+                return "missing"
+            h = hashlib.sha256()
+            with open(p, "rb") as f:
+                for chunk in iter(lambda: f.read(1 << 20), b""):
+                    h.update(chunk)
+            return h.hexdigest()
+        except Exception:
+            return "missing"
+
+    @staticmethod
+    def _detect_airflow_metadata() -> dict[str, str | None] | None:
+        """Return Airflow context from environment variables, or ``None``
+        when not running inside an Airflow task.
+        """
+        dag_id = os.environ.get("AIRFLOW_CTX_DAG_ID")
+        if dag_id is None:
+            return None
+        return {
+            "dag_id": dag_id,
+            "task_id": os.environ.get("AIRFLOW_CTX_TASK_ID"),
+            "execution_date": os.environ.get("AIRFLOW_CTX_EXECUTION_DATE"),
+        }
+
+    def _init_manifest(self, config: ResistanceMapConfig) -> None:
+        """Build the initial run manifest (before agent execution).
+
+        Populates ``self._run_manifest`` with run_id, git_sha,
+        config_hash, data/split manifest hashes, and empty containers
+        for per-agent data that will be filled during execution.
+        """
+        # Resolve data_ready.pt and split paths from config if available
+        output_dir = getattr(config, "output_dir", None) or "."
+        data_ready_path = Path(output_dir) / "data_ready.pt"
+        split_path = Path(output_dir) / "splits.json"
+
+        self._run_manifest: dict[str, Any] = {
+            "run_id": self._generate_run_id(),
+            "git_sha": self._get_git_sha(),
+            "config_hash": self._compute_config_hash(config),
+            "data_manifest_hash": self._compute_file_hash(data_ready_path),
+            "split_manifest_hash": self._compute_file_hash(split_path),
+            "per_agent_artifacts": {},
+            "per_agent_verification_hashes": {},
+            "per_agent_timing": {},
+            "airflow_metadata": self._detect_airflow_metadata(),
+        }
+        logger.info(
+            f"Orchestrator: run_id={self._run_manifest['run_id']}  "
+            f"git_sha={self._run_manifest['git_sha'][:8]}..."
+        )
+
+    def save_manifest(self, path: str | Path) -> Path:
+        """Write the full run manifest to disk as JSON.
+
+        Ensures the parent directory exists before writing.  Populates
+        ``per_agent_verification_hashes`` and ``per_agent_timing`` from
+        the existing verification chain and timing log so the manifest
+        is always internally consistent.
+
+        Args:
+            path: Destination file path.
+
+        Returns:
+            Resolved ``pathlib.Path`` of the written file.
+
+        Raises:
+            RuntimeError: If called before ``run()`` has initialised the
+                manifest.
+        """
+        if not hasattr(self, "_run_manifest"):
+            raise RuntimeError(
+                "No run manifest available — call run() first"
+            )
+
+        # Sync live data into the manifest
+        self._run_manifest["per_agent_verification_hashes"] = {
+            name: result.verification_hash
+            for name, result in self.results.items()
+        }
+        self._run_manifest["per_agent_timing"] = self.get_timing_report()
+
+        dest = Path(path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(json.dumps(self._run_manifest, indent=2, default=str))
+        logger.info(f"Orchestrator: manifest saved to {dest}")
+        return dest
+
+    # ------------------------------------------------------------------
+    # Agent registration
+    # ------------------------------------------------------------------
+
     def add_agent(self, agent: BaseAgent) -> None:
         """Register an agent with the orchestrator.
 
@@ -238,6 +399,9 @@ class Orchestrator:
         """
         if self.execution_plan is None:
             raise RuntimeError("Call prepare_execution() before run()")
+
+        # Initialise the run manifest before any agents execute
+        self._init_manifest(config)
 
         start_time = time.time()
         logger.info(
@@ -372,6 +536,15 @@ class Orchestrator:
 
             # Record timing
             self._timing_log[agent_name] = (start_time, time.time())
+
+            # Record artifact paths produced by this agent (if any).
+            # Agents report their output files by including an
+            # ``artifact_paths`` list in ``result.metadata``.
+            if hasattr(self, "_run_manifest"):
+                artifact_paths = (result.metadata or {}).get("artifact_paths", [])
+                self._run_manifest["per_agent_artifacts"][agent_name] = list(
+                    artifact_paths
+                )
 
             # v7: GuardrailEngine pass on the agent's output. We feed the
             # output dict in flat form; rules that aren't applicable simply

@@ -21,11 +21,16 @@ resistance_emergence claim gates.
 from resistancemap.mortfm.longitudinal.schemas import (  # noqa: F401
     ClinicalEvent,
     LongitudinalPair,
+    LongitudinalPanelRow,
     MolecularSample,
     PatientTimeline,
     ResistanceEndpoint,
     ResponseEvent,
     TreatmentExposure,
+    build_panel_from_pairs,
+    panel_from_parquet,
+    panel_to_parquet,
+    validate_panel,
 )
 from resistancemap.mortfm.longitudinal.resistance_endpoint_builder import (  # noqa: F401
     build_endpoints_from_mmrf_outcomes,

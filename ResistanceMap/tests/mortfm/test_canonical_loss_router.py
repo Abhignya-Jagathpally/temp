@@ -178,8 +178,8 @@ def test_canonical_trajectory_loss_zero_on_nonpositive_dt():
     ("E", ("trajectory", "sde_path", "basin_transition")),
     # v19 Phase 7: stage F gains hitting_nll + surv_hit_consistency
     ("F", ("survival", "hitting", "hitting_nll", "surv_hit_consistency")),
-    ("G", ("basin_transition",)),
-    ("H", ("survival",)),
+    ("G", ("basin_transition", "pathway_attribution", "pathway_evidence")),
+    ("H", ("survival", "counterfactual_consistency")),
 ])
 def test_assemble_canonical_loss_dispatches_per_stage(stage, expected_terms):
     out = _mk_outputs()

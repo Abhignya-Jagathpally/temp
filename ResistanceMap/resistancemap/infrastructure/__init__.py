@@ -13,6 +13,7 @@ __all__ = [
     'multi_site_harmonization',
     'scrna_integration',
     'imaging_radiomics',
+    'workflow_backend',
 ]
 
 
@@ -37,6 +38,9 @@ def __getattr__(name):
         elif name == 'imaging_radiomics':
             from . import imaging_radiomics
             return imaging_radiomics
+        elif name == 'workflow_backend':
+            from . import workflow_backend
+            return workflow_backend
         else:
             raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     except ImportError as e:

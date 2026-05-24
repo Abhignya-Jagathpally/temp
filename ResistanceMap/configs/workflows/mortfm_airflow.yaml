@@ -1,0 +1,611 @@
+# =============================================================================
+# MORT-FM Airflow Workflow Configuration
+# =============================================================================
+# Orchestration config for the full MORT-FM pipeline (scripts/mortfm/00-09).
+# Consumed by the DAG builder; every threshold here is the single source of
+# truth that scripts, registries, and the claim-gate auditor read at run-time.
+#
+# Depends on:
+#   configs/mortfm.yaml            (model hyperparameters)
+#   configs/mortfm_gates.yaml      (gate thresholds)
+#   resistancemap/mortfm/registries/claim_gate_registry.py  (12 claim levels)
+#   resistancemap/mortfm/registries/endpoint_registry.py    (endpoint semantics)
+#   resistancemap/mortfm/registries/artifact_registry.py    (block artifacts)
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# 1. Paths
+# ---------------------------------------------------------------------------
+paths:
+  repo_root: /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap
+  data_root: /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data
+  checkpoint_dir: /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/checkpoints/mortfm
+  log_dir: /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/logs/mortfm
+  results_dir: /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/results/mortfm
+  splits_dir: /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data/processed/splits
+
+# ---------------------------------------------------------------------------
+# 2. Cohorts
+# ---------------------------------------------------------------------------
+cohorts:
+  - cohort_id: MMRF_IA12_paired
+    description: >-
+      MMRF CoMMpass IA12 longitudinal paired samples (baseline + follow-up).
+      Primary cohort for trajectory and survival claims.
+    n_patients: 787
+    n_paired: 29          # patients with 2+ real timepoints (paired molecular)
+    modalities:
+      - rna
+      - clinical
+      - drug
+    access_tier: public   # dbGaP open-access tier
+
+  - cohort_id: BeatAML_1.0
+    description: >-
+      Beat AML 1.0 specimen-level ex-vivo drug-response data.
+      Used for Block B hematologic-specimen finetune.
+    n_patients: 672
+    n_specimens_with_expression: 451
+    n_specimens_with_drug_response: 365
+    modalities:
+      - rna
+      - drug
+      - clinical
+    access_tier: public
+
+  - cohort_id: GSE124310
+    description: >-
+      Single-cell RNA-seq atlas of MM progression (HD/MGUS/SMM/MM stages).
+      Block C pretraining -- pseudotime only, NOT calendar time.
+    n_patients: 40
+    n_cells: 35000
+    modalities:
+      - scrna
+    access_tier: public
+
+  - cohort_id: GSE271107
+    description: >-
+      Lenalidomide treatment response scRNA-seq.
+      Block C contrastive pretraining + drug-perturbation context.
+    n_patients: 12
+    n_cells: 28000
+    modalities:
+      - scrna
+      - drug
+    access_tier: public
+
+  - cohort_id: PADIMAC
+    description: >-
+      Proteomics And Drug response In Multiple myeloma And Classification.
+      Multi-omics paired proteomics + drug-response on MM cell lines.
+    n_patients: 0         # cell-line only, no patient-level data
+    n_cell_lines: 25
+    modalities:
+      - proteomics
+      - drug
+    access_tier: public
+
+# ---------------------------------------------------------------------------
+# 3. Baselines
+# ---------------------------------------------------------------------------
+# Every model in this list is run by scripts/mortfm/10_run_baselines.py.
+# MORT-FM claims are rejected unless they beat the best baseline with the
+# same input modality set, evaluated on the same split and endpoint.
+baselines:
+  # --- Classical ML ---
+  - model_id: elasticnet
+    family: linear
+    modalities: [rna]
+    endpoints: [drug_response, progression_free_survival]
+
+  - model_id: ridge
+    family: linear
+    modalities: [rna]
+    endpoints: [drug_response]
+
+  - model_id: random_forest
+    family: tree
+    modalities: [rna, clinical]
+    endpoints: [drug_response, progression_free_survival]
+
+  - model_id: xgboost
+    family: tree
+    modalities: [rna, clinical]
+    endpoints: [drug_response, progression_free_survival]
+
+  - model_id: lightgbm
+    family: tree
+    modalities: [rna, clinical]
+    endpoints: [drug_response, progression_free_survival]
+
+  # --- Deep baselines (tabular) ---
+  - model_id: mlp
+    family: neural
+    modalities: [rna, clinical]
+    endpoints: [drug_response, progression_free_survival]
+
+  - model_id: cnn_feature_order
+    family: neural
+    modalities: [rna]
+    endpoints: [drug_response]
+
+  - model_id: ft_transformer
+    family: neural
+    modalities: [rna, clinical]
+    endpoints: [drug_response, progression_free_survival]
+
+  # --- Sequence / temporal baselines ---
+  - model_id: lstm_visits
+    family: temporal
+    modalities: [rna, clinical]
+    endpoints: [longitudinal_molecular_state, progression_free_survival]
+
+  - model_id: gru_visits
+    family: temporal
+    modalities: [rna, clinical]
+    endpoints: [longitudinal_molecular_state, progression_free_survival]
+
+  # --- Clinical-only (mandatory survival baseline) ---
+  - model_id: clinical_only_cox
+    family: survival
+    modalities: [clinical]
+    endpoints: [overall_survival, progression_free_survival]
+    notes: >-
+      MORT-FM MUST beat this baseline on PFS to earn
+      patient_level_clinical_prediction claim.
+
+  # --- Published drug-response models ---
+  - model_id: DeepCDR
+    family: published
+    modalities: [rna, drug]
+    endpoints: [drug_response]
+
+  - model_id: DrugCell
+    family: published
+    modalities: [rna, drug]
+    endpoints: [drug_response]
+
+  - model_id: GraphDRP
+    family: published
+    modalities: [rna, drug]
+    endpoints: [drug_response]
+
+  - model_id: PaccMann
+    family: published
+    modalities: [rna, drug]
+    endpoints: [drug_response]
+
+  - model_id: TCRP
+    family: published
+    modalities: [rna, drug]
+    endpoints: [drug_response]
+
+  - model_id: PRECISE
+    family: published
+    modalities: [rna]
+    endpoints: [drug_response]
+
+# ---------------------------------------------------------------------------
+# 4. Claim Gates (12-level system)
+# ---------------------------------------------------------------------------
+# Mirrors resistancemap/mortfm/registries/claim_gate_registry.py.
+# Thresholds here are the YAML source-of-truth; the Python registry defines
+# semantics (required_artifacts, required_gates, forbidden_endpoint_types).
+gates:
+  # Level 1: technical
+  technical:
+    description: "Pipeline runs end-to-end on real data without fabrication."
+    required_artifacts: []
+    required_gates: []
+    min_n: 1              # at least one real sample processed
+
+  # Level 2: static_drug_response
+  static_drug_response:
+    description: "Static cell-line drug-response ranking (GDSC/PRISM/CCLE)."
+    required_artifacts: [A_cellline_foundation]
+    required_gates: [gate_static_drug_response]
+    min_models: 300
+    min_drugs: 50
+    min_observed_response_rows: 10000
+    min_model_mapping_rate: 0.8
+    forbidden_endpoint_types: [overall_survival]
+
+  # Level 3: hematologic_specimen_drug_response
+  hematologic_specimen_drug_response:
+    description: "Specimen-level ex-vivo drug-response on hematologic cancers (BeatAML)."
+    required_artifacts: [A_cellline_foundation, B_beataml_finetuned]
+    required_gates:
+      - gate_beataml_specimen_drug_response
+      - gate_static_drug_response
+    min_specimens_with_expression: 300
+    min_specimens_with_drug_response: 100
+    min_drugs: 20
+    require_specimen_disjoint_split: true
+
+  # Level 4: single_cell_state
+  single_cell_state:
+    description: "Disease-state representation learning on scRNA atlases. Pseudotime only."
+    required_artifacts: [C_scrna_state_encoder]
+    required_gates: [gate_single_cell_state_pretraining]
+    min_total_cells: 50000
+    min_unique_samples: 10
+    require_counts_layer: true
+    pseudotime_only_block_trajectory_claim: true
+    forbidden_endpoint_types: [overall_survival, longitudinal_molecular_state]
+
+  # Level 5: sequence_aware
+  sequence_aware:
+    description: "Protein sequences (ESM-2) consumed by downstream heads."
+    required_artifacts: [D_esm2_embeddings]
+    required_gates: [gate_sequence_aware]
+    require_uniprot_fasta: true
+    require_esm_embedding_cache: true
+    min_n_embeddings: 100
+    min_feature_gene_coverage_via_identifier_map: 0.70
+
+  # Level 6: pathway_context
+  pathway_context:
+    description: "Reactome + STRING PPI + drug-target edges as biological context."
+    required_artifacts: [D_esm2_embeddings, A_cellline_foundation]
+    required_gates: [gate_pathway_context]
+    min_feature_gene_to_uniprot_coverage: 0.70
+
+  # Level 7: drug_target_mechanism
+  drug_target_mechanism:
+    description: "Drug-target ChEMBL coverage above gate threshold."
+    required_artifacts: [D_esm2_embeddings]
+    required_gates:
+      - gate_drug_target_mechanism
+      - gate_pathway_mechanism
+    min_per_source_drug_coverage: 0.30
+    spec_target_drug_coverage: 0.50
+    min_gene_to_uniprot_coverage: 0.70
+    min_drug_to_target_coverage: 0.50
+    min_pathway_mapping_coverage: 0.50
+    require_reactome: true
+    require_drug_target_edges: true
+
+  # Level 8: survival_prediction
+  survival_prediction:
+    description: "Patient-level survival head technical validation (C-index, Brier, KM)."
+    required_artifacts: []
+    required_gates: [gate_survival_claim]
+    min_patients: 200
+    min_events: 50
+    require_c_index: true
+    require_patient_disjoint_split: true
+    require_endpoint_name: true
+    allowed_endpoint_types:
+      - progression_free_survival
+      - relapse
+      - refractory_status
+      - mrd_conversion
+      - overall_survival
+
+  # Level 9: patient_level_clinical_prediction
+  patient_level_clinical_prediction:
+    description: "Full clinical-outcome prediction with external/temporal holdout AND clinical-only baseline beaten."
+    required_artifacts: [A_cellline_foundation, B_beataml_finetuned]
+    required_gates: [gate_patient_level_clinical_prediction]
+    must_beat_baseline: clinical_only_cox
+    allowed_endpoint_types:
+      - progression_free_survival
+      - relapse
+      - refractory_status
+      - mrd_conversion
+    forbidden_endpoint_types: [disease_stage_ordinal, drug_response]
+
+  # Level 10: longitudinal_trajectory
+  longitudinal_trajectory:
+    description: "Same-patient baseline-to-followup molecular pairs with real calendar-time labels."
+    required_artifacts: [E_integrated]
+    required_gates: [gate_longitudinal_trajectory]
+    min_longitudinal_pairs: 100
+    min_unique_patients_with_2_timepoints: 50
+    require_real_time_units: true
+    forbid_pseudotime_as_calendar_time: true
+    allowed_endpoint_types: [longitudinal_molecular_state]
+    forbidden_endpoint_types: [disease_stage_ordinal, overall_survival]
+
+  # Level 11: resistance_emergence
+  resistance_emergence:
+    description: "Time-to-resistance prediction under treatment pressure. OS forbidden as sole endpoint."
+    required_artifacts: [E_integrated]
+    required_gates:
+      - gate_resistance_claim
+      - gate_time_to_resistance
+    forbid_endpoint_only_overall_survival: true
+    allowed_endpoint_types:
+      - progression_free_survival
+      - relapse_time
+      - refractory_status
+      - mrd_conversion
+      - drug_resistance_label
+      - ex_vivo_resistance_shift
+      - longitudinal_molecular_state
+    forbidden_endpoint_types: [overall_survival, drug_response, disease_stage_ordinal]
+
+  # Level 12: causal_mechanism
+  causal_mechanism:
+    description: "Pathway attribution + drug-target + CRISPR + counterfactual + negative controls. Highest bar."
+    required_artifacts: [E_integrated, D_esm2_embeddings]
+    required_gates: [gate_causal_pathway_mechanism]
+    require_crispr_consistency: true
+    require_counterfactual_ablation: true
+    require_negative_controls: true
+
+# ---------------------------------------------------------------------------
+# 5. Compute Profile
+# ---------------------------------------------------------------------------
+compute_profile:
+  gpu_type: H100
+  n_gpus: 1
+  dtype: bfloat16
+  mixed_precision: true
+  compile: false              # torch.compile disabled (dynamo compat issue)
+  pin_memory: true
+  num_workers: 8
+  prefetch_factor: 4
+
+  max_epochs:
+    cellline_pretrain: 50     # scripts/mortfm/04_pretrain_foundation.py
+    patient_finetune: 50      # scripts/mortfm/07_train_survival.py
+    trajectory: 60            # scripts/mortfm/02_build_longitudinal_dataset.py
+    survival: 50              # scripts/mortfm/07_train_survival.py
+    block_c_contrastive: 30   # scripts/mortfm/05_train_block_c_contrastive.py
+    lens_resistance: 40       # scripts/mortfm/06_train_lens_resistance.py
+    ablation: 20              # configs/mortfm_ablation.yaml
+
+  batch_size:
+    cellline_pretrain: 128
+    patient_finetune: 32
+    trajectory: 16            # SDE rollout is memory-intensive
+    survival: 32
+    block_c_contrastive: 64
+    lens_resistance: 64
+    baselines: 256
+
+  seeds: [42, 137, 2024, 7, 31]
+
+# ---------------------------------------------------------------------------
+# 6. Evidence Channels
+# ---------------------------------------------------------------------------
+# Each channel provides orthogonal biological evidence. The causal_mechanism
+# claim (level 12) requires ALL four channels to pass.
+evidence_channels:
+  crispr:
+    description: "DepMap CRISPR gene-knockout phenotypes validate gene-essentiality predictions."
+    data_source: depmap/CRISPRGeneEffect.csv
+    pass_threshold: 0.05      # p-value for gene-essentiality enrichment
+    min_genes_tested: 50
+    require_negative_controls: true
+
+  drug_target:
+    description: "ChEMBL drug-target edges validate drug-mechanism attribution."
+    data_source: chembl_v34_drug_targets
+    pass_threshold: 0.50      # fraction of MORT-FM drug attributions matched in ChEMBL
+    min_drugs_with_targets: 10
+    require_bidirectional_lookup: true
+
+  reactome:
+    description: "Reactome pathway membership validates pathway-level attribution."
+    data_source: reactome_membership.parquet
+    pass_threshold: 0.50      # fraction of attributed pathways with Reactome support
+    min_pathways_tested: 20
+    require_pathway_mapping_coverage: 0.50
+
+  perturbation:
+    description: "Counterfactual edge ablation + perturbation consistency."
+    data_source: in_silico_perturbation
+    pass_threshold: 0.05      # p-value for perturbation effect directionality
+    min_perturbations: 10
+    require_direction_consistency: true
+
+# ---------------------------------------------------------------------------
+# 7. Endpoints
+# ---------------------------------------------------------------------------
+# Allowed and forbidden endpoint types per claim level, derived from
+# resistancemap/mortfm/registries/endpoint_registry.py.
+endpoints:
+  canonical_types:
+    - drug_response
+    - overall_survival
+    - progression_free_survival
+    - relapse
+    - refractory_status
+    - mrd_conversion
+    - ex_vivo_resistance_shift
+    - longitudinal_molecular_state
+    - disease_stage_ordinal
+
+  # Per-claim-level allowed/forbidden constraints.
+  # "allowed" means the claim MAY use this endpoint type; "forbidden" means
+  # the claim MUST NOT use it. Unlisted types are implicitly forbidden.
+  per_claim_level:
+    technical:
+      allowed: [drug_response, overall_survival, progression_free_survival,
+                relapse, refractory_status, mrd_conversion,
+                ex_vivo_resistance_shift, longitudinal_molecular_state,
+                disease_stage_ordinal]
+      forbidden: []
+
+    static_drug_response:
+      allowed: [drug_response]
+      forbidden: [overall_survival, longitudinal_molecular_state,
+                  progression_free_survival, relapse, refractory_status,
+                  mrd_conversion]
+
+    hematologic_specimen_drug_response:
+      allowed: [drug_response]
+      forbidden: [overall_survival, longitudinal_molecular_state]
+
+    single_cell_state:
+      allowed: [disease_stage_ordinal]
+      forbidden: [overall_survival, longitudinal_molecular_state]
+
+    sequence_aware:
+      allowed: [drug_response, overall_survival, progression_free_survival,
+                relapse, refractory_status, mrd_conversion]
+      forbidden: []
+
+    pathway_context:
+      allowed: [drug_response, overall_survival, progression_free_survival,
+                relapse, refractory_status, mrd_conversion]
+      forbidden: []
+
+    drug_target_mechanism:
+      allowed: [drug_response]
+      forbidden: []
+
+    survival_prediction:
+      allowed: [progression_free_survival, relapse, refractory_status,
+                mrd_conversion, overall_survival]
+      forbidden: [longitudinal_molecular_state, drug_response,
+                  disease_stage_ordinal]
+
+    patient_level_clinical_prediction:
+      allowed: [progression_free_survival, relapse, refractory_status,
+                mrd_conversion]
+      forbidden: [disease_stage_ordinal, drug_response, overall_survival]
+
+    longitudinal_trajectory:
+      allowed: [longitudinal_molecular_state]
+      forbidden: [disease_stage_ordinal, overall_survival]
+
+    resistance_emergence:
+      allowed: [progression_free_survival, relapse_time, refractory_status,
+                mrd_conversion, drug_resistance_label,
+                ex_vivo_resistance_shift, longitudinal_molecular_state]
+      forbidden: [overall_survival, drug_response, disease_stage_ordinal]
+
+    causal_mechanism:
+      allowed: [drug_response, progression_free_survival, relapse,
+                refractory_status, mrd_conversion, ex_vivo_resistance_shift,
+                longitudinal_molecular_state]
+      forbidden: [overall_survival, disease_stage_ordinal]
+
+# ---------------------------------------------------------------------------
+# 8. Splits
+# ---------------------------------------------------------------------------
+splits:
+  val_fraction: 0.15
+  test_fraction: 0.15
+  seed: 42
+  enforce_patient_disjoint: true
+  enforce_temporal_holdout: true
+  # Temporal holdout: test set is the latest N% of samples by collection date
+  # when timestamps are available. Falls back to random if timestamps are
+  # missing (with a warning in the gate report).
+  temporal_holdout_latest_fraction: 0.15
+  stratify_by:
+    - iss_stage               # International Staging System (I/II/III)
+    - treatment_line          # 1L, 2L, 3L+
+  notes: >-
+    Patient-disjoint means no patient appears in both train and test.
+    Temporal holdout means the test set contains only the latest samples.
+    Both constraints are enforced by the split builder; the gate auditor
+    re-checks at claim time and fails the claim if violated.
+
+# ---------------------------------------------------------------------------
+# 9. Artifacts
+# ---------------------------------------------------------------------------
+# On-disk paths for each pipeline artifact. S3 paths are for archival sync
+# (not used at training time). Local paths are relative to paths.repo_root.
+artifacts:
+  A_cellline_foundation:
+    local: checkpoints/mortfm/cellline_pretrain/best.pt
+    s3: s3://resistancemap-artifacts/mortfm/v19/A_cellline_foundation.pt
+    artifact_type: checkpoint
+    data_source: [GDSC, PRISM, CCLE]
+    allowed_claims:
+      - technical
+      - static_drug_response
+      - pathway_context
+
+  B_beataml_finetuned:
+    local: checkpoints/mortfm/beataml_finetune/best.pt
+    s3: s3://resistancemap-artifacts/mortfm/v19/B_beataml_finetuned.pt
+    artifact_type: checkpoint
+    data_source: [BeatAML_1.0]
+    allowed_claims:
+      - hematologic_specimen_drug_response
+      - patient_level_clinical_prediction
+
+  C_scrna_state_encoder:
+    local: checkpoints/mortfm/block_c/best.pt
+    s3: s3://resistancemap-artifacts/mortfm/v19/C_scrna_state_encoder.pt
+    artifact_type: checkpoint
+    data_source: [GSE124310, GSE271107]
+    allowed_claims:
+      - single_cell_state
+
+  D_esm2_embeddings:
+    local: data/processed/proteins/esm_embeddings__facebook__esm2_t6_8M_UR50D.pt
+    s3: s3://resistancemap-artifacts/mortfm/v19/D_esm2_embeddings.pt
+    artifact_type: embedding_cache
+    data_source: [UniProt_UP000005640]
+    allowed_claims:
+      - sequence_aware
+      - pathway_context
+      - drug_target_mechanism
+      - causal_mechanism
+
+  E_integrated:
+    local: checkpoints/mortfm/integrated/mortfm_integrated.pt
+    s3: s3://resistancemap-artifacts/mortfm/v19/E_integrated.pt
+    artifact_type: checkpoint
+    data_source: [MMRF_IA12_paired, BeatAML_1.0, GSE124310, GSE271107]
+    allowed_claims:
+      - longitudinal_trajectory
+      - resistance_emergence
+      - causal_mechanism
+
+  identifier_map:
+    local: data/processed/metadata/gene_protein_identifier_map.csv
+    s3: s3://resistancemap-artifacts/mortfm/v19/gene_protein_identifier_map.csv
+    artifact_type: manifest
+
+  drug_ontology:
+    local: data/processed/drugs/drug_ontology.csv
+    s3: s3://resistancemap-artifacts/mortfm/v19/drug_ontology.csv
+    artifact_type: manifest
+
+  reactome_membership:
+    local: data/processed/pathways/reactome_membership.parquet
+    s3: s3://resistancemap-artifacts/mortfm/v19/reactome_membership.parquet
+    artifact_type: graph
+
+  feature_space_registry:
+    local: data/processed/features/mortfm_feature_spaces.json
+    s3: s3://resistancemap-artifacts/mortfm/v19/mortfm_feature_spaces.json
+    artifact_type: manifest
+
+  claim_gate_registry:
+    local: logs/mortfm/claim_gate_registry.json
+    s3: s3://resistancemap-artifacts/mortfm/v19/claim_gate_registry.json
+    artifact_type: manifest
+
+  endpoint_registry:
+    local: logs/mortfm/endpoint_registry.json
+    s3: s3://resistancemap-artifacts/mortfm/v19/endpoint_registry.json
+    artifact_type: manifest
+
+  artifact_registry:
+    local: logs/mortfm/artifact_registry.json
+    s3: s3://resistancemap-artifacts/mortfm/v19/artifact_registry.json
+    artifact_type: manifest
+
+  baseline_results:
+    local: results/mortfm/baselines/
+    s3: s3://resistancemap-artifacts/mortfm/v19/baselines/
+    artifact_type: report
+
+  gate_report:
+    local: logs/mortfm/gate_report.json
+    s3: s3://resistancemap-artifacts/mortfm/v19/gate_report.json
+    artifact_type: report
+
+  splits_manifest:
+    local: data/processed/splits/split_manifest.json
+    s3: s3://resistancemap-artifacts/mortfm/v19/split_manifest.json
+    artifact_type: manifest
