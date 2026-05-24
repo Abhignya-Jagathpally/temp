@@ -299,7 +299,7 @@ TRL grading: Tier A FAIL -> TRL <= 2; Tier B FAIL -> TRL <= 3; no clinical utili
 
 ## Latest Run: r-2026-05-23-v19-fullrun
 
-Full sequential pipeline on 1x H100 NVL 96GB, 31.8 min total.
+Provenance row: `RUNS.md` -> `r-2026-05-23-v19-fullrun`. Full sequential pipeline on 1x H100 NVL 96GB, 31.8 min total.
 
 ### Stage Timings
 
@@ -372,9 +372,9 @@ Krishnaswamy visualizations (`paper/v8_artifacts/visualizations/`):
 | 4 | Naive concat -> Ridge | 2.458 |
 | 5 | PCA per-modality -> Ridge | 3.737 |
 
-## Run Ledger
+## Run Ledger (`RUNS.md`)
 
-Every numeric claim in README/ARCHITECTURE must cite a row in `RUNS.md`. If a row has no W&B link or persistent log, its numbers cannot appear in docs. Use `release-bouncer` subagent before tagging.
+Every numeric claim in README/ARCHITECTURE must cite a row in `ResistanceMap/RUNS.md` (38 tracked runs, March-May 2026). If a row has no W&B link or persistent log, its numbers cannot appear in docs. The latest row is `r-2026-05-23-v19-fullrun` (this session's pipeline run). Use `release-bouncer` subagent before tagging.
 
 ## Dependencies
 
