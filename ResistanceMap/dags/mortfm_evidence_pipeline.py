@@ -164,26 +164,47 @@ def prepare_mmrf(**ctx):
 def build_longitudinal_dataset(**ctx):
     _run_script(SCRIPTS / "02_build_longitudinal_dataset.py", task_id="build_longitudinal_dataset")
 
-def build_temporal_pairs(**ctx):
-    """Build temporal pairs from outcomes. Survival-only mode when no RNA snapshots."""
-    import pickle
-    pairs_pkl = ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl"
-    outcomes_pkl = ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"
-    if not outcomes_pkl.exists():
-        import logging
-        logging.getLogger("airflow.task").warning("No outcomes.pkl — skipping build_temporal_pairs.")
-        return
-    # Build survival-only pairs inline (no snapshots needed)
+def build_mmrf_snapshots(**ctx):
+    """Build PatientCellSnapshot objects from MMRF RNA-seq + clinical data."""
     build_script = textwrap.dedent(f"""\
-        import pickle, sys
+        import pickle, sys, logging
+        logging.basicConfig(level=logging.INFO)
+        sys.path.insert(0, "{ROOT}")
+        from resistancemap.data.clinical_outcome_loader import build_mmrf_snapshots
+        snapshots = build_mmrf_snapshots("{ROOT / 'data' / 'raw' / 'mmrf_commpass'}")
+        out = "{ROOT / 'data' / 'processed' / 'mortfm' / 'snapshots.pkl'}"
+        import pathlib; pathlib.Path(out).parent.mkdir(parents=True, exist_ok=True)
+        with open(out, "wb") as f:
+            pickle.dump(snapshots, f)
+        print(f"Built {{len(snapshots)}} snapshots -> {{out}}")
+    """)
+    subprocess.run(
+        ["python", "-c", build_script],
+        cwd=str(ROOT), check=True,
+        env={**os.environ, "PYTHONUNBUFFERED": "1"},
+    )
+
+def build_temporal_pairs(**ctx):
+    """Build real TemporalTrainingPairs from RNA snapshots + clinical outcomes."""
+    build_script = textwrap.dedent(f"""\
+        import pickle, sys, logging
+        logging.basicConfig(level=logging.INFO)
         sys.path.insert(0, "{ROOT}")
         from resistancemap.data.trajectory_pair_builder import build_temporal_pairs
-        with open("{outcomes_pkl}", "rb") as f:
-            outcomes = pickle.load(f)
-        pairs = build_temporal_pairs([], outcomes, include_survival_only=True, include_unlabelled=True)
-        with open("{pairs_pkl}", "wb") as f:
+        from resistancemap.data.clinical_outcome_loader import load_mortfm_outcomes
+
+        snap_path = "{ROOT / 'data' / 'processed' / 'mortfm' / 'snapshots.pkl'}"
+        out_path = "{ROOT / 'data' / 'processed' / 'mortfm' / 'temporal_pairs.pkl'}"
+        import pathlib; pathlib.Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+
+        with open(snap_path, "rb") as f:
+            snapshots = pickle.load(f)
+        outcomes = load_mortfm_outcomes("{ROOT / 'data' / 'raw' / 'mmrf_commpass'}")
+        pairs = build_temporal_pairs(snapshots, outcomes, include_survival_only=True, include_unlabelled=True)
+        n_with_followup = sum(1 for p in pairs if p.x_t_delta is not None)
+        with open(out_path, "wb") as f:
             pickle.dump(pairs, f)
-        print(f"Built {{len(pairs)}} survival-only pairs -> {pairs_pkl}")
+        print(f"Built {{len(pairs)}} pairs ({{n_with_followup}} with follow-up RNA snapshot) -> {{out_path}}")
     """)
     subprocess.run(
         ["python", "-c", build_script],
@@ -308,6 +329,7 @@ with DAG(
     # Phase 6: Integration + longitudinal
     t_integrate     = PythonOperator(task_id="integrate_blocks", python_callable=integrate_blocks)
     t_mmrf          = PythonOperator(task_id="prepare_mmrf", python_callable=prepare_mmrf)
+    t_snapshots     = PythonOperator(task_id="build_mmrf_snapshots", python_callable=build_mmrf_snapshots)
     t_longitudinal  = PythonOperator(task_id="build_longitudinal_dataset", python_callable=build_longitudinal_dataset)
     t_pairs         = PythonOperator(task_id="build_temporal_pairs", python_callable=build_temporal_pairs)
     t_audit         = PythonOperator(task_id="audit_leakage", python_callable=audit_leakage)
@@ -350,9 +372,9 @@ with DAG(
     [t_bio_graph, t_uniprot] >> t_esm2
     t_depmap >> t_crispr
 
-    # Phase 6: Integration → longitudinal → audit
+    # Phase 6: Integration → snapshots → longitudinal → audit
     [t_block_a, t_block_b, t_block_c, t_esm2] >> t_integrate
-    t_harmonize >> t_mmrf >> t_longitudinal >> t_pairs
+    t_harmonize >> t_mmrf >> t_snapshots >> t_longitudinal >> t_pairs
     [t_integrate, t_pairs] >> t_audit
 
     # Phase 7: LENS training (after audit passes)

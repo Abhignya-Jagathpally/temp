@@ -304,6 +304,134 @@ def load_mortfm_outcomes(
     return outcomes
 
 
+def build_mmrf_snapshots(
+    data_dir: str,
+    *,
+    block_a_features: Optional[List[str]] = None,
+    top_k_genes: int = 2000,
+) -> List["PatientCellSnapshot"]:
+    """Build PatientCellSnapshot objects from MMRF bulk RNA-seq.
+
+    Reads gene_expression.tsv and file_to_case.tsv, maps aliquots to
+    (patient_id, timepoint), selects top-variance genes (or aligns to
+    block_a_features if provided), and returns one snapshot per
+    (patient, timepoint) with a real RNA ModalityTensor.
+
+    Parameters
+    ----------
+    data_dir
+        Path to data/raw/mmrf_commpass/ containing gene_expression.tsv
+        and file_to_case.tsv.
+    block_a_features
+        If provided, align expression to these gene names (Block A's
+        top-2000). Otherwise, select top_k_genes by variance.
+    top_k_genes
+        Number of genes to select by variance when block_a_features
+        is not provided.
+
+    Returns
+    -------
+    List[PatientCellSnapshot]
+        One snapshot per (patient, timepoint) with rna ModalityTensor.
+    """
+    import torch
+    from resistancemap.mortfm.schemas import (
+        ModalityTensor,
+        PatientCellSnapshot,
+    )
+
+    base = Path(data_dir)
+    expr_path = base / "gene_expression.tsv"
+    f2c_path = base / "file_to_case.tsv"
+
+    if not expr_path.exists():
+        raise FileNotFoundError(f"gene_expression.tsv not found in {base}")
+    if not f2c_path.exists():
+        raise FileNotFoundError(f"file_to_case.tsv not found in {base}")
+
+    logger.info("Loading MMRF gene expression from %s", expr_path)
+    expr_df = pd.read_csv(expr_path, sep="\t", index_col=0)
+    gene_names = list(expr_df.index)
+    aliquot_cols = list(expr_df.columns)
+    logger.info("  %d genes x %d aliquots", len(gene_names), len(aliquot_cols))
+
+    f2c = pd.read_csv(f2c_path, sep="\t")
+    f2c = f2c[f2c["modality"] == "rna"].copy()
+
+    tp_re = re.compile(r"_T(\d+)_")
+    def parse_tp(aliquot_id: str) -> int:
+        m = tp_re.search(aliquot_id)
+        return int(m.group(1)) if m else 999
+
+    f2c["timepoint_int"] = f2c["aliquot_submitter_id"].map(parse_tp)
+
+    aliquot_to_patient = dict(
+        zip(f2c["aliquot_submitter_id"], f2c["patient_submitter_id"])
+    )
+    aliquot_to_tp = dict(
+        zip(f2c["aliquot_submitter_id"], f2c["timepoint_int"])
+    )
+
+    if block_a_features is not None:
+        selected_genes = block_a_features
+    else:
+        log_expr = np.log1p(expr_df.values.astype(np.float32))
+        gene_var = np.nanvar(log_expr, axis=1)
+        top_idx = np.argsort(gene_var)[-top_k_genes:]
+        selected_genes = [gene_names[i] for i in sorted(top_idx)]
+
+    gene_idx = {g: i for i, g in enumerate(gene_names)}
+    sel_positions = [gene_idx[g] for g in selected_genes if g in gene_idx]
+    sel_gene_names = [gene_names[i] for i in sel_positions]
+    logger.info("  Selected %d/%d genes", len(sel_gene_names), len(selected_genes))
+
+    matched_aliquots = [a for a in aliquot_cols if a in aliquot_to_patient]
+    logger.info("  %d aliquots matched to patients", len(matched_aliquots))
+
+    best_per_patient_tp: Dict[tuple, str] = {}
+    for aliquot in matched_aliquots:
+        pid = aliquot_to_patient[aliquot]
+        tp = aliquot_to_tp[aliquot]
+        key = (pid, tp)
+        if key not in best_per_patient_tp:
+            best_per_patient_tp[key] = aliquot
+
+    snapshots = []
+    for (pid, tp_int), aliquot in sorted(best_per_patient_tp.items()):
+        raw_vals = expr_df[aliquot].values[sel_positions].astype(np.float32)
+        log_vals = np.log1p(raw_vals)
+
+        rna_tensor = ModalityTensor(
+            name="rna",
+            values=torch.tensor(log_vals, dtype=torch.float32).unsqueeze(0),
+            feature_names=sel_gene_names,
+        )
+
+        timepoint_days = float(tp_int - 1) * 180.0 if tp_int < 999 else 0.0
+
+        snap = PatientCellSnapshot(
+            patient_id=pid,
+            sample_id=f"{pid}_T{tp_int}",
+            disease="MM",
+            timepoint=timepoint_days,
+            treatment_id=None,
+            cell_id=None,
+            rna=rna_tensor,
+        )
+        snapshots.append(snap)
+
+    n_patients = len({s.patient_id for s in snapshots})
+    n_paired = sum(
+        1 for p in {s.patient_id for s in snapshots}
+        if sum(1 for s in snapshots if s.patient_id == p) >= 2
+    )
+    logger.info(
+        "build_mmrf_snapshots: %d snapshots, %d patients, %d paired (>=2 timepoints)",
+        len(snapshots), n_patients, n_paired,
+    )
+    return snapshots
+
+
 def summarise_outcomes(outcomes: List[ResistanceOutcome]) -> Dict[str, float]:
     """Compute summary statistics for a list of outcomes (logging aid)."""
     n = len(outcomes)
