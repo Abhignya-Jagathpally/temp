@@ -169,6 +169,16 @@ def _find_pairs_pkl():
 
 def pretrain_foundation(**ctx):
     pairs_pkl = _find_pairs_pkl()
+    import pickle
+    with open(pairs_pkl, "rb") as f:
+        pairs = pickle.load(f)
+    if not pairs:
+        import logging
+        logging.getLogger("airflow.task").warning(
+            "No temporal pairs available (need MORT-FM Block A-C data ingestion). "
+            "Skipping pretrain_foundation — downstream tasks will use existing checkpoints."
+        )
+        return
     _run_script(
         SCRIPTS / "04_pretrain_foundation.py",
         "--pairs", pairs_pkl,
@@ -189,6 +199,15 @@ def train_lens_resistance(**ctx):
 
 def train_survival(**ctx):
     pairs_pkl = _find_pairs_pkl()
+    import pickle
+    with open(pairs_pkl, "rb") as f:
+        pairs = pickle.load(f)
+    if not pairs:
+        import logging
+        logging.getLogger("airflow.task").warning(
+            "No temporal pairs available. Skipping train_survival."
+        )
+        return
     _run_script(
         SCRIPTS / "07_train_survival.py",
         "--pairs", pairs_pkl,
