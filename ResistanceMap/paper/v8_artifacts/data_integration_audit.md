@@ -14,16 +14,16 @@ the original training (random seed 42).
 
 | Rank | Method | test_mse | val_mse | notes |
 |---|---|---|---|---|
-| 1 | D. Late fusion (avg) | 2.3653 | 1.9011 |  |
-| 2 | ResistanceMap CrossModalFusionNet (v6) | 2.3731 | n/a | from checkpoints/pipeline_validated.pt |
-| 3 | C. MOFA+-like shared factors(64) -> Ridge | 2.4440 | 3.2508 |  |
-| 4 | A. Naive concat -> Ridge | 2.4583 | 1.9932 |  |
-| 5 | B. PCA(256/20) per-modality -> Ridge | 3.7370 | 3.0461 |  |
+| 1 | D. Late fusion (avg) | 2.8399 | 1.9972 |  |
+| 2 | ResistanceMap CrossModalFusionNet (v6) | 2.8450 | n/a | from checkpoints/pipeline_validated.pt |
+| 3 | A. Naive concat -> Ridge | 2.9579 | 2.0962 |  |
+| 4 | B. PCA(256/20) per-modality -> Ridge | 3.1307 | 2.3276 |  |
+| 5 | C. MOFA+-like shared factors(64) -> Ridge | 3.6835 | 2.7287 |  |
 
 ## Batch-effect proxy (PCA(64) on train proteomics, quartile pseudo-batch)
-- kBET mean chi² (lower = better integrated): 0.18579174633868475
-- iLISI mean (close to n_batches = 4 = better): 3.4211662554223237
-- silhouette by pseudo-batch: -0.009000346064567566
+- kBET mean chi² (lower = better integrated): 0.18273393916407607
+- iLISI mean (close to n_batches = 4 = better): 3.4249156060964854
+- silhouette by pseudo-batch: -0.008796751499176025
 - Note: kBET reported as mean chi^2 (lower=better integrated); iLISI close to n_batches=better
 
 ## Verdict (auto-derived; sota-comparator and chair refine)

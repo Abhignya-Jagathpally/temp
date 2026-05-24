@@ -1,9 +1,99 @@
 {
-  "test_mse": 2.3730967044830322,
+  "test_mse": 2.8449559211730957,
   "n_test_samples": 132,
   "n_drugs": 11,
   "split": "test",
-  "vae_pretrained_val_loss": 1.021289587020874,
+  "per_drug_metrics": [
+    {
+      "drug": "Bortezomib",
+      "n_obs": 102,
+      "mse": 0.8872931003570557,
+      "mae": 0.6042010188102722,
+      "spearman": 0.20574947271997332,
+      "reliable": true
+    },
+    {
+      "drug": "Cyclophosphamide",
+      "n_obs": 76,
+      "mse": 0.3248578608036041,
+      "mae": 0.4035038352012634,
+      "spearman": 0.22693096377306904,
+      "reliable": true
+    },
+    {
+      "drug": "Dinaciclib",
+      "n_obs": 100,
+      "mse": 0.12927591800689697,
+      "mae": 0.17277374863624573,
+      "spearman": 0.41140114011401135,
+      "reliable": true
+    },
+    {
+      "drug": "Doxorubicin",
+      "n_obs": 100,
+      "mse": 1.9940376281738281,
+      "mae": 0.5589235424995422,
+      "spearman": -0.04717671767176718,
+      "reliable": true
+    },
+    {
+      "drug": "Etoposide",
+      "n_obs": 93,
+      "mse": 0.3615376055240631,
+      "mae": 0.4345303475856781,
+      "spearman": 0.032690758258482285,
+      "reliable": true
+    },
+    {
+      "drug": "Lenalidomide",
+      "n_obs": 95,
+      "mse": 0.7968195080757141,
+      "mae": 0.5669751763343811,
+      "spearman": 0.08814389697648377,
+      "reliable": true
+    },
+    {
+      "drug": "Palbociclib",
+      "n_obs": 81,
+      "mse": 0.20061233639717102,
+      "mae": 0.36308687925338745,
+      "spearman": 0.16303071364046975,
+      "reliable": true
+    },
+    {
+      "drug": "Panobinostat",
+      "n_obs": 101,
+      "mse": 22.688682556152344,
+      "mae": 0.8114726543426514,
+      "spearman": -0.1011531741409435,
+      "reliable": true
+    },
+    {
+      "drug": "Romidepsin",
+      "n_obs": 93,
+      "mse": 1.2794159650802612,
+      "mae": 0.5836676955223083,
+      "spearman": 0.09135806153203424,
+      "reliable": true
+    },
+    {
+      "drug": "Venetoclax",
+      "n_obs": 74,
+      "mse": 0.026472190394997597,
+      "mae": 0.13314227759838104,
+      "spearman": 0.1803924472417623,
+      "reliable": true
+    },
+    {
+      "drug": "Vorinostat",
+      "n_obs": 100,
+      "mse": 0.2203412503004074,
+      "mae": 0.3465224802494049,
+      "spearman": -0.007776777677767775,
+      "reliable": true
+    }
+  ],
+  "vae_pretrained_val_loss": 0.998436689376831,
   "fusion_val_loss": 1.242,
   "landscape_val_loss": 1.2434,
   "target_drugs": [
