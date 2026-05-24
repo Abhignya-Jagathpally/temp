@@ -171,7 +171,7 @@ def build_mmrf_snapshots(**ctx):
         logging.basicConfig(level=logging.INFO)
         sys.path.insert(0, "{ROOT}")
         from resistancemap.data.clinical_outcome_loader import build_mmrf_snapshots
-        snapshots = build_mmrf_snapshots("{ROOT / 'data' / 'raw' / 'mmrf_commpass'}")
+        snapshots = build_mmrf_snapshots("{ROOT / 'data' / 'raw' / 'mmrf_commpass'}", top_k_genes=5000)
         out = "{ROOT / 'data' / 'processed' / 'mortfm' / 'snapshots.pkl'}"
         import pathlib; pathlib.Path(out).parent.mkdir(parents=True, exist_ok=True)
         with open(out, "wb") as f:
@@ -225,8 +225,10 @@ def pretrain_foundation(**ctx):
         with open(pairs_pkl, "rb") as f:
             pairs = pickle.load(f)
         if pairs:
-            _run_script(SCRIPTS / "04_pretrain_foundation.py", "--pairs", pairs_pkl,
-                        task_id="pretrain_foundation")
+            _run_script_allow_exit1(
+                SCRIPTS / "04_pretrain_foundation.py", "--pairs", pairs_pkl,
+                task_id="pretrain_foundation",
+            )
             return
     import logging
     logging.getLogger("airflow.task").warning("No temporal pairs — skipping pretrain_foundation.")
