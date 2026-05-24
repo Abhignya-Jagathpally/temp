@@ -136,8 +136,28 @@ def audit_leakage_and_temporal_validity(**ctx):
     )
 
 
+def _build_pairs_if_needed():
+    """Build temporal pairs pickle if it doesn't exist yet."""
+    pairs_pkl = ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl"
+    if not pairs_pkl.exists():
+        _run_script(
+            SCRIPTS_TOP / "mortfm_build_temporal_pairs.py",
+            "--snapshots", str(ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"),
+            "--outcomes", str(ROOT / "data" / "processed" / "mortfm" / "outcomes.pkl"),
+            "--out", str(pairs_pkl),
+            "--include-unlabelled",
+            task_id="_build_pairs",
+        )
+    return str(pairs_pkl)
+
+
 def pretrain_foundation(**ctx):
-    _run_script(SCRIPTS / "04_pretrain_foundation.py", task_id="pretrain_foundation")
+    pairs_pkl = _build_pairs_if_needed()
+    _run_script(
+        SCRIPTS / "04_pretrain_foundation.py",
+        "--pairs", pairs_pkl,
+        task_id="pretrain_foundation",
+    )
 
 
 def train_state_encoder(**ctx):
@@ -152,8 +172,11 @@ def train_lens_resistance(**ctx):
 
 
 def train_survival(**ctx):
+    pairs_pkl = _build_pairs_if_needed()
     _run_script(
-        SCRIPTS / "07_train_survival.py", "--canonical",
+        SCRIPTS / "07_train_survival.py",
+        "--pairs", pairs_pkl,
+        "--canonical",
         task_id="train_survival",
     )
 
