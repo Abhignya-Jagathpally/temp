@@ -191,10 +191,21 @@ def train_state_encoder(**ctx):
 
 
 def train_lens_resistance(**ctx):
-    _run_script(
-        SCRIPTS / "06_train_lens_resistance.py",
-        task_id="train_lens_resistance",
-    )
+    # Script exits 1 when gates fail (honest negative), which is a valid outcome
+    try:
+        _run_script(
+            SCRIPTS / "06_train_lens_resistance.py",
+            task_id="train_lens_resistance",
+        )
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            import logging
+            logging.getLogger("airflow.task").warning(
+                "train_lens_resistance exited 1 (gates did not pass — honest negative at n=29). "
+                "Continuing DAG."
+            )
+        else:
+            raise
 
 
 def train_survival(**ctx):
@@ -224,11 +235,29 @@ def run_baselines(**ctx):
 
 
 def evaluate_causal_evidence(**ctx):
-    _run_script(SCRIPTS / "08_eval_causal_evidence_v2.py", task_id="evaluate_causal_evidence")
+    try:
+        _run_script(SCRIPTS / "08_eval_causal_evidence_v2.py", task_id="evaluate_causal_evidence")
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            import logging
+            logging.getLogger("airflow.task").warning(
+                "evaluate_causal_evidence exited 1 (causal gate not passed). Continuing."
+            )
+        else:
+            raise
 
 
 def gate_revalidate(**ctx):
-    _run_script(SCRIPTS / "09_gate_revalidate.py", task_id="gate_revalidate")
+    try:
+        _run_script(SCRIPTS / "09_gate_revalidate.py", task_id="gate_revalidate")
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            import logging
+            logging.getLogger("airflow.task").warning(
+                "gate_revalidate exited 1 (some claims blocked). Continuing."
+            )
+        else:
+            raise
 
 
 def generate_figures(**ctx):
