@@ -122,7 +122,11 @@ def build_longitudinal_dataset(**ctx):
 
 
 def prepare_mmrf(**ctx):
-    _run_script(SCRIPTS / "03_prepare_mmrf.py", task_id="prepare_mmrf")
+    _run_script(
+        SCRIPTS / "03_prepare_mmrf.py",
+        "--data-dir", str(ROOT / "data" / "raw" / "mmrf_commpass"),
+        task_id="prepare_mmrf",
+    )
 
 
 def audit_leakage_and_temporal_validity(**ctx):
