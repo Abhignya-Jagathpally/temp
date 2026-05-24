@@ -23,11 +23,15 @@ from pathlib import Path
 
 try:
     from airflow import DAG
-    from airflow.datasets import Dataset
     from airflow.operators.python import PythonOperator
+    try:
+        from airflow.sdk.definitions.asset import Asset as Dataset
+    except ImportError:
+        from airflow.datasets import Dataset
     HAS_AIRFLOW = True
 except ImportError:
     HAS_AIRFLOW = False
+    Dataset = None
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -40,21 +44,20 @@ LOG_DIR = ROOT / "logs" / "airflow"
 # ---------------------------------------------------------------------------
 # Airflow Dataset URIs — artifact-driven scheduling
 # ---------------------------------------------------------------------------
-if HAS_AIRFLOW:
-    DS_RAW_DATA       = Dataset("file://ResistanceMap/data/raw")
-    DS_HARMONIZED     = Dataset("file://ResistanceMap/data/harmonized")
-    DS_LONGITUDINAL   = Dataset("file://ResistanceMap/data/longitudinal")
-    DS_MMRF_PREPARED  = Dataset("file://ResistanceMap/data/mmrf_prepared")
-    DS_AUDIT_REPORT   = Dataset("file://ResistanceMap/results/longitudinal_audit")
-    DS_FOUNDATION_CKP = Dataset("file://ResistanceMap/checkpoints/foundation")
-    DS_STATE_ENCODER  = Dataset("file://ResistanceMap/checkpoints/state_encoder")
-    DS_LENS_CKP       = Dataset("file://ResistanceMap/checkpoints/lens_resistance")
-    DS_SURVIVAL_CKP   = Dataset("file://ResistanceMap/checkpoints/survival")
-    DS_BASELINES      = Dataset("file://ResistanceMap/results/baseline_comparison")
-    DS_CAUSAL         = Dataset("file://ResistanceMap/results/causal_evidence")
-    DS_GATE_REPORT    = Dataset("file://ResistanceMap/results/gate_report")
-    DS_FIGURES        = Dataset("file://ResistanceMap/results/figures")
-    DS_PUB_BUNDLE     = Dataset("file://ResistanceMap/results/publication_bundle")
+DS_RAW_DATA       = Dataset("file://ResistanceMap/data/raw") if HAS_AIRFLOW else None
+DS_HARMONIZED     = Dataset("file://ResistanceMap/data/harmonized") if HAS_AIRFLOW else None
+DS_LONGITUDINAL   = Dataset("file://ResistanceMap/data/longitudinal") if HAS_AIRFLOW else None
+DS_MMRF_PREPARED  = Dataset("file://ResistanceMap/data/mmrf_prepared") if HAS_AIRFLOW else None
+DS_AUDIT_REPORT   = Dataset("file://ResistanceMap/results/longitudinal_audit") if HAS_AIRFLOW else None
+DS_FOUNDATION_CKP = Dataset("file://ResistanceMap/checkpoints/foundation") if HAS_AIRFLOW else None
+DS_STATE_ENCODER  = Dataset("file://ResistanceMap/checkpoints/state_encoder") if HAS_AIRFLOW else None
+DS_LENS_CKP       = Dataset("file://ResistanceMap/checkpoints/lens_resistance") if HAS_AIRFLOW else None
+DS_SURVIVAL_CKP   = Dataset("file://ResistanceMap/checkpoints/survival") if HAS_AIRFLOW else None
+DS_BASELINES      = Dataset("file://ResistanceMap/results/baseline_comparison") if HAS_AIRFLOW else None
+DS_CAUSAL         = Dataset("file://ResistanceMap/results/causal_evidence") if HAS_AIRFLOW else None
+DS_GATE_REPORT    = Dataset("file://ResistanceMap/results/gate_report") if HAS_AIRFLOW else None
+DS_FIGURES        = Dataset("file://ResistanceMap/results/figures") if HAS_AIRFLOW else None
+DS_PUB_BUNDLE     = Dataset("file://ResistanceMap/results/publication_bundle") if HAS_AIRFLOW else None
 
 # ---------------------------------------------------------------------------
 # Helper: run a script via subprocess
@@ -227,16 +230,13 @@ default_args = {
     "execution_timeout": datetime.timedelta(hours=12),
 }
 
-if not HAS_AIRFLOW:
-    raise SystemExit(0)
-
 with DAG(
     dag_id="mortfm_evidence_pipeline",
     description=(
         "End-to-end MORT-FM evidence pipeline: data acquisition through "
         "publication bundle export.  Evidence-first design."
     ),
-    schedule=[DS_RAW_DATA],           # triggered when raw data artifact updates
+    schedule=None,                     # manual trigger only (no self-referencing asset loop)
     start_date=datetime.datetime(2026, 5, 23),
     catchup=False,
     default_args=default_args,
@@ -272,85 +272,73 @@ with DAG(
     t_acquire = PythonOperator(
         task_id="acquire_public_data",
         python_callable=acquire_public_data,
-        outlets=[DS_RAW_DATA],
+
     )
 
     t_harmonize = PythonOperator(
         task_id="harmonize_identifiers",
         python_callable=harmonize_identifiers,
-        outlets=[DS_HARMONIZED],
+
     )
 
     t_longitudinal = PythonOperator(
         task_id="build_longitudinal_dataset",
         python_callable=build_longitudinal_dataset,
-        outlets=[DS_LONGITUDINAL],
     )
 
     t_mmrf = PythonOperator(
         task_id="prepare_mmrf",
         python_callable=prepare_mmrf,
-        outlets=[DS_MMRF_PREPARED],
     )
 
     t_audit = PythonOperator(
         task_id="audit_leakage_and_temporal_validity",
         python_callable=audit_leakage_and_temporal_validity,
-        outlets=[DS_AUDIT_REPORT],
     )
 
     t_pretrain = PythonOperator(
         task_id="pretrain_foundation",
         python_callable=pretrain_foundation,
-        outlets=[DS_FOUNDATION_CKP],
     )
 
     t_state_encoder = PythonOperator(
         task_id="train_state_encoder",
         python_callable=train_state_encoder,
-        outlets=[DS_STATE_ENCODER],
     )
 
     t_lens = PythonOperator(
         task_id="train_lens_resistance",
         python_callable=train_lens_resistance,
-        outlets=[DS_LENS_CKP],
     )
 
     t_survival = PythonOperator(
         task_id="train_survival",
         python_callable=train_survival,
-        outlets=[DS_SURVIVAL_CKP],
     )
 
     t_baselines = PythonOperator(
         task_id="run_baselines",
         python_callable=run_baselines,
-        outlets=[DS_BASELINES],
     )
 
     t_causal = PythonOperator(
         task_id="evaluate_causal_evidence",
         python_callable=evaluate_causal_evidence,
-        outlets=[DS_CAUSAL],
     )
 
     t_gate = PythonOperator(
         task_id="gate_revalidate",
         python_callable=gate_revalidate,
-        outlets=[DS_GATE_REPORT],
     )
 
     t_figures = PythonOperator(
         task_id="generate_figures",
         python_callable=generate_figures,
-        outlets=[DS_FIGURES],
     )
 
     t_bundle = PythonOperator(
         task_id="export_publication_bundle",
         python_callable=export_publication_bundle,
-        outlets=[DS_PUB_BUNDLE],
     )
 
     # ------------------------------------------------------------------
