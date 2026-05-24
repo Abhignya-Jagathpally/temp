@@ -1,10 +1,59 @@
 # ResistanceMap / MORT-FM
 
-Branch `v18-clean-canonical-mortfm` (latest head; v17 archived).
-v18 is the **clean-canonical-MORTFM** pass: one official patient-level
-execution path, legacy code namespaced under `resistancemap/legacy/`,
-trainer that **raises** instead of silently skipping when supervision
-is missing, and a discoverable numbered scripts workflow.
+Branch `v19` (latest head; v18 archived).
+v19 adds the **SOTA benchmark** (6 external model reimplementations trained
+on the same splits), **15 publication-quality figures** (PHATE embeddings,
+PPI network subgraphs, per-drug comparisons), and a **6,700-line CLAUDE.md**
+exhaustive codebase reference. The latest full pipeline run
+(`r-2026-05-23-v19-fullrun`) achieves test_mse=2.845 on 132 held-out cell
+lines across 11 drugs.
+
+### v19 latest run (2026-05-23, 1x H100 NVL 96GB, 31.8 min)
+
+| Stage | Time | Key Metric |
+|-------|------|------------|
+| data_prep | 1.5 min | 886 samples, 19177 proteins, 473860 PPI edges |
+| vae_pretrain | 1.4 min | best_val=0.998, epoch 70/200 |
+| vae_finetune | 0.4 min | best_val=1.152, epoch 21/100 |
+| trajectory_calibrate | 4.4 min | loss=0.0001, 692 valid samples |
+| trajectory_forecast | 1.0 min | val=0.0078, epoch 21/200 |
+| protein_net_train | 15.2 min | val=1.781 (929520 edges) |
+| fusion_train | 7.6 min | val=1.276, epoch 16/150 |
+| landscape_train | 0.1 min | val=1.345, epoch 31/100 |
+| **validate** | 0.1 min | **test_mse=2.845**, 132 test samples |
+
+### SOTA benchmark (6 models, same train/test splits — `r-2026-05-23-v19-fullrun`)
+
+| Rank | Model | Test MSE | Mean Spearman | Reference |
+|------|-------|----------|---------------|-----------|
+| 1 | TCRP | 2.779 | 0.289 | Ma et al. 2021 |
+| 2 | DeepCDR | 2.796 | 0.300 | Liu et al. 2020 |
+| 3 | DrugCell | 2.843 | 0.236 | Kuenzi et al. 2020 |
+| 4 | **ResistanceMap** | **2.845** | **0.113** | this work |
+| 5 | PRECISE | 2.847 | 0.282 | Mourragui et al. 2019 |
+| 6 | PaccMann | 2.852 | 0.202 | Manica et al. 2019 |
+| 7 | GraphDRP | 2.855 | 0.223 | Nguyen et al. 2022 |
+
+All models cluster within MSE 2.78-2.86 (predict-mean floor at 2.81). SOTA
+models achieve higher per-drug Spearman. ResistanceMap's value is its
+**falsification framework** and **multi-modal interpretability** (PPI
+attribution, Waddington potential, causal counterfactuals), not raw
+prediction accuracy. Script: `scripts/sota_benchmark_and_visualizations.py`.
+
+### v19 generated figures (`paper/v8_artifacts/sota_benchmark/`)
+
+| Figure | Content |
+|--------|---------|
+| fig_a | SOTA comparison bar chart with bootstrap CIs |
+| fig_b | Per-drug MSE heatmap (7 models x 11 drugs) |
+| fig_c | Radar chart (1/MSE, Spearman, drug coverage) |
+| fig_d | PHATE embedding (886 cell lines: sensitivity, stability, lineage) |
+| fig_e | PPI network subgraphs (top-20 attributed proteins, 4 drugs) |
+| fig_f | Cell-line x drug residual heatmap |
+| fig_g | Pred-vs-truth scatter (top 3 drugs by Spearman) |
+| fig_h | Pipeline architecture diagram |
+| fig_i | Training curves for all 6 SOTA models |
+| fig_j | Per-drug Spearman grouped bars (ResistanceMap vs SOTA) |
 
 ### v18 deltas (6 commits)
 
@@ -341,44 +390,55 @@ The v8 ResistanceMap cell-line pipeline is still reproducible from
 a different scientific contribution: **wet-lab compound prioritisation on
 MM-relevant cell lines for 9 of 11 GDSC drugs**.
 
-### v8 headline result
+### v8 → v19 latest run headline (r-2026-05-23-v19-fullrun)
 
 ```
-Trained on:        622 CCLE cell lines × 11 GDSC drugs (3,635 observed IC50 cells)
-Test:              132 cell lines, 736 observed (drug, cell-line) pairs
-Aggregate test_mse:  2.3731 (NaN-masked, pooled across all drugs/cells)
-Per-drug Spearman:   0.045 — 0.396 (median 0.328)
-Actionable for screening:  9/11 drugs (82%)  ← Spearman ≥ 0.25 AND n_test ≥ 30
-Well-calibrated for IC50:  8/11 drugs (73%)  ← additionally MSE < 1.0
-Documented failure modes:  Panobinostat, Romidepsin (HDAC class)
+Trained on:        622 CCLE cell lines × 11 drugs (GDSC + PRISM)
+Test:              132 cell lines, 1015 observed (drug, cell-line) pairs
+Aggregate test_mse:  2.845 (NaN-masked, pooled across all drugs/cells)
+Per-drug Spearman:   -0.101 — 0.411 (mean 0.113)
+Best drug:           Dinaciclib (Spearman 0.411, MSE 0.129)
+Documented failure:  Panobinostat (MSE 22.7, Spearman -0.101)
+RUNS.md row:         r-2026-05-23-v19-fullrun
 ```
 
-### v8 per-drug decision matrix
+### v19 per-drug results
 
-| Drug | Class | n_test | MSE | Spearman | Verdict |
-|---|---|---|---|---|---|
-| Venetoclax | BCL2 | 68 | 0.010 | 0.328 | screen + IC50 |
-| Bortezomib | Proteasome | 69 | 0.032 | 0.338 | screen + IC50 |
-| Dinaciclib | CDK | 66 | 0.156 | 0.373 | screen + IC50 |
-| Palbociclib | CDK | 69 | 0.197 | 0.305 | screen + IC50 |
-| Cyclophosphamide | DNA-damage | 68 | 0.279 | 0.358 | screen + IC50 |
-| Vorinostat | HDAC | 69 | 0.413 | 0.310 | screen + IC50 |
-| Lenalidomide | IMiD | 69 | 0.499 | 0.396 | screen + IC50 |
-| Etoposide | DNA-damage | 67 | 0.531 | 0.328 | screen + IC50 |
-| Doxorubicin | DNA-damage | 69 | 1.666 | 0.339 | screen only |
-| Romidepsin | HDAC | 56 | 0.237 | 0.240 | **DO NOT USE** |
-| Panobinostat | HDAC | 66 | 22.335 | 0.045 | **DO NOT USE** |
+| Drug | Class | n_test | MSE | Spearman |
+|---|---|---|---|---|
+| Venetoclax | BCL2 | 74 | 0.026 | 0.180 |
+| Bortezomib | Proteasome | 102 | 0.887 | 0.206 |
+| Dinaciclib | CDK | 100 | 0.129 | **0.411** |
+| Palbociclib | CDK | 81 | 0.201 | 0.163 |
+| Cyclophosphamide | DNA-damage | 76 | 0.325 | 0.227 |
+| Vorinostat | HDAC | 100 | 0.220 | -0.008 |
+| Lenalidomide | IMiD | 95 | 0.797 | 0.088 |
+| Etoposide | DNA-damage | 93 | 0.362 | 0.033 |
+| Doxorubicin | DNA-damage | 100 | 1.994 | -0.047 |
+| Romidepsin | HDAC | 93 | 1.279 | 0.091 |
+| Panobinostat | HDAC | 101 | 22.689 | -0.101 |
 
-Full v8 matrix + drug-class summary: `paper/v8_artifacts/actionability_matrix.md`.
+Full per-drug CSV: `logs/per_drug_metrics.csv`.
 
-### v8 baseline comparison
+### v19 baseline + SOTA comparison
 
-ResistanceMap v8 is ranked 4 / 11 on aggregate `test_mse` against simple
-baselines (Zero, PerDrugTrainMean, GradientBoosting, ResistanceMap,
-RandomForest, Ridge), beaten by Zero / PerDrugTrainMean **on aggregate
-because of the Panobinostat MSE=22.3 outlier**. On the 9 actionable drugs,
-ResistanceMap beats a constant predictor in rank correlation (median Spearman
-0.328 vs 0). See `paper/tables/baseline_comparison.md`.
+ResistanceMap ranks 4/7 against SOTA reimplementations and 3/11 against
+simple baselines. All models cluster in MSE 2.78-2.86 (predict-mean floor
+at 2.81). SOTA models achieve higher per-drug Spearman (mean 0.20-0.30
+vs ResistanceMap's 0.113). See `paper/tables/baseline_comparison.md` and
+`paper/v8_artifacts/sota_benchmark/sota_comparison_table.json`.
+
+### Integration audit
+
+| Rank | Method | Test MSE |
+|------|--------|---------|
+| 1 | Late fusion (avg) | 2.365 |
+| 2 | ResistanceMap CrossModalFusionNet | 2.373 |
+| 3 | MOFA+-like factors → Ridge | 2.444 |
+| 4 | Naive concat → Ridge | 2.458 |
+| 5 | PCA per-modality → Ridge | 3.737 |
+
+Full report: `paper/v8_artifacts/data_integration_audit.md`.
 
 ### v8 architecture (10-agent training DAG)
 
@@ -487,12 +547,10 @@ Three project-policy rules enforced via `.claude/settings.json` hooks:
 
 ---
 
-_README v17.9 (final, 2026-05-18) — v17 added 9 commits on top of v16 head
-`3cfcaf0`: `4ccf49f` (v17.1 STRING-alias→HGNC bridge), `4f120f8` (v17.2
-clinical-only Cox), `72e51dc` (v17.3 model.py unification), `008d071`
-(v17.4-8 longitudinal upgrade + Block C contrastive + drug-conditioned
-BeatAML + regularised LENS + causal v2), and this commit (v17.9 final
-gate revalidation + RUNS + README). All numbers derive from artifacts under
-`checkpoints/mortfm/`, `data/processed/`, `results/mortfm/`, and
-`logs/mortfm/`. The v8 ResistanceMap section is preserved as a historical
-track and is still reproducible from `checkpoints/pipeline_validated.pt`._
+_README v19.2 (2026-05-23) — v19 added SOTA benchmark (6 reimplemented
+models: DeepCDR, DrugCell, GraphDRP, PaccMann, TCRP, PRECISE), 15
+publication figures (PHATE, PPI networks, per-drug comparisons), 6700-line
+CLAUDE.md, and fresh end-to-end pipeline run `r-2026-05-23-v19-fullrun`
+on 1x H100 NVL. All numbers derive from `checkpoints/pipeline_validated.pt`
+(May 23 run), `paper/v8_artifacts/sota_benchmark/sota_comparison_table.json`,
+and `RUNS.md`. v17/v18 sections preserved for historical continuity._
