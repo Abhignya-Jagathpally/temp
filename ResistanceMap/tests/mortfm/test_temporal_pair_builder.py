@@ -26,9 +26,12 @@ def test_empty_inputs_return_empty_list():
 def test_pairs_respect_allowed_time_gaps():
     snaps = [_snap("P1", 0), _snap("P1", 6), _snap("P1", 12)]
     # One outcome per *baseline* timepoint so both (0,6) and (6,12) have a match.
+    # NOTE: event_time must NOT equal any follow-up timepoint (temporal leakage
+    # guardrail would reject the pair). Use event_time=18.0 for the second
+    # outcome so the (6, 12) pair is not blocked.
     outs = [
         ResistanceOutcome(patient_id="P1", baseline_time=0.0, event_time=10.0, censored=False),
-        ResistanceOutcome(patient_id="P1", baseline_time=6.0, event_time=12.0, censored=False),
+        ResistanceOutcome(patient_id="P1", baseline_time=6.0, event_time=18.0, censored=False),
     ]
     pairs = build_temporal_pairs(snaps, outs, allowed_time_gaps=[6.0], gap_tolerance=0.5,
                                  include_survival_only=False)

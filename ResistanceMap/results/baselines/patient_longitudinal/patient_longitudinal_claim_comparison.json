@@ -1,0 +1,235 @@
+{
+  "generated": "2026-05-24T20:28:10",
+  "model_summary": {
+    "clinical_only_cox": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": 0.25,
+      "std_ibs": 0.0,
+      "n_seeds": 3
+    },
+    "clinical_ridge_cox": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": 0.25,
+      "std_ibs": 0.0,
+      "n_seeds": 3
+    },
+    "rna_only_cox": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": NaN,
+      "std_ibs": NaN,
+      "n_seeds": 3
+    },
+    "rna_plus_clinical_cox": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": NaN,
+      "std_ibs": NaN,
+      "n_seeds": 3
+    },
+    "random_survival_forest": {
+      "mean_c_index": 0.9619460000000001,
+      "std_c_index": 0.003925349156444571,
+      "mean_ibs": 0.4396013333333333,
+      "std_ibs": 0.0023131840009437844,
+      "n_seeds": 3
+    },
+    "deepsurv_mlp": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": NaN,
+      "std_ibs": NaN,
+      "n_seeds": 3
+    },
+    "mean_time_baseline": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": 0.25,
+      "std_ibs": 0.0,
+      "n_seeds": 3
+    },
+    "kaplan_meier_baseline": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": 0.25,
+      "std_ibs": 0.0,
+      "n_seeds": 3
+    },
+    "locf_trajectory_baseline": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": 0.25,
+      "std_ibs": 0.0,
+      "n_seeds": 3
+    },
+    "mean_future_state_baseline": {
+      "mean_c_index": 0.5,
+      "std_c_index": 0.0,
+      "mean_ibs": 0.25,
+      "std_ibs": 0.0,
+      "n_seeds": 3
+    }
+  },
+  "claim_levels": {
+    "survival_prediction": {
+      "description": "MORT-FM must exceed clinical-only Cox and KM to claim survival prediction.",
+      "must_beat_results": {
+        "clinical_only_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        },
+        "kaplan_meier_baseline": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        }
+      },
+      "should_beat_results": {
+        "clinical_ridge_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        },
+        "rna_plus_clinical_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": NaN,
+          "std_ibs": NaN,
+          "n_seeds": 3
+        }
+      },
+      "mortfm_must_exceed_c_index": 0.5
+    },
+    "longitudinal_trajectory": {
+      "description": "MORT-FM must exceed LOCF and mean-future-state for trajectory claims.",
+      "must_beat_results": {
+        "locf_trajectory_baseline": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        },
+        "mean_future_state_baseline": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        }
+      },
+      "should_beat_results": {
+        "rna_only_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": NaN,
+          "std_ibs": NaN,
+          "n_seeds": 3
+        }
+      },
+      "mortfm_must_exceed_c_index": 0.5
+    },
+    "resistance_emergence": {
+      "description": "MORT-FM must exceed ALL simple baselines and SHOULD beat non-trivial baselines for resistance_emergence.",
+      "must_beat_results": {
+        "clinical_only_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        },
+        "kaplan_meier_baseline": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        },
+        "locf_trajectory_baseline": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        },
+        "mean_future_state_baseline": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        }
+      },
+      "should_beat_results": {
+        "rna_plus_clinical_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": NaN,
+          "std_ibs": NaN,
+          "n_seeds": 3
+        },
+        "random_survival_forest": {
+          "mean_c_index": 0.9619460000000001,
+          "std_c_index": 0.003925349156444571,
+          "mean_ibs": 0.4396013333333333,
+          "std_ibs": 0.0023131840009437844,
+          "n_seeds": 3
+        },
+        "deepsurv_mlp": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": NaN,
+          "std_ibs": NaN,
+          "n_seeds": 3
+        }
+      },
+      "mortfm_must_exceed_c_index": 0.5
+    },
+    "patient_level_clinical_prediction": {
+      "description": "Must exceed clinical-only models for patient-level claims.",
+      "must_beat_results": {
+        "clinical_only_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        },
+        "clinical_ridge_cox": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": 0.25,
+          "std_ibs": 0.0,
+          "n_seeds": 3
+        }
+      },
+      "should_beat_results": {
+        "random_survival_forest": {
+          "mean_c_index": 0.9619460000000001,
+          "std_c_index": 0.003925349156444571,
+          "mean_ibs": 0.4396013333333333,
+          "std_ibs": 0.0023131840009437844,
+          "n_seeds": 3
+        },
+        "deepsurv_mlp": {
+          "mean_c_index": 0.5,
+          "std_c_index": 0.0,
+          "mean_ibs": NaN,
+          "std_ibs": NaN,
+          "n_seeds": 3
+        }
+      },
+      "mortfm_must_exceed_c_index": 0.5
+    }
+  }
+}

@@ -1,0 +1,314 @@
+{
+  "generated": "2026-05-24T20:28:10",
+  "mode": "patient_longitudinal",
+  "confirmed_dataset": "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data/lake/confirmed/mortfm_training_dataset",
+  "split_manifest": "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data/lake/confirmed/split_manifest.json",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "n_results": 30,
+  "results": [
+    {
+      "model": "clinical_only_cox",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "clinical_ridge_cox",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "rna_only_cox",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 9.88
+    },
+    {
+      "model": "rna_plus_clinical_cox",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 9.78
+    },
+    {
+      "model": "random_survival_forest",
+      "seed": 0,
+      "c_index": 0.956441,
+      "ibs": 0.437876,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.17
+    },
+    {
+      "model": "deepsurv_mlp",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 19.56
+    },
+    {
+      "model": "mean_time_baseline",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "kaplan_meier_baseline",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "locf_trajectory_baseline",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "mean_future_state_baseline",
+      "seed": 0,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "clinical_only_cox",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "clinical_ridge_cox",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "rna_only_cox",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 9.79
+    },
+    {
+      "model": "rna_plus_clinical_cox",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 9.79
+    },
+    {
+      "model": "random_survival_forest",
+      "seed": 1,
+      "c_index": 0.964079,
+      "ibs": 0.442871,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.17
+    },
+    {
+      "model": "deepsurv_mlp",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 19.56
+    },
+    {
+      "model": "mean_time_baseline",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "kaplan_meier_baseline",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "locf_trajectory_baseline",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "mean_future_state_baseline",
+      "seed": 1,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "clinical_only_cox",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "clinical_ridge_cox",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "rna_only_cox",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 9.78
+    },
+    {
+      "model": "rna_plus_clinical_cox",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 9.79
+    },
+    {
+      "model": "random_survival_forest",
+      "seed": 2,
+      "c_index": 0.965318,
+      "ibs": 0.438057,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.17
+    },
+    {
+      "model": "deepsurv_mlp",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": NaN,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 19.56
+    },
+    {
+      "model": "mean_time_baseline",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "kaplan_meier_baseline",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "locf_trajectory_baseline",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    },
+    {
+      "model": "mean_future_state_baseline",
+      "seed": 2,
+      "c_index": 0.5,
+      "ibs": 0.25,
+      "n_train": 691,
+      "n_test": 148,
+      "n_events_test": 33,
+      "wall_seconds": 0.0
+    }
+  ]
+}

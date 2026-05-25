@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from resistancemap.mortfm.schemas import (
     PatientCellSnapshot,
@@ -42,6 +42,16 @@ from resistancemap.mortfm.schemas import (
 )
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Supervision routing policy (hard guardrail)
+# ---------------------------------------------------------------------------
+# Survival-only rows (x_t_delta=None) may supervise ONLY the survival head.
+# They must NOT supervise the trajectory loss (no future molecular state exists).
+# The trainer enforces this via validate_for_loss("trajectory") which requires
+# future_state.  This module enforces at construction time that no outcome
+# event_time is silently reused as a molecular visit timestamp.
+# ---------------------------------------------------------------------------
 
 
 def _group_by_patient(
@@ -122,6 +132,7 @@ def build_temporal_pairs(
     include_unlabelled: bool = False,
     include_survival_only: bool = True,
     include_drug_response_only: bool = False,
+    require_real_molecular_followup: bool = True,
 ) -> List[TemporalTrainingPair]:
     """Build training pairs from a flat snapshot + outcome stream.
 
@@ -147,6 +158,14 @@ def build_temporal_pairs(
     include_survival_only
         If True, emit pairs with ``x_t_delta=None`` whose outcome carries a
         survival label (event_time + censored). Default True.
+    require_real_molecular_followup
+        If True (default), longitudinal pairs are only emitted when both
+        ``x_t.timepoint`` and ``x_t_delta.timepoint`` are real timestamps
+        (not None), ``x_t_delta.timepoint > x_t.timepoint``, and
+        ``delta_t_days > 0``.  Additionally, pairs where the follow-up
+        timepoint suspiciously equals the outcome event_time (within 1 unit)
+        are rejected to prevent temporal leakage from outcome labels into
+        visit-time supervision.
 
     Returns
     -------
@@ -164,6 +183,8 @@ def build_temporal_pairs(
     skipped_no_followup = 0
     skipped_no_outcome = 0
     skipped_bad_gap = 0
+    skipped_temporal_leakage = 0
+    skipped_missing_real_timepoint = 0
 
     for patient_id, snaps in snapshots_by_patient.items():
         timed = [s for s in snaps if s.timepoint is not None]
@@ -189,6 +210,40 @@ def build_temporal_pairs(
                     else:
                         skipped_no_outcome += 1
                         continue
+
+                # ---- Hard guardrail: require_real_molecular_followup ----
+                if require_real_molecular_followup:
+                    if x_t.timepoint is None or x_t_delta.timepoint is None:
+                        skipped_missing_real_timepoint += 1
+                        continue
+                    if x_t_delta.timepoint <= x_t.timepoint:
+                        skipped_missing_real_timepoint += 1
+                        continue
+                    if dt <= 0:
+                        skipped_missing_real_timepoint += 1
+                        continue
+
+                # ---- Hard guardrail: outcome event_time must never be
+                # reused as molecular visit time (temporal leakage). ----
+                if (
+                    out is not None
+                    and out.event_time is not None
+                    and x_t_delta is not None
+                    and hasattr(x_t_delta, "timepoint")
+                    and x_t_delta.timepoint is not None
+                    and abs(x_t_delta.timepoint - out.event_time) < 1.0
+                ):
+                    logger.warning(
+                        "Patient %s: follow-up timepoint (%.2f) equals outcome "
+                        "event_time (%.2f). Skipping pair to prevent temporal "
+                        "leakage.",
+                        patient_id,
+                        x_t_delta.timepoint,
+                        out.event_time,
+                    )
+                    skipped_temporal_leakage += 1
+                    continue
+
                 pairs.append(TemporalTrainingPair(x_t=x_t, x_t_delta=x_t_delta, outcome=out))
 
         # --- survival-only rows (single snapshot + outcome) ------------------
@@ -252,19 +307,29 @@ def build_temporal_pairs(
 
     logger.info(
         "build_temporal_pairs: emitted %d pairs from %d snapshots / %d outcomes "
-        "(skipped: %d no-followup patients, %d no-outcome rows, %d bad-gap rows)",
+        "(skipped: %d no-followup patients, %d no-outcome rows, %d bad-gap rows, "
+        "%d temporal-leakage, %d missing-real-timepoint)",
         len(pairs),
         len(snapshots),
         len(outcomes),
         skipped_no_followup,
         skipped_no_outcome,
         skipped_bad_gap,
+        skipped_temporal_leakage,
+        skipped_missing_real_timepoint,
     )
     return pairs
 
 
-def summarise_pairs(pairs: Sequence[TemporalTrainingPair]) -> Dict[str, float]:
-    """Diagnostic counts for a list of pairs. Useful as a logging payload."""
+def summarise_pairs(pairs: Sequence[TemporalTrainingPair]) -> Dict[str, Any]:
+    """Diagnostic counts for a list of pairs. Useful as a logging payload.
+
+    Includes supervision-routing counts:
+    - ``n_valid_for_trajectory``: longitudinal pairs with real positive delta_t
+      (eligible for trajectory loss).
+    - ``n_survival_only``: rows with no follow-up molecular snapshot but with a
+      survival label (eligible ONLY for survival head, never trajectory).
+    """
     n_total = len(pairs)
     n_longitudinal = sum(1 for p in pairs if p.x_t_delta is not None)
     n_survival = sum(1 for p in pairs if p.outcome.has_survival_label())
@@ -274,6 +339,29 @@ def summarise_pairs(pairs: Sequence[TemporalTrainingPair]) -> Dict[str, float]:
         1 for p in pairs if not p.has_any_supervision()
     )
     patient_set = {p.x_t.patient_id for p in pairs}
+
+    # Supervision routing: trajectory-eligible pairs
+    n_valid_for_trajectory = 0
+    for p in pairs:
+        if p.x_t_delta is None:
+            continue
+        # Check for real positive delta_t
+        if (
+            p.x_t.timepoint is not None
+            and p.x_t_delta.timepoint is not None
+            and p.x_t_delta.timepoint > p.x_t.timepoint
+        ):
+            n_valid_for_trajectory += 1
+
+    # Supervision routing: survival-only rows (no molecular follow-up)
+    n_survival_only = sum(
+        1
+        for p in pairs
+        if p.x_t_delta is None
+        and p.outcome is not None
+        and p.outcome.event_time is not None
+    )
+
     return {
         "n_pairs_total": float(n_total),
         "n_longitudinal_pairs": float(n_longitudinal),
@@ -282,4 +370,6 @@ def summarise_pairs(pairs: Sequence[TemporalTrainingPair]) -> Dict[str, float]:
         "n_drug_response_rows": float(n_drug),
         "n_unlabelled_rows": float(n_unlabelled),
         "n_unique_patients": float(len(patient_set)),
+        "n_valid_for_trajectory": float(n_valid_for_trajectory),
+        "n_survival_only": float(n_survival_only),
     }

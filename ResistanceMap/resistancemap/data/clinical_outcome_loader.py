@@ -225,12 +225,19 @@ def load_mortfm_outcomes(
         clin,
     )
 
-    # GDC fallback: if endpoint is OS-like and no explicit time/event column was
-    # found, derive event_time + censored from vital_status + days_to_death /
-    # days_to_last_follow_up. This handles the dbGaP/GDC MMRF clinical export
-    # which uses ``vital_status = {Alive, Dead}``.
+    # GDC fallback: ONLY OS may fall back to vital_status + days_to_death /
+    # days_to_last_follow_up. PFS/relapse endpoints must NOT fall through to
+    # OS-based vital_status because that would corrupt resistance-emergence
+    # supervision (OS != resistance).
+    if endpoint in {"pfs", "relapse"} and (t_col is None or e_col is None):
+        raise ValueError(
+            f"Endpoint {endpoint!r} requires explicit PFS time and censor/event "
+            "columns in the clinical data. Refusing to fall back to OS/vital_status "
+            "because that would corrupt resistance-emergence supervision."
+        )
+
     using_gdc_fallback = (
-        endpoint in {"os", "pfs"}                                    # PFS often falls through to OS here
+        endpoint == "os"
         and (t_col is None or e_col is None)
         and _GDC_VITAL_COL in clin.columns
         and (_GDC_FOLLOWUP_COL in clin.columns or _GDC_DEATH_COL in clin.columns)
@@ -269,11 +276,22 @@ def load_mortfm_outcomes(
                 if pd.notna(raw):
                     censored = bool(int(raw) == 1)
 
+        # event_time must come from clinical outcome columns only.
+        # Never back-fill from visit_time_days, TT2L, or molecular sample timestamps.
+
+        # Censored means event not observed within follow-up window.
+        # It must NEVER be encoded as resistance_label=0 (sensitive).
+        # Only assign resistance_label from explicit response/progression columns.
         resistance_label: Optional[int] = None
         if resp_col is not None:
             r = str(row.get(resp_col, "")).strip().upper()
             if r in {"SCR", "CR", "VGPR", "PR"}:
-                resistance_label = 0  # sensitive
+                # Only label as sensitive if the event was actually observed
+                # (i.e., patient is NOT censored). A censored patient with
+                # an apparent response may still progress after follow-up ends.
+                if not censored:
+                    resistance_label = 0  # sensitive
+                # If censored, leave resistance_label=None (unknown)
             elif r in {"SD", "MR"}:
                 resistance_label = 1  # tolerant
             elif r in {"PD"}:
@@ -430,6 +448,44 @@ def build_mmrf_snapshots(
         len(snapshots), n_patients, n_paired,
     )
     return snapshots
+
+
+def validate_outcome_integrity(outcomes: List[ResistanceOutcome]) -> Dict[str, int]:
+    """Post-hoc audit of loaded outcomes. Returns counts dict.
+
+    Raises
+    ------
+    ValueError
+        If any censored patient has resistance_label=0 (sensitive).
+        Censored != sensitive; this invariant is enforced at load time
+        and double-checked here.
+    """
+    n_total = len(outcomes)
+    n_with_time = sum(1 for o in outcomes if o.event_time is not None)
+    n_observed = sum(1 for o in outcomes if o.event_time is not None and not o.censored)
+    n_censored = sum(1 for o in outcomes if o.event_time is not None and o.censored)
+    n_with_label = sum(1 for o in outcomes if o.resistance_label is not None)
+    n_label_zero = sum(1 for o in outcomes if o.resistance_label == 0)
+
+    # Hard check: no censored patient should have resistance_label=0
+    n_censored_mislabeled = sum(
+        1 for o in outcomes
+        if o.censored and o.resistance_label == 0
+    )
+    if n_censored_mislabeled > 0:
+        raise ValueError(
+            f"{n_censored_mislabeled} censored patients have resistance_label=0 "
+            "(sensitive). Censored != sensitive. Fix label assignment."
+        )
+
+    return {
+        "n_total": n_total,
+        "n_with_event_time": n_with_time,
+        "n_events_observed": n_observed,
+        "n_censored": n_censored,
+        "n_with_resistance_label": n_with_label,
+        "n_labeled_sensitive": n_label_zero,
+    }
 
 
 def summarise_outcomes(outcomes: List[ResistanceOutcome]) -> Dict[str, float]:

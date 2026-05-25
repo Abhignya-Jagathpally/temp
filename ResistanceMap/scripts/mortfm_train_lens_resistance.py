@@ -64,6 +64,68 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("mortfm_train_lens_resistance")
 
 
+def _load_from_confirmed(confirmed_path: str, split_manifest_path: str = None) -> dict:
+    """Load training data from the Spark lakehouse confirmed dataset.
+
+    Joins with pre-computed z64 latents (PCA-encoded baseline expression from
+    scripts/v10/s1c_encode_mmrf_z64.py) to provide real molecular features.
+    """
+    import json
+    df = pd.read_parquet(confirmed_path)
+    logger.info("Loaded confirmed dataset: %d rows, %d columns", len(df), len(df.columns))
+
+    # Filter to rows with valid survival supervision
+    if "allowed_loss_survival" in df.columns:
+        df = df[df["allowed_loss_survival"] == True]
+    elif "has_valid_survival_supervision" in df.columns:
+        df = df[df["has_valid_survival_supervision"] == True]
+
+    # Load split manifest for train/test assignment
+    if split_manifest_path and Path(split_manifest_path).exists():
+        manifest = json.loads(Path(split_manifest_path).read_text())
+        logger.info("Split manifest: %s", {k: v for k, v in manifest.items() if k != "splits"})
+
+    # Load pre-computed z64 latents (real PCA-encoded baseline expression)
+    z64_path = Path("data/processed/mmrf_z64.npy")
+    z64_ids_path = Path("data/processed/mmrf_z64_sample_ids.json")
+    z64_map = {}
+    if z64_path.exists() and z64_ids_path.exists():
+        z64_arr = np.load(str(z64_path))
+        z64_ids = json.loads(z64_ids_path.read_text())
+        z64_map = {pid: z64_arr[i] for i, pid in enumerate(z64_ids)}
+        logger.info("Loaded z64 latents for %d patients (real PCA features)", len(z64_map))
+    else:
+        logger.warning("No z64 latents found — using zero vectors (will underperform)")
+
+    # Build rows, matching submitter_id to z64 latents
+    rows = []
+    n_matched = 0
+    for _, r in df.iterrows():
+        et = r.get("event_time_days")
+        eo = r.get("event_observed")
+        if pd.isna(et) or et is None:
+            continue
+        pid = r.get("submitter_id", "")
+        # Try to match patient ID to z64 latent (strip suffix for matching)
+        pid_short = pid.split("_")[0] + "_" + pid.split("_")[1] if "_" in pid else pid
+        z0 = z64_map.get(pid, z64_map.get(pid_short, np.zeros(64)))
+        if not np.all(z0 == 0):
+            n_matched += 1
+        rows.append({
+            "patient_id": pid,
+            "z0": z0,
+            "z1": np.zeros(64),  # no follow-up for survival-only
+            "tt2l_days": float(et),
+            "event_observed": int(bool(eo)),
+            "bort_1L": 0,
+        })
+
+    logger.info("Loaded %d patients from confirmed dataset; %d observed events; "
+                "%d matched to z64 latents",
+                len(rows), sum(r["event_observed"] for r in rows), n_matched)
+    return {"rows": rows}
+
+
 def _load_pairs() -> dict:
     z = np.load("data/processed/mmrf_paired_z64.npz", allow_pickle=True)
     pids = [str(p) for p in z["patient_id"]]
@@ -133,13 +195,24 @@ def main() -> int:
     ap.add_argument("--use-graph-projector", action="store_true",
                     help="Learn graph_emb from z0 via LatentToGraphProjector "
                          "instead of feeding a zero tensor.")
+    ap.add_argument("--confirmed-dataset", type=str, default=None,
+                    help="Path to confirmed Parquet dataset from Spark lakehouse. "
+                         "If provided, loads training data from lakehouse instead of "
+                         "legacy checkpoints.")
+    ap.add_argument("--split-manifest", type=str, default=None,
+                    help="Path to split_manifest.json from Spark lakehouse.")
+    ap.add_argument("--graph-embedding-table", type=str, default=None,
+                    help="Path to graph embedding Parquet (biological_edges).")
     ap.add_argument("--out", default="logs/mortfm/lens_resistance_summary.json")
     args = ap.parse_args()
 
-    data = _load_pairs()
+    if args.confirmed_dataset:
+        data = _load_from_confirmed(args.confirmed_dataset, args.split_manifest)
+    else:
+        data = _load_pairs()
     rows = data["rows"]
     if len(rows) < 10:
-        logger.error("Too few paired patients (%d) — aborting", len(rows))
+        logger.error("Too few patients (%d) — aborting", len(rows))
         return 1
 
     d_latent = 64

@@ -1,15 +1,11 @@
 """
 resistancemap/mortfm/graph/patient_graph_encoder.py
-====================================================
-Patient-conditioned GNN that propagates patient-specific features over
-the biological graph.
+===================================================
+Patient-specific graph embedding via real PPI/pathway/drug-target topology.
 
-Replaces the :class:`LatentToGraphProjector` (which just projects z0
-linearly) with a REAL heterogeneous graph neural network that conditions
-on each patient's RNA expression and drug exposure, propagates those
-signals over the STRING PPI + Reactome pathway + drug-target graph, and
-pools them into a per-patient ``(B, d_graph)`` embedding the SDE drift
-can consume.
+Replaces the zero-tensor placeholder in the canonical trainer. When this module
+is used as graph_emb_fn, pathway and causal claims become supportable.
+When only LatentToGraphProjector is used, pathway claims must be blocked.
 
 Graph data
 ----------
@@ -54,136 +50,121 @@ logger = logging.getLogger(__name__)
 # Optional PyG guard
 # ---------------------------------------------------------------------------
 try:
-    from torch_geometric.data import HeteroData
+    from torch_geometric.data import Data, HeteroData
     from torch_geometric.nn import GATConv, HeteroConv, GlobalAttention
     HAS_PYG = True
 except ImportError:
     HAS_PYG = False
-    logger.warning(
-        "torch_geometric not available; PatientGraphEncoder will not be "
-        "usable. Install with: pip install torch_geometric"
+    logger.info(
+        "torch_geometric not available; will use manual message-passing "
+        "fallback for PatientGraphEncoder."
     )
 
 from resistancemap.mortfm.graph.id_harmonizer import IDHarmonizer
 
 __all__ = [
-    "HeteroBiologicalGraph",
+    "GraphStore",
+    "PatientNodeFeatureBuilder",
     "PatientGraphEncoder",
+    "PatientGraphEmbeddingFn",
+    "build_patient_graph_embedding_fn",
+    # Legacy exports preserved for backward compatibility with __init__.py
+    "HeteroBiologicalGraph",
     "build_patient_graph_emb_fn",
 ]
 
 
 # ===================================================================
-# 1. HeteroBiologicalGraph -- builds PyG HeteroData from on-disk data
+# 1. GraphStore -- loads and caches the Block A biological graph
 # ===================================================================
 
 # Canonical mapping from parquet edge_type -> PyG (src_type, rel, dst_type)
 _EDGE_TYPE_MAP: Dict[str, Tuple[str, str, str]] = {
-    "ppi":                ("protein", "interacts", "protein"),
-    "drug_target":        ("drug", "targets", "protein"),
+    "ppi": ("protein", "interacts", "protein"),
+    "drug_target": ("drug", "targets", "protein"),
     "protein_in_pathway": ("gene", "member_of", "pathway"),
 }
 
 
-@dataclass
-class HeteroBiologicalGraph:
-    """Heterogeneous biological graph backed by a PyG :class:`HeteroData`.
+class GraphStore:
+    """Loads and caches the Block A biological graph from disk.
 
-    Build once from on-disk parquet/csv via :meth:`from_disk`, then call
-    :meth:`to_hetero_data` to get the immutable graph topology that
-    :class:`PatientGraphEncoder` clones per-batch (with patient-specific
-    node features stamped on).
+    Builds sparse adjacency from edges in
+    ``data/processed/graphs/biological_edges.parquet``, maps protein nodes
+    to indices, and provides ``edge_index`` and ``edge_attr`` as PyTorch
+    tensors.
 
-    Attributes
+    Parameters
     ----------
-    hetero_data : HeteroData
-        PyG heterogeneous graph object with node indices and edge topology.
-    node_id_to_idx : dict
-        ``{node_type: {raw_id_str: int_index}}`` for every node type.
-    gene_symbols : list[str]
-        Ordered list of HGNC symbols that correspond to ``gene`` node
-        indices (via IDHarmonizer bridging). Used to align patient RNA
-        expression columns.
-    drug_ids : list[str]
-        Ordered list of drug IDs (CHEMBL) that correspond to ``drug``
-        node indices.
-    n_nodes : dict[str, int]
-        ``{node_type: count}`` for quick shape queries.
+    edges_parquet :
+        Path to the biological_edges.parquet file (columns: source_id,
+        target_id, edge_type, edge_weight).
+    nodes_csv :
+        Path to protein_nodes.csv (columns: uniprot_id, gene_symbol,
+        length).
+    string_threshold :
+        Minimum STRING combined score for PPI edges (0-1000 scale).
+        Edges below this threshold are dropped.
     """
 
-    hetero_data: Any  # HeteroData (typed as Any for when PYG is missing)
-    node_id_to_idx: Dict[str, Dict[str, int]]
-    gene_symbols: List[str]
-    drug_ids: List[str]
-    n_nodes: Dict[str, int]
-
-    # ----------------------------------------------------------------
-    # Factory
-    # ----------------------------------------------------------------
-    @classmethod
-    def from_disk(
-        cls,
+    def __init__(
+        self,
         edges_parquet: str = "data/processed/graphs/biological_edges.parquet",
         nodes_csv: str = "data/processed/graphs/protein_nodes.csv",
-        id_harmonizer: Optional[IDHarmonizer] = None,
-    ) -> "HeteroBiologicalGraph":
-        """Build the heterogeneous graph from on-disk edge + node files.
+        string_threshold: int = 700,
+    ) -> None:
+        self.edges_path = Path(edges_parquet)
+        self.nodes_path = Path(nodes_csv)
+        self.string_threshold = string_threshold
 
-        Parameters
-        ----------
-        edges_parquet :
-            Path to the biological_edges.parquet file produced by the
-            graph builder (columns: source_id, target_id, source_type,
-            target_type, edge_type, edge_weight, directed,
-            evidence_source).
-        nodes_csv :
-            Path to the protein_nodes.csv (columns: uniprot_id,
-            gene_symbol, length). Used to establish the ``gene``
-            node-type vocabulary for RNA expression alignment.
-        id_harmonizer :
-            Optional :class:`IDHarmonizer` for bridging HGNC symbols to
-            STRING alias IDs. When ``None`` a fresh one is built via
-            ``IDHarmonizer.build_or_load()`` (which uses the parquet
-            cache if available).
+        # Populated by _load()
+        self.edges_df: Optional[pd.DataFrame] = None
+        self.nodes_df: Optional[pd.DataFrame] = None
+        self.protein_index: Dict[str, int] = {}
+        self.gene_symbols: List[str] = []
+        self.drug_ids: List[str] = []
+        self.n_nodes: Dict[str, int] = {}
 
-        Returns
-        -------
-        HeteroBiologicalGraph
-        """
-        if not HAS_PYG:
-            raise ImportError(
-                "torch_geometric is required for HeteroBiologicalGraph. "
-                "Install with: pip install torch_geometric"
+        # Per-type node ID -> index mappings
+        self.node_id_to_idx: Dict[str, Dict[str, int]] = {}
+
+        # Edge index tensors (homogeneous flattened view for fallback)
+        self._edge_index: Optional[torch.Tensor] = None
+        self._edge_attr: Optional[torch.Tensor] = None
+
+        # Per edge-type tensors
+        self._edge_index_per_type: Dict[str, torch.Tensor] = {}
+        self._edge_attr_per_type: Dict[str, torch.Tensor] = {}
+
+        self._load()
+
+    def _load(self) -> None:
+        """Load graph from disk and build index structures."""
+        if not self.edges_path.exists():
+            raise FileNotFoundError(
+                f"Edges file not found: {self.edges_path}. "
+                "Run the graph builder first: scripts/mortfm_build_biological_graph.py"
             )
 
-        edges_path = Path(edges_parquet)
-        nodes_path = Path(nodes_csv)
-        if not edges_path.exists():
-            raise FileNotFoundError(f"Edges file not found: {edges_path}")
-
-        df = pd.read_parquet(edges_path)
+        self.edges_df = pd.read_parquet(self.edges_path)
         logger.info(
-            "Loaded biological edges: %d rows, edge_types=%s",
-            len(df), list(df["edge_type"].unique()),
+            "GraphStore: loaded %d edges, types=%s",
+            len(self.edges_df),
+            list(self.edges_df["edge_type"].unique()),
         )
 
-        # Build harmonizer if not provided (for HGNC <-> alias bridging).
-        if id_harmonizer is None:
-            id_harmonizer = IDHarmonizer.build_or_load()
+        if self.nodes_path.exists():
+            self.nodes_df = pd.read_csv(self.nodes_path)
+            logger.info("GraphStore: loaded %d protein nodes", len(self.nodes_df))
 
-        # ----------------------------------------------------------
-        # Collect unique node IDs per node type
-        # ----------------------------------------------------------
-        # We must separate the node ID spaces by type because the same
-        # raw string might appear as both a protein and a gene alias.
+        # ------------------------------------------------------------------
+        # Collect unique node IDs per type
+        # ------------------------------------------------------------------
         per_type_ids: Dict[str, set] = {
-            "protein": set(),
-            "drug": set(),
-            "gene": set(),
-            "pathway": set(),
+            "protein": set(), "drug": set(), "gene": set(), "pathway": set(),
         }
 
-        for _, row in df.iterrows():
+        for _, row in self.edges_df.iterrows():
             etype = row["edge_type"]
             if etype not in _EDGE_TYPE_MAP:
                 continue
@@ -192,517 +173,678 @@ class HeteroBiologicalGraph:
             per_type_ids[dst_type].add(str(row["target_id"]))
 
         # Deterministic ordering for reproducibility.
-        node_id_to_idx: Dict[str, Dict[str, int]] = {}
         for ntype, ids in per_type_ids.items():
             sorted_ids = sorted(ids)
-            node_id_to_idx[ntype] = {rid: i for i, rid in enumerate(sorted_ids)}
+            self.node_id_to_idx[ntype] = {rid: i for i, rid in enumerate(sorted_ids)}
 
-        n_nodes = {ntype: len(mapping) for ntype, mapping in node_id_to_idx.items()}
-        logger.info("Node counts: %s", n_nodes)
+        self.n_nodes = {ntype: len(m) for ntype, m in self.node_id_to_idx.items()}
+        logger.info("GraphStore node counts: %s", self.n_nodes)
 
-        # ----------------------------------------------------------
-        # Build HeteroData edge_index tensors
-        # ----------------------------------------------------------
-        hetero = HeteroData()
-
-        # Placeholder node features (zero-initialised; PatientGraphEncoder
-        # will stamp patient-specific features at forward time).
-        for ntype, count in n_nodes.items():
-            hetero[ntype].num_nodes = count
-
-        edge_lists: Dict[Tuple[str, str, str], Tuple[List[int], List[int], List[float]]] = {}
+        # ------------------------------------------------------------------
+        # Build edge index tensors per type
+        # ------------------------------------------------------------------
         for etype_key, pyg_etype in _EDGE_TYPE_MAP.items():
-            edge_lists[pyg_etype] = ([], [], [])
-
-        for _, row in df.iterrows():
-            etype = row["edge_type"]
-            if etype not in _EDGE_TYPE_MAP:
-                continue
-            pyg_etype = _EDGE_TYPE_MAP[etype]
             src_type, _, dst_type = pyg_etype
+            srcs, dsts, wts = [], [], []
 
-            src_raw = str(row["source_id"])
-            dst_raw = str(row["target_id"])
+            subset = self.edges_df[self.edges_df["edge_type"] == etype_key]
+            for _, row in subset.iterrows():
+                src_raw = str(row["source_id"])
+                dst_raw = str(row["target_id"])
+                src_idx = self.node_id_to_idx[src_type].get(src_raw)
+                dst_idx = self.node_id_to_idx[dst_type].get(dst_raw)
+                if src_idx is None or dst_idx is None:
+                    continue
+                srcs.append(src_idx)
+                dsts.append(dst_idx)
+                wts.append(float(row.get("edge_weight", 1.0)))
 
-            src_idx = node_id_to_idx[src_type].get(src_raw)
-            dst_idx = node_id_to_idx[dst_type].get(dst_raw)
-            if src_idx is None or dst_idx is None:
-                continue
-
-            srcs, dsts, wts = edge_lists[pyg_etype]
-            srcs.append(src_idx)
-            dsts.append(dst_idx)
-            wts.append(float(row["edge_weight"]))
-
-        for pyg_etype, (srcs, dsts, wts) in edge_lists.items():
             if len(srcs) == 0:
                 continue
+
             ei = torch.tensor([srcs, dsts], dtype=torch.long)
-            ew = torch.tensor(wts, dtype=torch.float32).unsqueeze(-1)  # (E, 1)
-            hetero[pyg_etype].edge_index = ei
-            hetero[pyg_etype].edge_attr = ew
+            ew = torch.tensor(wts, dtype=torch.float32).unsqueeze(-1)
 
-            # For undirected PPI, add reverse edges so message-passing
-            # is symmetric.
-            if pyg_etype == ("protein", "interacts", "protein"):
+            # For undirected PPI, add reverse edges.
+            if etype_key == "ppi":
                 rev_ei = torch.tensor([dsts, srcs], dtype=torch.long)
-                # Store reverse under the same edge type (PPI is symmetric)
-                # by concatenating.
-                hetero[pyg_etype].edge_index = torch.cat([ei, rev_ei], dim=1)
-                hetero[pyg_etype].edge_attr = torch.cat([ew, ew], dim=0)
+                ei = torch.cat([ei, rev_ei], dim=1)
+                ew = torch.cat([ew, ew], dim=0)
 
-        # ----------------------------------------------------------
-        # Build gene_symbols list (HGNC) aligned to gene node indices
-        # ----------------------------------------------------------
-        # The ``gene`` node IDs in the parquet are Entrez-style numeric
-        # strings (from Reactome protein_in_pathway edges). We bridge
-        # them to HGNC via the IDHarmonizer.
-        gene_idx_to_id = {v: k for k, v in node_id_to_idx.get("gene", {}).items()}
-        gene_ids_ordered = [gene_idx_to_id[i] for i in range(n_nodes.get("gene", 0))]
-        gene_symbols = id_harmonizer.any_alias_to_hgnc(gene_ids_ordered)
-        # Replace None with the raw ID so downstream alignment can skip
-        # unmapped genes gracefully.
-        gene_symbols_clean: List[str] = [
-            sym if sym is not None else raw
-            for sym, raw in zip(gene_symbols, gene_ids_ordered)
+            self._edge_index_per_type[etype_key] = ei
+            self._edge_attr_per_type[etype_key] = ew
+
+        # Build protein index from nodes_csv gene_symbol column.
+        if self.nodes_df is not None and "gene_symbol" in self.nodes_df.columns:
+            for idx, row in self.nodes_df.iterrows():
+                sym = str(row["gene_symbol"])
+                if sym not in self.protein_index:
+                    self.protein_index[sym] = len(self.protein_index)
+
+        # Gene symbols aligned to gene node indices.
+        gene_idx_to_id = {v: k for k, v in self.node_id_to_idx.get("gene", {}).items()}
+        self.gene_symbols = [
+            gene_idx_to_id.get(i, f"UNKNOWN_{i}")
+            for i in range(self.n_nodes.get("gene", 0))
         ]
 
-        # Ordered drug IDs for the drug node type.
-        drug_idx_to_id = {v: k for k, v in node_id_to_idx.get("drug", {}).items()}
-        drug_ids = [drug_idx_to_id[i] for i in range(n_nodes.get("drug", 0))]
+        # Drug IDs.
+        drug_idx_to_id = {v: k for k, v in self.node_id_to_idx.get("drug", {}).items()}
+        self.drug_ids = [
+            drug_idx_to_id.get(i, f"UNKNOWN_{i}")
+            for i in range(self.n_nodes.get("drug", 0))
+        ]
 
-        # Also load protein_nodes.csv for additional metadata (optional).
-        if nodes_path.exists():
-            _nodes_df = pd.read_csv(nodes_path)
-            logger.info(
-                "Loaded protein_nodes.csv: %d rows (used for metadata "
-                "alignment, not for node creation).",
-                len(_nodes_df),
-            )
+    @property
+    def edge_index(self) -> torch.Tensor:
+        """Homogeneous (protein-protein) PPI edge index (2, E)."""
+        if "ppi" in self._edge_index_per_type:
+            return self._edge_index_per_type["ppi"]
+        return torch.zeros(2, 0, dtype=torch.long)
 
-        logger.info(
-            "HeteroBiologicalGraph built: %s nodes, %d edge types",
-            n_nodes, len(edge_lists),
-        )
-        return cls(
-            hetero_data=hetero,
-            node_id_to_idx=node_id_to_idx,
-            gene_symbols=gene_symbols_clean,
-            drug_ids=drug_ids,
-            n_nodes=n_nodes,
-        )
+    @property
+    def edge_attr(self) -> torch.Tensor:
+        """Homogeneous PPI edge weights (E, 1)."""
+        if "ppi" in self._edge_attr_per_type:
+            return self._edge_attr_per_type["ppi"]
+        return torch.zeros(0, 1, dtype=torch.float32)
 
-    # ----------------------------------------------------------------
-    # Utility
-    # ----------------------------------------------------------------
-    def to(self, device: torch.device) -> "HeteroBiologicalGraph":
-        """Move the underlying HeteroData to ``device`` (in-place).
+    def to_pyg_data(self, node_features: torch.Tensor) -> Any:
+        """Create a PyG Data object from the PPI subgraph.
 
-        Returns ``self`` for chaining.
+        Parameters
+        ----------
+        node_features : Tensor (N_protein, F)
+            Node feature matrix for protein nodes.
+
+        Returns
+        -------
+        torch_geometric.data.Data or dict
+            PyG Data if available, else a plain dict with keys
+            ``x``, ``edge_index``, ``edge_attr``.
         """
-        self.hetero_data = self.hetero_data.to(device)
-        return self
+        ei = self.edge_index
+        ea = self.edge_attr
+        if HAS_PYG:
+            return Data(x=node_features, edge_index=ei, edge_attr=ea)
+        return {"x": node_features, "edge_index": ei, "edge_attr": ea}
 
     def gene_symbol_to_idx(self) -> Dict[str, int]:
         """Return ``{HGNC_symbol: gene_node_index}`` for RNA alignment."""
         return {sym: i for i, sym in enumerate(self.gene_symbols)}
 
     def drug_id_to_idx(self) -> Dict[str, int]:
-        """Return ``{CHEMBL_id: drug_node_index}`` for drug alignment."""
+        """Return ``{drug_id: drug_node_index}`` for drug alignment."""
         return {did: i for i, did in enumerate(self.drug_ids)}
 
 
 # ===================================================================
-# 2. PatientGraphEncoder -- heterogeneous GAT conditioned on patient
+# 2. PatientNodeFeatureBuilder -- maps molecular features to nodes
 # ===================================================================
 
-class PatientGraphEncoder(nn.Module):
-    """Patient-conditioned heterogeneous GNN over the biological graph.
 
-    For each patient in the batch this encoder:
+class PatientNodeFeatureBuilder:
+    """Maps patient molecular features onto graph nodes.
 
-    1. **Stamps** patient-specific node features onto the graph:
-       - ``gene`` nodes receive the patient's RNA expression (mapped by
-         HGNC symbol alignment).
-       - ``drug`` nodes receive the patient's drug exposure vector.
-       - ``protein`` and ``pathway`` nodes receive learned embeddings.
-
-    2. **Conditions** all node features on the patient's z0 latent via a
-       learned gating mechanism (FiLM-style: ``gamma * x + beta``
-       derived from z0).
-
-    3. **Propagates** features via a stack of :class:`HeteroConv` layers
-       wrapping :class:`GATConv` for each edge type.
-
-    4. **Pools** node representations to a single ``(d_graph,)`` vector
-       via global attention pooling over ``protein`` nodes.
+    Places patient RNA expression values on the corresponding gene/protein
+    graph nodes using HGNC symbol matching. Missing proteins receive zero
+    features with an explicit mask.
 
     Parameters
     ----------
-    d_latent : int
-        Dimensionality of the patient z0 latent (output of the
-        foundation encoder).
+    protein_index : dict
+        ``{HGNC_symbol: node_index}`` mapping genes to protein graph
+        nodes.
+    feature_dim : int
+        Dimensionality of node features produced (typically 1 for raw
+        expression, or higher if additional features are concatenated).
+    """
+
+    def __init__(self, protein_index: Dict[str, int], feature_dim: int = 1) -> None:
+        self.protein_index = protein_index
+        self.feature_dim = feature_dim
+        self.n_nodes = max(protein_index.values()) + 1 if protein_index else 0
+
+    def build_node_features(
+        self,
+        batch_rna: Optional[torch.Tensor],
+        batch_proteomics: Optional[torch.Tensor],
+        protein_names: Optional[List[str]],
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Build per-patient node feature tensors from molecular data.
+
+        Parameters
+        ----------
+        batch_rna : Tensor (B, n_genes) or None
+            RNA expression values per patient. Columns correspond to
+            ``protein_names``.
+        batch_proteomics : Tensor (B, n_proteins) or None
+            Protein abundance values. Columns correspond to
+            ``protein_names``. If both RNA and proteomics are present,
+            proteomics takes priority for shared genes.
+        protein_names : list of str or None
+            HGNC gene symbols labelling columns of the input matrices.
+
+        Returns
+        -------
+        (node_features, mask)
+            ``node_features`` : Tensor (B, N_nodes, feature_dim)
+            ``mask`` : Tensor (B, N_nodes) bool, True where a real
+            feature was placed.
+        """
+        if batch_rna is not None:
+            B = batch_rna.shape[0]
+        elif batch_proteomics is not None:
+            B = batch_proteomics.shape[0]
+        else:
+            # No input data -- return zeros.
+            B = 1
+            features = torch.zeros(B, self.n_nodes, self.feature_dim)
+            mask = torch.zeros(B, self.n_nodes, dtype=torch.bool)
+            return features, mask
+
+        device = (batch_rna if batch_rna is not None else batch_proteomics).device
+        features = torch.zeros(B, self.n_nodes, self.feature_dim, device=device)
+        mask = torch.zeros(B, self.n_nodes, dtype=torch.bool, device=device)
+
+        if protein_names is None:
+            return features, mask
+
+        # Map expression values onto graph nodes.
+        for col_idx, name in enumerate(protein_names):
+            node_idx = self.protein_index.get(name)
+            if node_idx is None or node_idx >= self.n_nodes:
+                continue
+
+            # Prefer proteomics if available, else use RNA.
+            if batch_proteomics is not None and col_idx < batch_proteomics.shape[1]:
+                features[:, node_idx, 0] = batch_proteomics[:, col_idx]
+                mask[:, node_idx] = True
+            elif batch_rna is not None and col_idx < batch_rna.shape[1]:
+                features[:, node_idx, 0] = batch_rna[:, col_idx]
+                mask[:, node_idx] = True
+
+        return features, mask
+
+
+# ===================================================================
+# 3. PatientGraphEncoder -- GNN producing per-patient embeddings
+# ===================================================================
+
+
+class _ManualGATLayer(nn.Module):
+    """Simple single-head attention-based message passing fallback.
+
+    Used when torch_geometric is not installed. Implements a basic
+    graph attention mechanism over a sparse edge index.
+    """
+
+    def __init__(self, in_dim: int, out_dim: int, dropout: float = 0.1) -> None:
+        super().__init__()
+        self.W = nn.Linear(in_dim, out_dim, bias=False)
+        self.a_src = nn.Linear(out_dim, 1, bias=False)
+        self.a_dst = nn.Linear(out_dim, 1, bias=False)
+        self.dropout = nn.Dropout(dropout)
+        self.leaky_relu = nn.LeakyReLU(0.2)
+
+    def forward(
+        self, x: torch.Tensor, edge_index: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Parameters
+        ----------
+        x : Tensor (N, in_dim)
+        edge_index : Tensor (2, E)
+
+        Returns
+        -------
+        Tensor (N, out_dim)
+        """
+        N = x.shape[0]
+        h = self.W(x)  # (N, out_dim)
+
+        src, dst = edge_index[0], edge_index[1]
+
+        # Attention coefficients.
+        e_src = self.a_src(h[src])  # (E, 1)
+        e_dst = self.a_dst(h[dst])  # (E, 1)
+        e = self.leaky_relu(e_src + e_dst).squeeze(-1)  # (E,)
+
+        # Softmax per destination node.
+        e_max = torch.full((N,), float("-inf"), device=x.device)
+        e_max.scatter_reduce_(0, dst, e, reduce="amax", include_self=False)
+        e_exp = torch.exp(e - e_max[dst])
+        e_sum = torch.zeros(N, device=x.device)
+        e_sum.scatter_add_(0, dst, e_exp)
+        alpha = e_exp / (e_sum[dst] + 1e-8)  # (E,)
+        alpha = self.dropout(alpha)
+
+        # Aggregate messages.
+        msg = alpha.unsqueeze(-1) * h[src]  # (E, out_dim)
+        out = torch.zeros(N, h.shape[1], device=x.device)
+        out.scatter_add_(0, dst.unsqueeze(-1).expand_as(msg), msg)
+
+        return out
+
+
+class PatientGraphEncoder(nn.Module):
+    """GNN that produces per-patient graph embeddings.
+
+    Uses GATConv layers when torch_geometric is available. Falls back
+    to a manual message-passing implementation otherwise.
+
+    The encoder operates on the **protein-protein** PPI subgraph:
+    patient RNA/proteomics features are placed on protein nodes, then
+    propagated through multi-layer graph attention, and globally
+    mean-pooled to a (B, d_graph) output.
+
+    Parameters
+    ----------
+    node_feature_dim : int
+        Input feature dimensionality per node.
     d_graph : int
-        Output dimensionality of the graph embedding consumed by the SDE
-        drift.
-    d_hidden : int
-        Hidden dimensionality inside the GNN layers.
+        Output graph embedding dimensionality.
     n_layers : int
-        Number of HeteroConv (GAT) layers. Default 3.
+        Number of GNN layers.
     n_heads : int
-        Number of GAT attention heads per layer. ``d_hidden`` must be
-        divisible by ``n_heads``.
+        Number of GAT attention heads per layer (PyG path only;
+        the fallback uses single-head attention).
     dropout : float
-        Dropout probability applied after each conv + residual.
+        Dropout probability.
+    d_hidden : int
+        Hidden dimensionality inside GNN layers.
+    d_latent : int
+        Dimensionality of patient z0 latent (for FiLM conditioning).
+        Set to 0 to disable FiLM.
     """
 
     def __init__(
         self,
-        d_latent: int,
-        d_graph: int,
-        d_hidden: int = 128,
+        node_feature_dim: int = 1,
+        d_graph: int = 64,
         n_layers: int = 3,
         n_heads: int = 4,
-        dropout: float = 0.2,
+        dropout: float = 0.1,
+        d_hidden: int = 128,
+        d_latent: int = 0,
     ) -> None:
         super().__init__()
-        if not HAS_PYG:
-            raise ImportError(
-                "torch_geometric is required for PatientGraphEncoder. "
-                "Install with: pip install torch_geometric"
-            )
-        if d_hidden % n_heads != 0:
-            raise ValueError(
-                f"d_hidden ({d_hidden}) must be divisible by n_heads "
-                f"({n_heads}) for multi-head GAT."
-            )
-
-        self.d_latent = d_latent
+        self.node_feature_dim = node_feature_dim
         self.d_graph = d_graph
         self.d_hidden = d_hidden
         self.n_layers = n_layers
         self.n_heads = n_heads
         self.dropout_p = dropout
+        self.d_latent = d_latent
 
-        # ---- Per-node-type input projections --------------------------
-        # Gene nodes: 1 feature (expression) -> d_hidden
-        self.gene_proj = nn.Linear(1, d_hidden)
-        # Drug nodes: 1 feature (exposure flag/dose) -> d_hidden
-        self.drug_proj = nn.Linear(1, d_hidden)
-        # Protein nodes: learned embedding (no patient-specific input)
-        self.protein_emb_dim = d_hidden  # will be set by register_graph
-        # Pathway nodes: learned embedding
-        self.pathway_emb_dim = d_hidden
+        # Input projection.
+        self.input_proj = nn.Linear(node_feature_dim, d_hidden)
 
-        # Protein and pathway embeddings are created lazily in
-        # register_graph() because we need the node counts from the
-        # HeteroBiologicalGraph.
-        self.protein_embedding: Optional[nn.Embedding] = None
-        self.pathway_embedding: Optional[nn.Embedding] = None
+        # Optional FiLM conditioning from z0.
+        if d_latent > 0:
+            self.film_gamma = nn.Linear(d_latent, d_hidden)
+            self.film_beta = nn.Linear(d_latent, d_hidden)
+        else:
+            self.film_gamma = None
+            self.film_beta = None
 
-        # ---- FiLM conditioning from z0 --------------------------------
-        # Produces per-node-type (gamma, beta) from z0 for each type.
-        self.film_gamma = nn.Linear(d_latent, d_hidden)
-        self.film_beta = nn.Linear(d_latent, d_hidden)
+        # GNN layers.
+        if HAS_PYG:
+            self.convs = nn.ModuleList()
+            for _ in range(n_layers):
+                self.convs.append(
+                    GATConv(
+                        d_hidden,
+                        d_hidden // n_heads,
+                        heads=n_heads,
+                        dropout=dropout,
+                        edge_dim=1,
+                        add_self_loops=True,
+                    )
+                )
+        else:
+            self.convs = nn.ModuleList()
+            for _ in range(n_layers):
+                self.convs.append(_ManualGATLayer(d_hidden, d_hidden, dropout))
 
-        # ---- HeteroConv layers ----------------------------------------
-        self.convs = nn.ModuleList()
-        self.norms = nn.ModuleList()
-        for _ in range(n_layers):
-            conv_dict = {
-                ("protein", "interacts", "protein"): GATConv(
-                    d_hidden, d_hidden // n_heads,
-                    heads=n_heads, dropout=dropout, edge_dim=1,
-                    add_self_loops=False,
-                ),
-                ("drug", "targets", "protein"): GATConv(
-                    (d_hidden, d_hidden), d_hidden // n_heads,
-                    heads=n_heads, dropout=dropout, edge_dim=1,
-                    add_self_loops=False,
-                ),
-                ("gene", "member_of", "pathway"): GATConv(
-                    (d_hidden, d_hidden), d_hidden // n_heads,
-                    heads=n_heads, dropout=dropout, edge_dim=1,
-                    add_self_loops=False,
-                ),
-            }
-            self.convs.append(HeteroConv(conv_dict, aggr="sum"))
-            # Per-type LayerNorm applied after each conv.
-            self.norms.append(nn.ModuleDict({
-                "protein": nn.LayerNorm(d_hidden),
-                "drug": nn.LayerNorm(d_hidden),
-                "gene": nn.LayerNorm(d_hidden),
-                "pathway": nn.LayerNorm(d_hidden),
-            }))
-
+        self.norms = nn.ModuleList([nn.LayerNorm(d_hidden) for _ in range(n_layers)])
         self.dropout = nn.Dropout(dropout)
 
-        # ---- Global attention pooling over protein nodes ---------------
-        gate_nn = nn.Sequential(
-            nn.Linear(d_hidden, d_hidden // 2),
-            nn.SiLU(),
-            nn.Linear(d_hidden // 2, 1),
-        )
-        self.pool = GlobalAttention(gate_nn=gate_nn)
-
-        # ---- Output projection + LayerNorm ----------------------------
+        # Global mean pooling -> output projection.
         self.out_proj = nn.Sequential(
             nn.Linear(d_hidden, d_graph),
-            nn.SiLU(),
+            nn.LayerNorm(d_graph),
         )
-        self.out_norm = nn.LayerNorm(d_graph)
-
-        self._registered = False
-
-    # ----------------------------------------------------------------
-    # Graph registration (call once after constructing graph)
-    # ----------------------------------------------------------------
-
-    def register_graph(self, graph: HeteroBiologicalGraph) -> None:
-        """Register the static graph topology and allocate learned
-        node embeddings for protein and pathway nodes.
-
-        Must be called once before the first ``forward()`` call.
-
-        Parameters
-        ----------
-        graph :
-            The :class:`HeteroBiologicalGraph` built from on-disk data.
-        """
-        n_protein = graph.n_nodes.get("protein", 0)
-        n_pathway = graph.n_nodes.get("pathway", 0)
-
-        if n_protein > 0:
-            self.protein_embedding = nn.Embedding(n_protein, self.protein_emb_dim)
-            nn.init.xavier_uniform_(self.protein_embedding.weight)
-        if n_pathway > 0:
-            self.pathway_embedding = nn.Embedding(n_pathway, self.pathway_emb_dim)
-            nn.init.xavier_uniform_(self.pathway_embedding.weight)
-
-        self._n_protein = n_protein
-        self._n_pathway = n_pathway
-        self._gene_sym_to_idx = graph.gene_symbol_to_idx()
-        self._drug_id_to_idx = graph.drug_id_to_idx()
-        self._n_gene = graph.n_nodes.get("gene", 0)
-        self._n_drug = graph.n_nodes.get("drug", 0)
-        self._registered = True
-        logger.info(
-            "PatientGraphEncoder registered: protein=%d, gene=%d, "
-            "drug=%d, pathway=%d",
-            n_protein, self._n_gene, self._n_drug, n_pathway,
-        )
-
-    # ----------------------------------------------------------------
-    # Feature stamping helpers
-    # ----------------------------------------------------------------
-
-    def _stamp_node_features(
-        self,
-        z0_single: torch.Tensor,
-        expression: Optional[torch.Tensor],
-        drug_exposure: Optional[torch.Tensor],
-        gene_columns: Optional[Sequence[str]],
-        drug_columns: Optional[Sequence[str]],
-        hetero: HeteroData,
-    ) -> Dict[str, torch.Tensor]:
-        """Build per-node-type feature tensors for a single patient.
-
-        Parameters
-        ----------
-        z0_single : Tensor (d_latent,)
-            Patient latent vector for FiLM conditioning.
-        expression : Tensor (n_genes_rna,) or None
-            Patient RNA expression values. ``gene_columns`` maps each
-            position to an HGNC symbol.
-        drug_exposure : Tensor (n_drugs,) or None
-            Patient drug exposure vector. ``drug_columns`` maps each
-            position to a CHEMBL drug ID.
-        gene_columns : sequence of str or None
-            HGNC symbols for each column of ``expression``.
-        drug_columns : sequence of str or None
-            Drug IDs for each column of ``drug_exposure``.
-        hetero : HeteroData
-            The base graph topology.
-
-        Returns
-        -------
-        dict mapping node_type -> Tensor (n_nodes_of_type, d_hidden)
-        """
-        device = z0_single.device
-        dtype = z0_single.dtype
-
-        # FiLM parameters from z0 (shared across node types).
-        gamma = self.film_gamma(z0_single)  # (d_hidden,)
-        beta = self.film_beta(z0_single)    # (d_hidden,)
-
-        features: Dict[str, torch.Tensor] = {}
-
-        # -- Gene nodes: patient RNA expression --------------------------
-        gene_feat = torch.zeros(self._n_gene, 1, device=device, dtype=dtype)
-        if expression is not None and gene_columns is not None:
-            for col_idx, sym in enumerate(gene_columns):
-                node_idx = self._gene_sym_to_idx.get(sym)
-                if node_idx is not None and col_idx < expression.shape[0]:
-                    gene_feat[node_idx, 0] = expression[col_idx]
-        gene_h = self.gene_proj(gene_feat)  # (n_gene, d_hidden)
-        features["gene"] = gamma.unsqueeze(0) * gene_h + beta.unsqueeze(0)
-
-        # -- Drug nodes: patient drug exposure ----------------------------
-        drug_feat = torch.zeros(self._n_drug, 1, device=device, dtype=dtype)
-        if drug_exposure is not None and drug_columns is not None:
-            for col_idx, did in enumerate(drug_columns):
-                node_idx = self._drug_id_to_idx.get(did)
-                if node_idx is not None and col_idx < drug_exposure.shape[0]:
-                    drug_feat[node_idx, 0] = drug_exposure[col_idx]
-        drug_h = self.drug_proj(drug_feat)  # (n_drug, d_hidden)
-        features["drug"] = gamma.unsqueeze(0) * drug_h + beta.unsqueeze(0)
-
-        # -- Protein nodes: learned embedding (not patient-specific) ------
-        if self.protein_embedding is not None:
-            prot_idx = torch.arange(self._n_protein, device=device)
-            prot_h = self.protein_embedding(prot_idx)
-        else:
-            prot_h = torch.zeros(
-                self._n_protein, self.d_hidden, device=device, dtype=dtype,
-            )
-        features["protein"] = gamma.unsqueeze(0) * prot_h + beta.unsqueeze(0)
-
-        # -- Pathway nodes: learned embedding -----------------------------
-        if self.pathway_embedding is not None:
-            pw_idx = torch.arange(self._n_pathway, device=device)
-            pw_h = self.pathway_embedding(pw_idx)
-        else:
-            pw_h = torch.zeros(
-                self._n_pathway, self.d_hidden, device=device, dtype=dtype,
-            )
-        features["pathway"] = gamma.unsqueeze(0) * pw_h + beta.unsqueeze(0)
-
-        return features
-
-    # ----------------------------------------------------------------
-    # Forward
-    # ----------------------------------------------------------------
 
     def forward(
         self,
-        z0: torch.Tensor,
-        batch_expression: Optional[torch.Tensor],
-        drug_exposure: Optional[torch.Tensor],
-        graph_data: HeteroBiologicalGraph,
-        gene_columns: Optional[Sequence[str]] = None,
-        drug_columns: Optional[Sequence[str]] = None,
+        node_features: torch.Tensor,
+        edge_index: torch.Tensor,
+        batch_idx: Optional[torch.Tensor] = None,
+        edge_attr: Optional[torch.Tensor] = None,
+        z0: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        """Produce per-patient graph embeddings.
+        """Encode graph node features into per-patient embeddings.
 
         Parameters
         ----------
-        z0 : Tensor (B, d_latent)
-            Patient latent vectors from the foundation encoder.
-        batch_expression : Tensor (B, n_genes_rna) or None
-            Per-patient RNA expression matrix. Columns aligned with
-            ``gene_columns``.
-        drug_exposure : Tensor (B, n_drugs) or None
-            Per-patient drug exposure vectors. Columns aligned with
-            ``drug_columns``.
-        graph_data : HeteroBiologicalGraph
-            The static biological graph (topology is shared across
-            patients; node features are stamped per patient).
-        gene_columns : list[str] or None
-            HGNC symbols identifying each column of
-            ``batch_expression``.
-        drug_columns : list[str] or None
-            Drug IDs identifying each column of ``drug_exposure``.
+        node_features : Tensor (N_total, node_feature_dim)
+            Concatenated node features for all patients in the batch.
+        edge_index : Tensor (2, E_total)
+            Edge index for the batched graph.
+        batch_idx : Tensor (N_total,) or None
+            Maps each node to its patient index (0..B-1). Required for
+            batched graphs. If None, assumes single graph.
+        edge_attr : Tensor (E_total, 1) or None
+            Edge weights.
+        z0 : Tensor (B, d_latent) or None
+            Patient latents for FiLM conditioning.
 
         Returns
         -------
         Tensor (B, d_graph)
-            Per-patient graph embedding.
         """
-        if not self._registered:
-            self.register_graph(graph_data)
+        # Input projection.
+        h = self.input_proj(node_features)  # (N_total, d_hidden)
 
-        B = z0.shape[0]
-        device = z0.device
-        hetero_template = graph_data.hetero_data
+        # FiLM conditioning.
+        if self.film_gamma is not None and z0 is not None and batch_idx is not None:
+            gamma = self.film_gamma(z0)  # (B, d_hidden)
+            beta = self.film_beta(z0)    # (B, d_hidden)
+            # Broadcast to per-node.
+            h = gamma[batch_idx] * h + beta[batch_idx]
 
-        # Process each patient independently, then stack.
-        # (Batching heterogeneous graphs with different node features per
-        # sample is non-trivial in PyG; the per-patient loop is the
-        # clear-correctness path. For N_patient ~ 30 this is fine.)
-        patient_embeddings = []
+        # Message passing layers with residual + norm.
+        for conv, norm in zip(self.convs, self.norms):
+            residual = h
+            if HAS_PYG:
+                h = conv(h, edge_index, edge_attr=edge_attr)
+            else:
+                h = conv(h, edge_index)
+            h = norm(h)
+            h = F.silu(h)
+            h = self.dropout(h) + residual
 
-        for i in range(B):
-            z0_i = z0[i]  # (d_latent,)
-            expr_i = batch_expression[i] if batch_expression is not None else None
-            drug_i = drug_exposure[i] if drug_exposure is not None else None
+        # Global mean pooling per patient.
+        if batch_idx is not None:
+            B = int(batch_idx.max().item()) + 1
+            pooled = torch.zeros(B, self.d_hidden, device=h.device, dtype=h.dtype)
+            counts = torch.zeros(B, 1, device=h.device, dtype=h.dtype)
+            pooled.scatter_add_(0, batch_idx.unsqueeze(-1).expand_as(h), h)
+            counts.scatter_add_(0, batch_idx.unsqueeze(-1), torch.ones_like(batch_idx, dtype=h.dtype).unsqueeze(-1))
+            pooled = pooled / counts.clamp(min=1.0)
+        else:
+            # Single graph -- mean over all nodes.
+            pooled = h.mean(dim=0, keepdim=True)  # (1, d_hidden)
 
-            # Stamp patient-specific node features.
-            x_dict = self._stamp_node_features(
-                z0_i, expr_i, drug_i,
-                gene_columns, drug_columns,
-                hetero_template,
-            )
-
-            # Build a per-patient HeteroData with these features.
-            h = HeteroData()
-            for ntype, feat in x_dict.items():
-                h[ntype].x = feat
-                h[ntype].num_nodes = feat.shape[0]
-
-            # Copy edge topology from template.
-            for etype_key in _EDGE_TYPE_MAP.values():
-                if hasattr(hetero_template[etype_key], "edge_index"):
-                    h[etype_key].edge_index = hetero_template[etype_key].edge_index.to(device)
-                    if hasattr(hetero_template[etype_key], "edge_attr") and hetero_template[etype_key].edge_attr is not None:
-                        h[etype_key].edge_attr = hetero_template[etype_key].edge_attr.to(device)
-
-            # Run HeteroConv layers with residual connections.
-            for layer_idx, (conv, norm_dict) in enumerate(
-                zip(self.convs, self.norms)
-            ):
-                # Collect current x_dict from h.
-                x_in = {ntype: h[ntype].x for ntype in x_dict}
-                edge_index_dict = {}
-                edge_attr_dict = {}
-                for etype_key in _EDGE_TYPE_MAP.values():
-                    if hasattr(h[etype_key], "edge_index"):
-                        edge_index_dict[etype_key] = h[etype_key].edge_index
-                        if hasattr(h[etype_key], "edge_attr") and h[etype_key].edge_attr is not None:
-                            edge_attr_dict[etype_key] = h[etype_key].edge_attr
-
-                # HeteroConv forward -- only updates node types that are
-                # on the receiving end of at least one edge type.
-                x_out = conv(x_in, edge_index_dict, edge_attr_dict=edge_attr_dict)
-
-                # Residual + LayerNorm + activation + dropout for
-                # updated node types.
-                for ntype in x_dict:
-                    if ntype in x_out:
-                        residual = h[ntype].x
-                        updated = norm_dict[ntype](x_out[ntype])
-                        h[ntype].x = self.dropout(F.silu(updated)) + residual
-                    # Node types not updated keep their previous features.
-
-            # Pool over protein nodes using global attention.
-            protein_h = h["protein"].x  # (n_protein, d_hidden)
-            # GlobalAttention expects a batch vector; single-graph ->
-            # all zeros.
-            batch_vec = torch.zeros(
-                protein_h.shape[0], dtype=torch.long, device=device,
-            )
-            pooled = self.pool(protein_h, batch_vec)  # (1, d_hidden)
-            patient_embeddings.append(pooled.squeeze(0))
-
-        # Stack all patients -> (B, d_hidden) then project.
-        stacked = torch.stack(patient_embeddings, dim=0)  # (B, d_hidden)
-        out = self.out_proj(stacked)  # (B, d_graph)
-        out = self.out_norm(out)
-        return out
+        return self.out_proj(pooled)  # (B, d_graph)
 
 
 # ===================================================================
-# 3. build_patient_graph_emb_fn -- factory for CanonicalMORTFMTrainer
+# 4. PatientGraphEmbeddingFn -- callable wrapper for canonical trainer
 # ===================================================================
+
+
+class PatientGraphEmbeddingFn:
+    """Callable wrapper producing per-patient graph embeddings from a MORTBatch.
+
+    Designed to be passed as ``graph_emb_fn`` to
+    :class:`CanonicalMORTFMTrainer`. Extracts RNA/proteomics from the
+    batch, builds node features, and runs the GNN encoder.
+
+    Parameters
+    ----------
+    graph_store : GraphStore
+        Loaded biological graph.
+    node_feature_builder : PatientNodeFeatureBuilder
+        Maps patient molecular features to graph nodes.
+    graph_encoder : PatientGraphEncoder
+        GNN that produces the embedding.
+    device : str
+        Target device.
+    protein_names : list of str or None
+        HGNC symbols identifying columns of ``MORTBatch.rna`` or
+        ``MORTBatch.proteomics``.
+    trainable : bool
+        If False (default), runs under ``torch.no_grad()`` for a
+        frozen encoder. If True, gradients flow through the GNN.
+    """
+
+    def __init__(
+        self,
+        graph_store: GraphStore,
+        node_feature_builder: PatientNodeFeatureBuilder,
+        graph_encoder: PatientGraphEncoder,
+        device: str = "cuda",
+        protein_names: Optional[List[str]] = None,
+        trainable: bool = False,
+    ) -> None:
+        self.graph_store = graph_store
+        self.node_feature_builder = node_feature_builder
+        self.graph_encoder = graph_encoder
+        self.device = torch.device(device)
+        self.protein_names = protein_names
+        self.trainable = trainable
+
+        # Precompute edge topology on device.
+        self._edge_index = graph_store.edge_index.to(self.device)
+        self._edge_attr = graph_store.edge_attr.to(self.device)
+
+    def __call__(self, batch: Any) -> torch.Tensor:
+        """Produce (B, d_graph) graph embedding from a MORTBatch.
+
+        Parameters
+        ----------
+        batch : MORTBatch
+            Must have ``.rna`` and/or ``.proteomics`` tensors, plus
+            ``.batch_size``.
+
+        Returns
+        -------
+        Tensor (B, d_graph)
+        """
+        rna = getattr(batch, "rna", None)
+        proteomics = getattr(batch, "proteomics", None)
+        B = batch.batch_size
+
+        # Build per-patient node features.
+        node_features, mask = self.node_feature_builder.build_node_features(
+            batch_rna=rna,
+            batch_proteomics=proteomics,
+            protein_names=self.protein_names,
+        )
+        # node_features: (B, N_nodes, F)
+        node_features = node_features.to(self.device)
+
+        N_nodes = node_features.shape[1]
+
+        # Build batched graph: replicate edge topology per patient with
+        # offset node indices.
+        all_node_feats = node_features.reshape(B * N_nodes, -1)  # (B*N, F)
+        batch_idx = torch.arange(B, device=self.device).repeat_interleave(N_nodes)
+
+        # Offset edge indices per patient.
+        base_ei = self._edge_index  # (2, E)
+        E = base_ei.shape[1]
+        offsets = torch.arange(B, device=self.device) * N_nodes  # (B,)
+        # Repeat edge index B times with offsets.
+        batched_ei = base_ei.unsqueeze(0).expand(B, 2, E)  # (B, 2, E)
+        batched_ei = batched_ei + offsets.view(B, 1, 1)
+        batched_ei = batched_ei.reshape(2, B * E)
+
+        # Repeat edge attr.
+        batched_ea = self._edge_attr.repeat(B, 1) if self._edge_attr.numel() > 0 else None
+
+        # Optional z0 for FiLM.
+        z0 = getattr(batch, "z0", None)
+        if z0 is None:
+            z0 = getattr(batch, "latent", None)
+
+        if self.trainable:
+            return self.graph_encoder(
+                all_node_feats, batched_ei,
+                batch_idx=batch_idx,
+                edge_attr=batched_ea,
+                z0=z0.to(self.device) if z0 is not None else None,
+            )
+        else:
+            with torch.no_grad():
+                return self.graph_encoder(
+                    all_node_feats, batched_ei,
+                    batch_idx=batch_idx,
+                    edge_attr=batched_ea,
+                    z0=z0.to(self.device) if z0 is not None else None,
+                )
+
+
+# ===================================================================
+# 5. Factory function
+# ===================================================================
+
+
+def build_patient_graph_embedding_fn(
+    edges_parquet: str = "data/processed/graphs/biological_edges.parquet",
+    nodes_csv: str = "data/processed/graphs/protein_nodes.csv",
+    protein_names: Optional[List[str]] = None,
+    d_graph: int = 64,
+    device: str = "cuda",
+    pretrained_encoder_path: Optional[str] = None,
+    n_layers: int = 3,
+    n_heads: int = 4,
+    dropout: float = 0.1,
+    d_hidden: int = 128,
+    d_latent: int = 0,
+    trainable: bool = False,
+) -> PatientGraphEmbeddingFn:
+    """Build a ready-to-use graph_emb_fn for CanonicalMORTFMTrainer.
+
+    Parameters
+    ----------
+    edges_parquet :
+        Path to biological_edges.parquet.
+    nodes_csv :
+        Path to protein_nodes.csv.
+    protein_names :
+        HGNC symbols labelling columns of ``MORTBatch.rna``. When
+        ``None``, the graph store's own protein index is used.
+    d_graph :
+        Output embedding dimensionality for the SDE drift.
+    device :
+        Target torch device string.
+    pretrained_encoder_path :
+        Optional path to a pretrained GNN encoder checkpoint.
+        If provided, loads state_dict into the encoder.
+    n_layers :
+        Number of GNN layers.
+    n_heads :
+        Number of GAT attention heads (PyG path).
+    dropout :
+        Dropout probability.
+    d_hidden :
+        Hidden dimensionality of GNN layers.
+    d_latent :
+        Dimensionality of patient z0 for FiLM conditioning (0=disabled).
+    trainable :
+        Whether the embedding function should allow gradient flow.
+
+    Returns
+    -------
+    PatientGraphEmbeddingFn
+        Callable compatible with ``CanonicalMORTFMTrainer.graph_emb_fn``.
+    """
+    # Load graph.
+    graph_store = GraphStore(
+        edges_parquet=edges_parquet,
+        nodes_csv=nodes_csv,
+    )
+
+    # Build protein index for feature alignment.
+    protein_index = graph_store.protein_index
+    if not protein_index and graph_store.node_id_to_idx.get("protein"):
+        # Fall back to protein node IDs as index.
+        protein_index = graph_store.node_id_to_idx["protein"]
+
+    # Node feature builder.
+    node_feature_builder = PatientNodeFeatureBuilder(
+        protein_index=protein_index,
+        feature_dim=1,
+    )
+
+    # Encoder.
+    encoder = PatientGraphEncoder(
+        node_feature_dim=1,
+        d_graph=d_graph,
+        n_layers=n_layers,
+        n_heads=n_heads,
+        dropout=dropout,
+        d_hidden=d_hidden,
+        d_latent=d_latent,
+    )
+
+    # Load pretrained weights if available.
+    if pretrained_encoder_path is not None:
+        path = Path(pretrained_encoder_path)
+        if path.exists():
+            state = torch.load(path, map_location="cpu", weights_only=True)
+            encoder.load_state_dict(state, strict=False)
+            logger.info("Loaded pretrained encoder from %s", path)
+        else:
+            logger.warning(
+                "Pretrained encoder path does not exist: %s", path
+            )
+
+    encoder.to(torch.device(device))
+    if not trainable:
+        encoder.eval()
+
+    # Resolve protein_names: use the graph store's own protein index keys.
+    if protein_names is None:
+        protein_names = list(protein_index.keys()) if protein_index else None
+
+    return PatientGraphEmbeddingFn(
+        graph_store=graph_store,
+        node_feature_builder=node_feature_builder,
+        graph_encoder=encoder,
+        device=device,
+        protein_names=protein_names,
+        trainable=trainable,
+    )
+
+
+# ===================================================================
+# Legacy compatibility aliases
+# ===================================================================
+# The __init__.py imports these names; preserve them.
+
+# HeteroBiologicalGraph is an alias for GraphStore with a PyG-oriented
+# interface. We provide a thin wrapper that matches the old API.
+
+class HeteroBiologicalGraph(GraphStore):
+    """Legacy alias for GraphStore that provides ``from_disk()`` and
+    ``to()`` methods matching the v17 interface.
+
+    New code should use :class:`GraphStore` directly.
+    """
+
+    @classmethod
+    def from_disk(
+        cls,
+        edges_parquet: str = "data/processed/graphs/biological_edges.parquet",
+        nodes_csv: str = "data/processed/graphs/protein_nodes.csv",
+        id_harmonizer: Optional[IDHarmonizer] = None,
+    ) -> "HeteroBiologicalGraph":
+        """Build from on-disk data, matching the legacy v17 API."""
+        instance = cls(edges_parquet=edges_parquet, nodes_csv=nodes_csv)
+        return instance
+
+    def to(self, device: torch.device) -> "HeteroBiologicalGraph":
+        """Move edge tensors to device (in-place). Returns self."""
+        for key in list(self._edge_index_per_type.keys()):
+            self._edge_index_per_type[key] = self._edge_index_per_type[key].to(device)
+        for key in list(self._edge_attr_per_type.keys()):
+            self._edge_attr_per_type[key] = self._edge_attr_per_type[key].to(device)
+        return self
+
 
 def build_patient_graph_emb_fn(
     graph_data_path: str = "data/processed/graphs",
@@ -716,122 +858,31 @@ def build_patient_graph_emb_fn(
     dropout: float = 0.2,
     gene_columns: Optional[Sequence[str]] = None,
     drug_columns: Optional[Sequence[str]] = None,
-) -> Tuple[PatientGraphEncoder, Callable]:
-    """Factory that builds a :class:`PatientGraphEncoder` and returns it
-    together with a ``graph_emb_fn(batch) -> Tensor`` callable compatible
-    with :class:`CanonicalMORTFMTrainer`'s ``graph_emb_fn`` parameter.
+) -> Tuple["PatientGraphEncoder", Callable]:
+    """Legacy factory matching the v17 ``build_patient_graph_emb_fn`` API.
 
-    Parameters
-    ----------
-    graph_data_path :
-        Directory containing ``biological_edges.parquet`` and
-        ``protein_nodes.csv``.
-    id_harmonizer :
-        Pre-built harmonizer; if ``None`` one is built from the default
-        STRING aliases file.
-    device :
-        Torch device string.
-    d_latent, d_graph, d_hidden, n_layers, n_heads, dropout :
-        Architecture hyper-parameters forwarded to
-        :class:`PatientGraphEncoder`.
-    gene_columns :
-        HGNC symbols that label the columns of ``MORTBatch.rna``. When
-        ``None`` the callable will attempt to align expression anyway
-        (zero-padded genes).
-    drug_columns :
-        Drug IDs that label the columns of ``MORTBatch.drug``. When
-        ``None`` drug exposure is not mapped to graph drug nodes.
+    Returns ``(encoder, graph_emb_fn)`` where ``graph_emb_fn`` is a
+    ``Callable[[MORTBatch], Tensor]`` returning ``(B, d_graph)``.
 
-    Returns
-    -------
-    (encoder, graph_emb_fn)
-        ``encoder`` is the :class:`PatientGraphEncoder` (so the caller
-        can register its parameters for optimisation).
-        ``graph_emb_fn`` is a ``Callable[[MORTBatch], Tensor]``
-        returning ``(B, d_graph)`` on the configured device.
+    New code should prefer :func:`build_patient_graph_embedding_fn`.
     """
-    if not HAS_PYG:
-        raise ImportError(
-            "torch_geometric is required. Install with: pip install torch_geometric"
-        )
-
     base = Path(graph_data_path)
     edges_pq = str(base / "biological_edges.parquet")
     nodes_csv = str(base / "protein_nodes.csv")
 
-    # Build the static graph (loaded once).
-    graph = HeteroBiologicalGraph.from_disk(
+    emb_fn = build_patient_graph_embedding_fn(
         edges_parquet=edges_pq,
         nodes_csv=nodes_csv,
-        id_harmonizer=id_harmonizer,
-    )
-    torch_device = torch.device(device)
-    graph.to(torch_device)
-
-    # Build the encoder.
-    encoder = PatientGraphEncoder(
-        d_latent=d_latent,
+        protein_names=list(gene_columns) if gene_columns is not None else None,
         d_graph=d_graph,
-        d_hidden=d_hidden,
+        device=device,
         n_layers=n_layers,
         n_heads=n_heads,
         dropout=dropout,
+        d_hidden=d_hidden,
+        d_latent=d_latent,
+        trainable=True,
     )
-    encoder.register_graph(graph)
-    encoder.to(torch_device)
 
-    # Capture gene/drug columns in closure.
-    _gene_cols = list(gene_columns) if gene_columns is not None else None
-    _drug_cols = list(drug_columns) if drug_columns is not None else None
-
-    def graph_emb_fn(batch: Any) -> torch.Tensor:
-        """Extract patient features from MORTBatch and run the GNN.
-
-        Expects ``batch`` to expose ``.rna``, ``.drug``, and a method
-        or attribute to get z0 (falls back to encoding via the model's
-        foundation encoder if z0 is not precomputed).
-
-        For the canonical trainer integration the z0 is available in the
-        model outputs dict; here we use ``batch.rna`` as a proxy for
-        expression features and ``batch.drug`` for drug exposure,
-        delegating the actual z0 computation to the caller (who should
-        pass it through the graph embedding function after the foundation
-        encoder step).
-
-        This callable signature matches the ``graph_emb_fn`` parameter of
-        :class:`CanonicalMORTFMTrainer` (``Callable[[MORTBatch], Tensor]``).
-        However, since the trainer calls ``graph_emb_fn(batch)`` before
-        the model forward (where z0 is produced), we fall back to a
-        zero z0 if the batch has no precomputed latent. The caller
-        should prefer using the encoder directly in training loops where
-        z0 is available.
-        """
-        rna = batch.rna  # (B, n_genes) or None
-        drug = batch.drug  # (B, n_drugs) or None
-
-        # z0: if the batch carries a precomputed latent, use it.
-        # Otherwise, use a zero placeholder -- the caller should prefer
-        # calling encoder.forward(z0, ...) directly when z0 is available.
-        z0 = getattr(batch, "z0", None)
-        if z0 is None:
-            z0 = getattr(batch, "latent", None)
-        if z0 is None:
-            B = batch.batch_size
-            z0 = torch.zeros(B, d_latent, device=torch_device)
-        z0 = z0.to(torch_device)
-
-        if rna is not None:
-            rna = rna.to(torch_device)
-        if drug is not None:
-            drug = drug.to(torch_device)
-
-        return encoder(
-            z0=z0,
-            batch_expression=rna,
-            drug_exposure=drug,
-            graph_data=graph,
-            gene_columns=_gene_cols,
-            drug_columns=_drug_cols,
-        )
-
-    return encoder, graph_emb_fn
+    # Return (encoder, callable) to match legacy API.
+    return emb_fn.graph_encoder, emb_fn

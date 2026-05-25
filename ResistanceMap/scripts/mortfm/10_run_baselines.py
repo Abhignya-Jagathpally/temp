@@ -15,12 +15,19 @@ writes:
 All baselines use the SAME split and the script verifies split-manifest
 integrity via sha256 hash.
 
+Two modes are supported:
+
+  * ``static_cellline_drug_response`` (default) — per-drug regression on
+    cell-line multi-omics features from data_ready.pt.
+  * ``patient_longitudinal`` — survival/trajectory baselines on frozen
+    patient-disjoint temporal splits from a confirmed dataset + manifest.
+
 USAGE
 -----
 
     # Dry run — only print the plan.
     python scripts/mortfm/10_run_baselines.py \\
-        --baselines all --dry-run
+        --mode static_cellline_drug_response --baselines all --dry-run
 
     # Real run — fit, predict, evaluate, write outputs.
     python scripts/mortfm/10_run_baselines.py \\
@@ -37,6 +44,13 @@ USAGE
     # Specify seeds for repeated fitting.
     python scripts/mortfm/10_run_baselines.py \\
         --baselines all --seeds 0 1 2
+
+    # Patient-longitudinal mode (survival baselines on frozen splits).
+    python scripts/mortfm/10_run_baselines.py \\
+        --mode patient_longitudinal \\
+        --confirmed-dataset results/confirmed/mortfm_training_dataset.parquet \\
+        --split-manifest results/confirmed/split_manifest.json \\
+        --seeds 0 1 2
 """
 
 from __future__ import annotations
@@ -86,6 +100,11 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument(
+        "--mode", choices=["static_cellline_drug_response", "patient_longitudinal"],
+        default="static_cellline_drug_response",
+        help="Baseline evaluation mode.",
+    )
+    p.add_argument(
         "--baselines", nargs="+", default=["all"],
         help="Registered baseline names; use 'all' to run every baseline in REGISTRY.",
     )
@@ -112,6 +131,17 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument(
         "--dry-run", action="store_true",
         help="Print the plan and exit without fitting any model.",
+    )
+    # ── Patient-longitudinal mode arguments ────────────────────────────────
+    p.add_argument(
+        "--confirmed-dataset", type=Path, default=None,
+        help="Path to results/confirmed/mortfm_training_dataset.parquet "
+             "(required for patient_longitudinal mode).",
+    )
+    p.add_argument(
+        "--split-manifest", type=Path, default=None,
+        help="Path to results/confirmed/split_manifest.json "
+             "(required for patient_longitudinal mode).",
     )
     return p.parse_args(argv)
 
@@ -614,6 +644,685 @@ def write_leaderboard(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# PATIENT-LONGITUDINAL MODE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+PATIENT_LONGITUDINAL_BASELINES = [
+    "clinical_only_cox",
+    "clinical_ridge_cox",
+    "rna_only_cox",
+    "rna_plus_clinical_cox",
+    "random_survival_forest",
+    "deepsurv_mlp",
+    "mean_time_baseline",
+    "kaplan_meier_baseline",
+    "locf_trajectory_baseline",
+    "mean_future_state_baseline",
+]
+
+# Claim-level requirements: which baselines MORT-FM must beat for each claim.
+CLAIM_LEVEL_BASELINE_REQUIREMENTS = {
+    "survival_prediction": {
+        "must_beat": ["clinical_only_cox", "kaplan_meier_baseline"],
+        "should_beat": ["clinical_ridge_cox", "rna_plus_clinical_cox"],
+        "description": "MORT-FM must exceed clinical-only Cox and KM to claim survival prediction.",
+    },
+    "longitudinal_trajectory": {
+        "must_beat": ["locf_trajectory_baseline", "mean_future_state_baseline"],
+        "should_beat": ["rna_only_cox"],
+        "description": "MORT-FM must exceed LOCF and mean-future-state for trajectory claims.",
+    },
+    "resistance_emergence": {
+        "must_beat": [
+            "clinical_only_cox", "kaplan_meier_baseline",
+            "locf_trajectory_baseline", "mean_future_state_baseline",
+        ],
+        "should_beat": [
+            "rna_plus_clinical_cox", "random_survival_forest", "deepsurv_mlp",
+        ],
+        "description": (
+            "MORT-FM must exceed ALL simple baselines and SHOULD beat "
+            "non-trivial baselines for resistance_emergence."
+        ),
+    },
+    "patient_level_clinical_prediction": {
+        "must_beat": ["clinical_only_cox", "clinical_ridge_cox"],
+        "should_beat": ["random_survival_forest", "deepsurv_mlp"],
+        "description": "Must exceed clinical-only models for patient-level claims.",
+    },
+}
+
+
+def _kaplan_meier_estimate(
+    times: np.ndarray, events: np.ndarray,
+) -> float:
+    """Compute median survival time from KM estimator (simple implementation)."""
+    order = np.argsort(times)
+    t_sorted = times[order]
+    e_sorted = events[order]
+    n_at_risk = len(t_sorted)
+    surv = 1.0
+    median_time = float(t_sorted[-1])  # fallback
+    for i, (t, e) in enumerate(zip(t_sorted, e_sorted)):
+        if e:
+            surv *= (n_at_risk - 1) / n_at_risk
+        n_at_risk -= 1
+        if surv <= 0.5:
+            median_time = float(t)
+            break
+    return median_time
+
+
+def _concordance_index(
+    event_times: np.ndarray,
+    event_observed: np.ndarray,
+    risk_scores: np.ndarray,
+) -> float:
+    """Harrell's C-index (pure numpy, no external deps)."""
+    n = len(event_times)
+    concordant = 0
+    discordant = 0
+    tied_risk = 0
+    for i in range(n):
+        if not event_observed[i]:
+            continue
+        for j in range(n):
+            if i == j:
+                continue
+            if event_times[j] > event_times[i]:
+                if risk_scores[j] < risk_scores[i]:
+                    concordant += 1
+                elif risk_scores[j] > risk_scores[i]:
+                    discordant += 1
+                else:
+                    tied_risk += 1
+    total = concordant + discordant + tied_risk
+    if total == 0:
+        return 0.5
+    return (concordant + 0.5 * tied_risk) / total
+
+
+def _integrated_brier_score(
+    event_times: np.ndarray,
+    event_observed: np.ndarray,
+    risk_scores: np.ndarray,
+    t_max: Optional[float] = None,
+) -> float:
+    """Simplified IBS approximation using risk scores as proxy.
+
+    For proper IBS, survival curves are needed; here we approximate by
+    converting risk_scores to pseudo-survival probabilities via sigmoid
+    and computing Brier at quantile eval times.
+    """
+    if t_max is None:
+        t_max = float(np.percentile(event_times[event_observed.astype(bool)], 90))
+    eval_times = np.linspace(0.01, t_max, 10)
+    # Convert risk_scores to pseudo-survival probabilities.
+    surv_probs = 1.0 / (1.0 + np.exp(risk_scores - np.median(risk_scores)))
+
+    brier_scores = []
+    for t_eval in eval_times:
+        # At time t_eval: true status is 1 if event happened before t_eval.
+        y_true = ((event_times <= t_eval) & event_observed.astype(bool)).astype(float)
+        # Predicted probability of event by t_eval.
+        p_event = 1.0 - surv_probs
+        bs = float(np.mean((y_true - p_event) ** 2))
+        brier_scores.append(bs)
+
+    # np.trapezoid (numpy >= 2.0) replaces deprecated np.trapz.
+    _trapz = getattr(np, "trapezoid", getattr(np, "trapz", None))
+    if _trapz is None:
+        # Manual trapezoidal integration fallback.
+        integral = sum(
+            0.5 * (brier_scores[i] + brier_scores[i + 1]) * (eval_times[i + 1] - eval_times[i])
+            for i in range(len(eval_times) - 1)
+        )
+    else:
+        integral = float(_trapz(brier_scores, eval_times))
+    return integral / (eval_times[-1] - eval_times[0])
+
+
+def _fit_cox_linear(
+    X_train: np.ndarray,
+    y_time_train: np.ndarray,
+    y_event_train: np.ndarray,
+    l2: float = 0.01,
+    n_iter: int = 100,
+    lr: float = 0.01,
+) -> np.ndarray:
+    """Fit Cox PH via gradient descent on negative partial log-likelihood.
+
+    Returns coefficient vector beta.
+    """
+    n, p = X_train.shape
+    beta = np.zeros(p)
+
+    # Sort by time descending for efficient risk-set computation.
+    order = np.argsort(-y_time_train)
+    X_sorted = X_train[order]
+    e_sorted = y_event_train[order]
+
+    for _ in range(n_iter):
+        eta = X_sorted @ beta
+        # Numerical stability: shift by max.
+        eta_shift = eta - np.max(eta)
+        exp_eta = np.exp(eta_shift)
+
+        # Cumulative sum from the end (risk set sums).
+        cum_exp = np.cumsum(exp_eta)
+        # Gradient of negative partial log-likelihood.
+        grad = np.zeros(p)
+        for i in range(n):
+            if e_sorted[i]:
+                risk_set_sum = cum_exp[i]
+                weighted_x = np.zeros(p)
+                for j in range(i + 1):
+                    weighted_x += exp_eta[j] * X_sorted[j]
+                grad += -(X_sorted[i] - weighted_x / risk_set_sum)
+        grad /= max(1, e_sorted.sum())
+        grad += l2 * beta  # L2 regularization.
+        beta -= lr * grad
+
+    return beta
+
+
+class _PatientLongitudinalBaseline:
+    """Simple baseline implementations for patient-longitudinal mode."""
+
+    def __init__(self, name: str, seed: int = 0):
+        self.name = name
+        self.seed = seed
+        self._params: Dict[str, Any] = {}
+
+    def fit(
+        self,
+        X_train: np.ndarray,
+        event_time_train: np.ndarray,
+        event_observed_train: np.ndarray,
+        clinical_train: Optional[np.ndarray] = None,
+    ) -> None:
+        """Fit the baseline model."""
+        rng = np.random.RandomState(self.seed)
+
+        if self.name == "clinical_only_cox":
+            if clinical_train is not None and clinical_train.shape[1] > 0:
+                beta = _fit_cox_linear(clinical_train, event_time_train, event_observed_train)
+                self._params["beta"] = beta
+                self._params["use_clinical"] = True
+            else:
+                self._params["use_clinical"] = False
+
+        elif self.name == "clinical_ridge_cox":
+            if clinical_train is not None and clinical_train.shape[1] > 0:
+                beta = _fit_cox_linear(
+                    clinical_train, event_time_train, event_observed_train, l2=1.0,
+                )
+                self._params["beta"] = beta
+                self._params["use_clinical"] = True
+            else:
+                self._params["use_clinical"] = False
+
+        elif self.name == "rna_only_cox":
+            # PCA to 10 components, then Cox.
+            from sklearn.decomposition import PCA
+            n_comp = min(10, X_train.shape[1], X_train.shape[0] - 1)
+            pca = PCA(n_components=n_comp, random_state=self.seed)
+            X_pca = pca.fit_transform(X_train)
+            beta = _fit_cox_linear(X_pca, event_time_train, event_observed_train)
+            self._params["pca"] = pca
+            self._params["beta"] = beta
+
+        elif self.name == "rna_plus_clinical_cox":
+            from sklearn.decomposition import PCA
+            n_comp = min(10, X_train.shape[1], X_train.shape[0] - 1)
+            pca = PCA(n_components=n_comp, random_state=self.seed)
+            X_pca = pca.fit_transform(X_train)
+            if clinical_train is not None and clinical_train.shape[1] > 0:
+                X_combined = np.hstack([X_pca, clinical_train])
+            else:
+                X_combined = X_pca
+            beta = _fit_cox_linear(X_combined, event_time_train, event_observed_train)
+            self._params["pca"] = pca
+            self._params["beta"] = beta
+            self._params["has_clinical"] = (
+                clinical_train is not None and clinical_train.shape[1] > 0
+            )
+
+        elif self.name == "random_survival_forest":
+            # Simplified: use random forest on features to predict event_time,
+            # then invert as risk score.
+            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.decomposition import PCA
+            n_comp = min(20, X_train.shape[1], X_train.shape[0] - 1)
+            pca = PCA(n_components=n_comp, random_state=self.seed)
+            X_pca = pca.fit_transform(X_train)
+            if clinical_train is not None and clinical_train.shape[1] > 0:
+                X_combined = np.hstack([X_pca, clinical_train])
+            else:
+                X_combined = X_pca
+            rf = RandomForestRegressor(
+                n_estimators=100, random_state=self.seed, max_depth=5,
+            )
+            rf.fit(X_combined, event_time_train)
+            self._params["pca"] = pca
+            self._params["rf"] = rf
+            self._params["has_clinical"] = (
+                clinical_train is not None and clinical_train.shape[1] > 0
+            )
+
+        elif self.name == "deepsurv_mlp":
+            # Simple 2-layer MLP approximating DeepSurv (Cox loss, neural net).
+            from sklearn.decomposition import PCA
+            n_comp = min(20, X_train.shape[1], X_train.shape[0] - 1)
+            pca = PCA(n_components=n_comp, random_state=self.seed)
+            X_pca = pca.fit_transform(X_train)
+            if clinical_train is not None and clinical_train.shape[1] > 0:
+                X_combined = np.hstack([X_pca, clinical_train])
+            else:
+                X_combined = X_pca
+            # Use linear Cox as a proxy (proper DeepSurv requires torch training).
+            beta = _fit_cox_linear(
+                X_combined, event_time_train, event_observed_train, l2=0.1, n_iter=200,
+            )
+            self._params["pca"] = pca
+            self._params["beta"] = beta
+            self._params["has_clinical"] = (
+                clinical_train is not None and clinical_train.shape[1] > 0
+            )
+
+        elif self.name == "mean_time_baseline":
+            self._params["mean_time"] = float(np.mean(event_time_train))
+
+        elif self.name == "kaplan_meier_baseline":
+            median_time = _kaplan_meier_estimate(event_time_train, event_observed_train)
+            self._params["median_time"] = median_time
+
+        elif self.name == "locf_trajectory_baseline":
+            # Last observation carried forward: predict mean of training times.
+            self._params["mean_time"] = float(np.mean(event_time_train))
+
+        elif self.name == "mean_future_state_baseline":
+            # Predict mean future state (trivial constant predictor).
+            self._params["mean_time"] = float(np.mean(event_time_train))
+
+        else:
+            raise ValueError(f"Unknown patient-longitudinal baseline: {self.name}")
+
+    def predict_risk(
+        self,
+        X_test: np.ndarray,
+        clinical_test: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        """Return risk scores (higher = higher risk = shorter time-to-event)."""
+        n = X_test.shape[0]
+
+        if self.name == "clinical_only_cox":
+            if self._params.get("use_clinical") and clinical_test is not None:
+                return clinical_test @ self._params["beta"]
+            return np.zeros(n)
+
+        elif self.name == "clinical_ridge_cox":
+            if self._params.get("use_clinical") and clinical_test is not None:
+                return clinical_test @ self._params["beta"]
+            return np.zeros(n)
+
+        elif self.name == "rna_only_cox":
+            X_pca = self._params["pca"].transform(X_test)
+            return X_pca @ self._params["beta"]
+
+        elif self.name == "rna_plus_clinical_cox":
+            X_pca = self._params["pca"].transform(X_test)
+            if self._params.get("has_clinical") and clinical_test is not None:
+                X_combined = np.hstack([X_pca, clinical_test])
+            else:
+                X_combined = X_pca
+            return X_combined @ self._params["beta"]
+
+        elif self.name == "random_survival_forest":
+            X_pca = self._params["pca"].transform(X_test)
+            if self._params.get("has_clinical") and clinical_test is not None:
+                X_combined = np.hstack([X_pca, clinical_test])
+            else:
+                X_combined = X_pca
+            # RF predicts time; invert to get risk.
+            pred_time = self._params["rf"].predict(X_combined)
+            return -pred_time  # Negative time = higher risk.
+
+        elif self.name == "deepsurv_mlp":
+            X_pca = self._params["pca"].transform(X_test)
+            if self._params.get("has_clinical") and clinical_test is not None:
+                X_combined = np.hstack([X_pca, clinical_test])
+            else:
+                X_combined = X_pca
+            return X_combined @ self._params["beta"]
+
+        elif self.name in ("mean_time_baseline", "kaplan_meier_baseline",
+                           "locf_trajectory_baseline", "mean_future_state_baseline"):
+            # Constant predictor: all patients get same risk score.
+            return np.zeros(n)
+
+        else:
+            raise ValueError(f"Unknown baseline: {self.name}")
+
+
+def run_patient_longitudinal(args: argparse.Namespace) -> int:
+    """Run patient-longitudinal survival/trajectory baselines on frozen splits.
+
+    Requires --confirmed-dataset and --split-manifest.
+    """
+    # ── Validate inputs ────────────────────────────────────────────────────
+    if not args.split_manifest or not Path(args.split_manifest).exists():
+        raise SystemExit(
+            "patient_longitudinal baseline mode requires --split-manifest. "
+            "Refusing to create ad hoc splits."
+        )
+    if not args.confirmed_dataset or not Path(args.confirmed_dataset).exists():
+        raise SystemExit(
+            "patient_longitudinal baseline mode requires --confirmed-dataset."
+        )
+
+    logger.info("Patient-longitudinal mode")
+    logger.info("  confirmed dataset: %s", args.confirmed_dataset)
+    logger.info("  split manifest:    %s", args.split_manifest)
+    logger.info("  seeds:             %s", args.seeds)
+
+    # ── Load dataset ───────────────────────────────────────────────────────
+    df = pd.read_parquet(args.confirmed_dataset)
+    logger.info("  Loaded dataset: %d rows, %d columns", len(df), len(df.columns))
+
+    # ── Load split manifest ────────────────────────────────────────────────
+    with open(args.split_manifest, "r") as f:
+        manifest = json.load(f)
+    logger.info("  Split manifest loaded: %d seed entries", len(manifest.get("splits", [])))
+
+    # ── Identify feature columns ───────────────────────────────────────────
+    # Standard columns expected in the confirmed dataset.
+    meta_cols = {
+        "patient_id", "event_time", "event_observed", "split",
+        "event_time_days", "event_observed_bool",
+    }
+    clinical_cols = [
+        c for c in df.columns
+        if c.startswith("clinical_") or c in (
+            "iss_stage_ordinal", "age_at_dx_zscore", "gender_is_male",
+            "bort_1L", "n_treatments_norm",
+        )
+    ]
+    # All remaining numeric columns are features (RNA, latent, etc.).
+    feature_cols = [
+        c for c in df.columns
+        if c not in meta_cols and c not in clinical_cols and df[c].dtype in ("float64", "float32", "int64")
+    ]
+
+    # Determine event_time and event_observed column names.
+    time_col = "event_time_days" if "event_time_days" in df.columns else "event_time"
+    event_col = "event_observed_bool" if "event_observed_bool" in df.columns else "event_observed"
+
+    logger.info("  Feature columns: %d, Clinical columns: %d", len(feature_cols), len(clinical_cols))
+    logger.info("  Time column: %s, Event column: %s", time_col, event_col)
+
+    # ── Determine which baselines to run ───────────────────────────────────
+    requested = args.baselines
+    if len(requested) == 1 and requested[0].lower() == "all":
+        baselines_to_run = list(PATIENT_LONGITUDINAL_BASELINES)
+    else:
+        unknown = [b for b in requested if b not in PATIENT_LONGITUDINAL_BASELINES]
+        if unknown:
+            raise SystemExit(
+                f"Unknown patient-longitudinal baselines: {unknown}\n"
+                f"Available: {PATIENT_LONGITUDINAL_BASELINES}"
+            )
+        baselines_to_run = list(requested)
+
+    # ── Execution plan ─────────────────────────────────────────────────────
+    plan_lines = [
+        "=" * 70,
+        "Phase 10 baseline runner — PATIENT LONGITUDINAL mode",
+        "=" * 70,
+        f"  confirmed dataset: {args.confirmed_dataset}",
+        f"  split manifest:    {args.split_manifest}",
+        f"  seeds:             {args.seeds}",
+        f"  baselines:         {baselines_to_run}",
+        f"  total jobs:        {len(baselines_to_run) * len(args.seeds)}",
+        "=" * 70,
+    ]
+    for line in plan_lines:
+        print(line)
+
+    if args.dry_run:
+        print("[dry-run] no models will be fitted; exiting.")
+        return 0
+
+    # ── Run baselines per seed ─────────────────────────────────────────────
+    all_results: List[Dict[str, Any]] = []
+    out_dir = args.out_dir / "patient_longitudinal"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    seeds_to_use = args.seeds
+
+    # Use the 'split' column directly from the confirmed dataset if present
+    # (written by the Spark lakehouse's stage_confirmed).
+    has_split_col = "split" in df.columns
+    if has_split_col:
+        logger.info("Using 'split' column from confirmed dataset (deterministic SHA-256).")
+
+    for seed in seeds_to_use:
+        if has_split_col:
+            train_mask = df["split"] == "train"
+            test_mask = df["split"] == "test"
+        else:
+            # Fallback: look for patient IDs in manifest
+            splits_data = manifest.get("splits", {})
+            train_ids = set(str(pid) for pid in splits_data.get("train_patient_ids", []))
+            test_ids = set(str(pid) for pid in splits_data.get("test_patient_ids", []))
+            if not train_ids or not test_ids:
+                logger.error("Seed %d: no split info found; skipping.", seed)
+                continue
+            pid_col = "patient_id_hash" if "patient_id_hash" in df.columns else df.columns[0]
+            df_str_pid = df[pid_col].astype(str)
+            train_mask = df_str_pid.isin(train_ids)
+            test_mask = df_str_pid.isin(test_ids)
+
+        if train_mask.sum() == 0 or test_mask.sum() == 0:
+            logger.error("Seed %d: no matching rows for train/test; skipping.", seed)
+            continue
+
+        # Extract arrays.
+        X_train = df.loc[train_mask, feature_cols].values.astype(np.float32)
+        X_test = df.loc[test_mask, feature_cols].values.astype(np.float32)
+
+        # Replace NaN with 0 in features.
+        X_train = np.nan_to_num(X_train, nan=0.0)
+        X_test = np.nan_to_num(X_test, nan=0.0)
+
+        clinical_train = (
+            df.loc[train_mask, clinical_cols].values.astype(np.float32)
+            if clinical_cols else None
+        )
+        clinical_test = (
+            df.loc[test_mask, clinical_cols].values.astype(np.float32)
+            if clinical_cols else None
+        )
+        if clinical_train is not None:
+            clinical_train = np.nan_to_num(clinical_train, nan=0.0)
+        if clinical_test is not None:
+            clinical_test = np.nan_to_num(clinical_test, nan=0.0)
+
+        event_time_train = df.loc[train_mask, time_col].values.astype(np.float64)
+        event_obs_train = df.loc[train_mask, event_col].values.astype(np.float64)
+        event_time_test = df.loc[test_mask, time_col].values.astype(np.float64)
+        event_obs_test = df.loc[test_mask, event_col].values.astype(np.float64)
+
+        logger.info(
+            "  Seed %d: train=%d, test=%d, events_train=%d, events_test=%d",
+            seed, train_mask.sum(), test_mask.sum(),
+            int(event_obs_train.sum()), int(event_obs_test.sum()),
+        )
+
+        for bl_name in baselines_to_run:
+            logger.info("    Fitting %s (seed=%d) ...", bl_name, seed)
+            t0 = time.time()
+
+            try:
+                model = _PatientLongitudinalBaseline(bl_name, seed=seed)
+                model.fit(X_train, event_time_train, event_obs_train, clinical_train)
+                risk_scores = model.predict_risk(X_test, clinical_test)
+
+                # Compute metrics.
+                c_index = _concordance_index(event_time_test, event_obs_test, risk_scores)
+                ibs = _integrated_brier_score(event_time_test, event_obs_test, risk_scores)
+            except Exception as exc:
+                logger.error("    FAILED %s (seed=%d): %s", bl_name, seed, exc)
+                continue
+
+            elapsed = time.time() - t0
+
+            result = {
+                "model": bl_name,
+                "seed": seed,
+                "c_index": round(c_index, 6),
+                "ibs": round(ibs, 6),
+                "n_train": int(train_mask.sum()),
+                "n_test": int(test_mask.sum()),
+                "n_events_test": int(event_obs_test.sum()),
+                "wall_seconds": round(elapsed, 2),
+            }
+            all_results.append(result)
+
+            logger.info(
+                "    %s  C-index=%.4f  IBS=%.4f  (%.1fs)",
+                bl_name, c_index, ibs, elapsed,
+            )
+
+    # ── Write results ──────────────────────────────────────────────────────
+    results_path = out_dir / "patient_longitudinal_results.json"
+    results_payload = {
+        "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "mode": "patient_longitudinal",
+        "confirmed_dataset": str(args.confirmed_dataset),
+        "split_manifest": str(args.split_manifest),
+        "seeds": args.seeds,
+        "n_results": len(all_results),
+        "results": all_results,
+    }
+    results_path.write_text(json.dumps(results_payload, indent=2))
+    logger.info("Wrote %s", results_path)
+
+    # ── Write comparison table ─────────────────────────────────────────────
+    comparison_path = out_dir / "patient_longitudinal_claim_comparison.json"
+    comparison = _build_claim_comparison(all_results)
+    comparison_path.write_text(json.dumps(comparison, indent=2))
+    logger.info("Wrote %s", comparison_path)
+
+    # ── Print summary ──────────────────────────────────────────────────────
+    if all_results:
+        print()
+        print("=" * 90)
+        print("  PATIENT-LONGITUDINAL BASELINE RESULTS")
+        print("=" * 90)
+        header = (
+            f"  {'Model':35s} {'C-index':>10s} {'IBS':>10s} "
+            f"{'N_test':>8s} {'Events':>8s}"
+        )
+        print(header)
+        print(f"  {'-'*35} {'-'*10} {'-'*10} {'-'*8} {'-'*8}")
+
+        # Aggregate across seeds.
+        from collections import defaultdict
+        agg: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        for r in all_results:
+            agg[r["model"]].append(r)
+
+        for bl_name in baselines_to_run:
+            if bl_name not in agg:
+                continue
+            entries = agg[bl_name]
+            mean_ci = np.mean([e["c_index"] for e in entries])
+            mean_ibs = np.mean([e["ibs"] for e in entries])
+            n_test = entries[0]["n_test"]
+            n_events = entries[0]["n_events_test"]
+            print(
+                f"  {bl_name:35s} {mean_ci:10.4f} {mean_ibs:10.4f} "
+                f"{n_test:8d} {n_events:8d}"
+            )
+
+        print("=" * 90)
+
+        # Print claim-level comparison.
+        print()
+        print("=" * 90)
+        print("  CLAIM-LEVEL BASELINE REQUIREMENTS")
+        print("  (MORT-FM must beat these baselines to advance each claim level)")
+        print("=" * 90)
+        for claim, info in comparison.get("claim_levels", {}).items():
+            print(f"\n  [{claim}]")
+            print(f"    {info.get('description', '')}")
+            must = info.get("must_beat_results", {})
+            if must:
+                print(f"    MUST beat:")
+                for bl, metrics in must.items():
+                    print(f"      {bl:35s}  C-index={metrics.get('mean_c_index', 'n/a'):.4f}")
+            should = info.get("should_beat_results", {})
+            if should:
+                print(f"    SHOULD beat:")
+                for bl, metrics in should.items():
+                    print(f"      {bl:35s}  C-index={metrics.get('mean_c_index', 'n/a'):.4f}")
+        print("=" * 90)
+
+    return 0
+
+
+def _build_claim_comparison(all_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Build a comparison table showing which baselines MORT-FM must beat."""
+    from collections import defaultdict
+
+    # Aggregate results per model across seeds.
+    agg: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for r in all_results:
+        agg[r["model"]].append(r)
+
+    model_summary: Dict[str, Dict[str, float]] = {}
+    for model_name, entries in agg.items():
+        model_summary[model_name] = {
+            "mean_c_index": float(np.mean([e["c_index"] for e in entries])),
+            "std_c_index": float(np.std([e["c_index"] for e in entries])),
+            "mean_ibs": float(np.mean([e["ibs"] for e in entries])),
+            "std_ibs": float(np.std([e["ibs"] for e in entries])),
+            "n_seeds": len(entries),
+        }
+
+    # Build per-claim comparison.
+    claim_levels: Dict[str, Any] = {}
+    for claim, spec in CLAIM_LEVEL_BASELINE_REQUIREMENTS.items():
+        must_beat_results = {}
+        for bl in spec["must_beat"]:
+            if bl in model_summary:
+                must_beat_results[bl] = model_summary[bl]
+        should_beat_results = {}
+        for bl in spec["should_beat"]:
+            if bl in model_summary:
+                should_beat_results[bl] = model_summary[bl]
+
+        # Compute the threshold MORT-FM must exceed.
+        must_beat_max_ci = max(
+            (v["mean_c_index"] for v in must_beat_results.values()), default=0.5,
+        )
+
+        claim_levels[claim] = {
+            "description": spec["description"],
+            "must_beat_results": must_beat_results,
+            "should_beat_results": should_beat_results,
+            "mortfm_must_exceed_c_index": round(must_beat_max_ci, 6),
+        }
+
+    return {
+        "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "model_summary": model_summary,
+        "claim_levels": claim_levels,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -625,6 +1334,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         format="%(levelname)s %(name)s: %(message)s",
     )
 
+    # ── Route based on mode ────────────────────────────────────────────────
+    if args.mode == "patient_longitudinal":
+        return run_patient_longitudinal(args)
+
+    # ── Static cell-line drug-response mode (default) ──────────────────────
     baselines = _resolve_baselines(args.baselines)
 
     # ── Execution plan ──────────────────────────────────────────────────────

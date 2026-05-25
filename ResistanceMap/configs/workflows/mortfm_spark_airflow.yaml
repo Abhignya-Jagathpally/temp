@@ -1,0 +1,290 @@
+# =============================================================================
+# MORT-FM Spark Lakehouse Pipeline Configuration
+# =============================================================================
+# Consumed by: spark_jobs/mortfm_lakehouse.py
+#
+# This config defines the Spark-based lakehouse pipeline for MORT-FM,
+# replacing the old PythonOperator DAG (mortfm_airflow.yaml). Data flows
+# through bronze (raw landing) -> silver (cleaned/harmonized) -> gold
+# (feature-engineered, split, ready for training) layers.
+#
+# Key differences from mortfm_airflow.yaml:
+#   - Spark-native I/O with Hive catalog
+#   - Declarative source registry (no per-task Python callables)
+#   - Explicit data quality gates at layer boundaries
+#   - Patient-disjoint splits enforced via SHA-256 hashing
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Lake filesystem layout
+# -----------------------------------------------------------------------------
+# lake_root: root directory for bronze/silver/gold Delta tables
+# confirmed_root: where final validated artifacts land after gate checks
+lake_root: "data/lake"
+confirmed_root: "results/confirmed"
+run_mode: survival_proxy_tt2l
+
+# -----------------------------------------------------------------------------
+# Source definitions for raw landing (bronze layer)
+# -----------------------------------------------------------------------------
+# Each source is ingested as-is into bronze/<name>/. The format field tells
+# the Spark reader which parser to use. No transformations at this stage.
+sources:
+  # -- MMRF CoMMpass (controlled-access, requires dbGaP phs000748) --
+  - name: mmrf_clinical
+    path: "data/raw/mmrf_commpass/clinical.tsv"
+    format: tsv
+
+  - name: mmrf_treatments
+    path: "data/raw/mmrf_commpass/treatments.tsv"
+    format: tsv
+
+  - name: mmrf_samples
+    path: "data/raw/mmrf_commpass/samples.tsv"
+    format: tsv
+
+  - name: mmrf_expression
+    path: "data/raw/mmrf_commpass/gene_expression.tsv"
+    format: tsv
+
+  - name: mmrf_mutations
+    path: "data/raw/mmrf_commpass/mutations.tsv"
+    format: tsv
+
+  - name: mmrf_cytogenetics
+    path: "data/raw/mmrf_commpass/cytogenetics.tsv"
+    format: tsv
+
+  # -- BeatAML 1.0 (public, Tyner et al. 2018) --
+  - name: beataml_expression
+    path: "data/processed/beataml/beataml_expression.parquet"
+    format: parquet
+
+  - name: beataml_drug_response
+    path: "data/processed/beataml/beataml_drug_response.parquet"
+    format: parquet
+
+  # -- DepMap CRISPR gene effect (public, Broad Institute) --
+  - name: depmap_crispr
+    path: "data/raw/depmap/CRISPRGeneEffect.csv"
+    format: csv
+
+  # -- Drug response (GDSC + PRISM, pre-processed to long format) --
+  - name: gdsc_response
+    path: "data/processed/drug_response/gdsc_response_long.parquet"
+    format: parquet
+
+  - name: prism_response
+    path: "data/processed/drug_response/prism_response_long.parquet"
+    format: parquet
+
+  # -- Biological graph components (STRING v12, Reactome, ChEMBL) --
+  - name: string_edges
+    path: "data/processed/graphs/string_edges.parquet"
+    format: parquet
+
+  - name: reactome_membership
+    path: "data/processed/graphs/reactome_membership.parquet"
+    format: parquet
+
+  - name: drug_targets
+    path: "data/processed/drugs/drug_targets.csv"
+    format: csv
+
+  - name: protein_nodes
+    path: "data/processed/graphs/protein_nodes.csv"
+    format: csv
+
+  - name: biological_edges
+    path: "data/processed/graphs/biological_edges.parquet"
+    format: parquet
+
+# -----------------------------------------------------------------------------
+# MMRF column mappings
+# -----------------------------------------------------------------------------
+# Canonical column names in the MMRF CoMMpass clinical tables. Used by the
+# silver-layer transformer to produce standardized survival/response fields.
+mmrf:
+  patient_id_col: "submitter_id"
+  pfs_time_col: "pfsdy"
+  pfs_censor_col: "censpfs"
+  os_time_col: "osdy"
+  os_censor_col: "censos"
+  response_col: "bestres"
+  iss_col: "iss_stage"
+
+# -----------------------------------------------------------------------------
+# Cleansed layer configuration
+# -----------------------------------------------------------------------------
+# Maps raw Hive table names to cleansed entity semantics.
+cleansed:
+  clinical_outcomes_source: "mortfm_raw.mmrf_clinical"
+  molecular_snapshots_source: "mortfm_raw.mmrf_samples"
+  treatment_exposures_source: "mortfm_raw.mmrf_treatments"
+  patient_col: "submitter_id"
+  # GDC open-access provides TT2L (time-to-2nd-line therapy) derived from
+  # treatments.tsv (days_to_treatment_start of 2L). This is the same approach
+  # used in v10 Sprint 4 (s4a_build_outcome_treatment.py). TT2L is a valid
+  # progression-free-survival proxy for resistance claims.
+  # OS fallback: days_to_death/vital_status for survival_prediction claims.
+  endpoint: "tt2l"
+  tt2l_source: "mortfm_raw.mmrf_treatments"
+  tt2l_line_col: "regimen_or_line_of_therapy"
+  tt2l_time_col: "days_to_treatment_start"
+  tt2l_second_line_value: "Second line of therapy"
+  # OS columns from clinical for censoring
+  time_col: "days_to_last_follow_up"
+  event_col: "vital_status"
+  event_value: "Dead"
+  os_time_col: "days_to_death"
+  os_event_col: "vital_status"
+  clinical_col_map:
+    iss_stage: "iss_stage"
+    age: "age_at_diagnosis_days"
+    gender: "gender"
+    race: "race"
+    ecog: "ecog"
+
+# -----------------------------------------------------------------------------
+# Curated layer configuration
+# -----------------------------------------------------------------------------
+curated:
+  drug_targets_source: "drug_targets"
+  reactome_source: "reactome_membership"
+
+# -----------------------------------------------------------------------------
+# Data quality gates
+# -----------------------------------------------------------------------------
+# Hard gates evaluated at silver->gold boundary. If any gate fails, the
+# pipeline halts with a diagnostic report rather than producing invalid
+# training data. These thresholds align with the MORT-FM acceptance_gate
+# "research" level requirements.
+# NOTE: GDC open-access MMRF does NOT provide real molecular visit timestamps.
+# Trajectory claims require dbGaP Researcher Gateway data or paired aliquots.
+# For survival-only pipeline, trajectory gate is informational (set to 0),
+# and patients gate uses survival supervision count.
+gates:
+  min_survival_patients: 50
+  min_survival_events: 20
+  min_trajectory_pairs: 10
+  min_real_molecular_followups: 10
+
+claim_policy:
+  run_mode: survival_proxy_tt2l
+  required_claims:
+    - tt2l_survival_proxy_prediction
+  optional_claims:
+    - longitudinal_trajectory
+    - resistance_emergence
+    - causal_mechanism
+  fail_on_blocked_required: true
+
+# -----------------------------------------------------------------------------
+# Train/val/test split configuration
+# -----------------------------------------------------------------------------
+# Patient-disjoint splitting ensures no patient appears in multiple splits.
+# The SHA-256 method hashes patient IDs to deterministically assign splits
+# without requiring a centralized shuffle (important for distributed Spark).
+splits:
+  val_fraction: 0.15
+  test_fraction: 0.15
+  seed: 42
+  method: "patient_disjoint_sha256"
+
+# -----------------------------------------------------------------------------
+# Biological graph configuration
+# -----------------------------------------------------------------------------
+# Controls how the heterogeneous biological graph is assembled in the gold
+# layer. STRING edges below the confidence threshold are excluded. Drug-target
+# and Reactome pathway edges are optionally added for richer graph context.
+graph:
+  # STRING combined_score threshold (0-1000 scale; 700 = high confidence)
+  string_confidence_threshold: 700
+
+  # Whether to include ChEMBL drug-target interaction edges
+  include_drug_target_edges: true
+
+  # Whether to include Reactome pathway membership edges
+  include_reactome_edges: true
+
+  # Dimensionality of per-edge graph embeddings (must match SDE d_graph)
+  d_graph: 64
+
+# -----------------------------------------------------------------------------
+# Spark runtime configuration
+# -----------------------------------------------------------------------------
+# Tuning knobs for the Spark session. These are passed to SparkSession.builder
+# at job startup. Adjust shuffle_partitions based on cluster size.
+spark:
+  # Use Hive metastore for table catalog (enables ACID Delta tables)
+  catalog_implementation: "hive"
+
+  # Number of partitions after shuffle operations (default 200 is often low
+  # for genomic-scale joins; 400 balances parallelism vs overhead)
+  shuffle_partitions: 400
+
+  # Adaptive Query Execution: lets Spark auto-coalesce small partitions
+  # and optimize skewed joins at runtime
+  adaptive_enabled: true
+
+  # Root directory for Hive warehouse (Delta table storage)
+  warehouse_dir: "data/lake/warehouse"
+
+# -----------------------------------------------------------------------------
+# Endpoint semantics
+# -----------------------------------------------------------------------------
+# Defines which clinical endpoints are valid for trajectory vs survival claims.
+# This enforces the project invariant: OS is NOT a resistance endpoint, and
+# pseudotime/vital_status cannot be used for trajectory modeling.
+endpoints:
+  # Endpoints that can serve as trajectory supervision targets
+  allowed_for_trajectory:
+    - "pfs"
+    - "relapse"
+    - "molecular_resistance_state"
+
+  # Endpoints explicitly forbidden for trajectory claims
+  # (OS conflates competing risks; vital_status lacks resistance semantics)
+  forbidden_for_trajectory:
+    - "os"
+    - "vital_status"
+
+  # Endpoints valid for survival head training
+  allowed_for_survival:
+    - "pfs"
+    - "os"
+    - "relapse"
+
+# -----------------------------------------------------------------------------
+# Cohort registry
+# -----------------------------------------------------------------------------
+# Declares what claim levels each cohort can advance, and what access
+# controls are required. This mirrors the canonical cohort registry in
+# resistancemap/mortfm/longitudinal/cohort_registry.py but is consumed
+# directly by the Spark pipeline for provenance tagging.
+cohorts:
+  mmrf_commpass:
+    contributes_to:
+      - survival_prediction
+      - patient_level_clinical_prediction
+    maybe_contributes_to:
+      - resistance_emergence
+    requires: "dbGaP phs000748"
+
+  beataml:
+    contributes_to:
+      - hematologic_specimen_drug_response
+      - transfer_learning
+    requires: "public"
+
+  gse161195:
+    contributes_to:
+      - single_cell_state
+      - pathway_context
+    requires: "public GEO"
+
+  ega_rrmm_multiome:
+    contributes_to:
+      - longitudinal_trajectory
+      - epigenetic_plasticity
+    requires: "EGA EGAS00001006538"
