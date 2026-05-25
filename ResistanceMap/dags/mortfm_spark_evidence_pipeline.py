@@ -186,19 +186,61 @@ with DAG(
     )
 
     # ------------------------------------------------------------------
-    # Stage 7b: Run Baselines (GPU / PyTorch, parallel with training)
-    # Patient-longitudinal baselines on same splits for honest comparison.
+    # Stage 7b: Run Baselines — 4-table benchmark taxonomy
+    # Table 1: TT2L survival-proxy (Cox, RSF, MOFA+, MORT-FM)
+    # Table 2: Short-term response classification (if labels available)
+    # Table 3: Trajectory forecasting (blocked until real timestamps)
+    # Table 4: Pathway/counterfactual evidence (via evaluate_causal_evidence)
     # ------------------------------------------------------------------
-    run_baselines = BashOperator(
-        task_id="run_baselines",
+
+    # Table 1 — TT2L / survival-proxy baselines (required)
+    run_baselines_survival = BashOperator(
+        task_id="run_baselines_survival",
         bash_command=(
             "cd {{ params.root }} && "
             "python -u scripts/mortfm/10_run_baselines.py "
             "  --mode patient_longitudinal "
+            "  --table survival_proxy "
             "  --confirmed-dataset {{ params.root }}/data/lake/confirmed/mortfm_training_dataset "
             "  --split-manifest {{ params.root }}/data/lake/confirmed/split_manifest.json "
-            "  --baselines all "
+            "  --baselines clinical_only_cox clinical_ridge_cox rna_only_cox "
+            "    rna_plus_clinical_cox random_survival_forest deepsurv_mlp "
+            "    kaplan_meier_baseline mofa_plus_cox "
             "  --seeds 0 1 2"
+        ),
+        params={"root": ROOT},
+        cwd=ROOT,
+    )
+
+    # Table 2 — Short-term treatment-response classification (optional)
+    run_baselines_response = BashOperator(
+        task_id="run_baselines_response",
+        bash_command=(
+            "cd {{ params.root }} && "
+            "python -u scripts/mortfm/10_run_baselines.py "
+            "  --mode patient_longitudinal "
+            "  --table response_classification "
+            "  --confirmed-dataset {{ params.root }}/data/lake/confirmed/mortfm_training_dataset "
+            "  --split-manifest {{ params.root }}/data/lake/confirmed/split_manifest.json "
+            "  --baselines clinical_only_cox padimac_7gene "
+            "  --seeds 0 "
+            "|| true"
+        ),
+        params={"root": ROOT},
+        cwd=ROOT,
+    )
+
+    # Table 3 — Trajectory baselines (blocked — no real timestamps)
+    run_baselines_trajectory = BashOperator(
+        task_id="run_baselines_trajectory",
+        bash_command=(
+            "cd {{ params.root }} && "
+            "echo '[Table 3] Trajectory baselines BLOCKED: "
+            "no real molecular visit timestamps in GDC open-access MMRF. "
+            "Requires dbGaP phs000748 or EGA longitudinal scRNA/multiome. "
+            "PRESCIENT, scNODE, TrajectoryNet, CellRank 2 cannot run on "
+            "fabricated visit_time_days.' "
+            "> {{ params.root }}/results/baselines/trajectory_blocked.txt"
         ),
         params={"root": ROOT},
         cwd=ROOT,
@@ -255,10 +297,12 @@ with DAG(
 
     # Parallel GPU tasks after audit passes
     audit_leakage_temporal_validity >> train_mortfm
-    audit_leakage_temporal_validity >> run_baselines
+    audit_leakage_temporal_validity >> run_baselines_survival
+    audit_leakage_temporal_validity >> run_baselines_response
+    audit_leakage_temporal_validity >> run_baselines_trajectory
 
-    # Evidence evaluation requires both training and baselines to complete
-    [train_mortfm, run_baselines] >> evaluate_causal_evidence
+    # Evidence evaluation requires training and Table 1 baselines
+    [train_mortfm, run_baselines_survival] >> evaluate_causal_evidence
 
     # Final claim gate after evidence evaluation
     evaluate_causal_evidence >> strict_claim_gate

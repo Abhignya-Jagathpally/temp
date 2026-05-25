@@ -132,6 +132,13 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         "--dry-run", action="store_true",
         help="Print the plan and exit without fitting any model.",
     )
+    p.add_argument(
+        "--table", type=str, default=None,
+        choices=["survival_proxy", "response_classification", "trajectory_forecast",
+                 "pathway_evidence"],
+        help="Benchmark table to run (v19 4-table taxonomy). "
+             "If not set, runs all applicable baselines.",
+    )
     # ── Patient-longitudinal mode arguments ────────────────────────────────
     p.add_argument(
         "--confirmed-dataset", type=Path, default=None,
@@ -658,7 +665,23 @@ PATIENT_LONGITUDINAL_BASELINES = [
     "kaplan_meier_baseline",
     "locf_trajectory_baseline",
     "mean_future_state_baseline",
+    "mofa_plus_cox",
+    "padimac_7gene",
 ]
+
+# v19 4-table benchmark taxonomy
+BENCHMARK_TABLES = {
+    "survival_proxy": [
+        "clinical_only_cox", "clinical_ridge_cox", "rna_only_cox",
+        "rna_plus_clinical_cox", "random_survival_forest", "deepsurv_mlp",
+        "kaplan_meier_baseline", "mofa_plus_cox",
+    ],
+    "response_classification": [
+        "clinical_only_cox", "padimac_7gene",
+    ],
+    "trajectory_forecast": [],  # blocked — no real timestamps
+    "pathway_evidence": [],     # handled by evaluate_causal_evidence task
+}
 
 # Claim-level requirements: which baselines MORT-FM must beat for each claim.
 CLAIM_LEVEL_BASELINE_REQUIREMENTS = {
@@ -1062,7 +1085,17 @@ def run_patient_longitudinal(args: argparse.Namespace) -> int:
     logger.info("  Time column: %s, Event column: %s", time_col, event_col)
 
     # ── Determine which baselines to run ───────────────────────────────────
-    requested = args.baselines
+    # If --table is specified, use the taxonomy-defined subset
+    if hasattr(args, "table") and args.table is not None:
+        table_baselines = BENCHMARK_TABLES.get(args.table, [])
+        if not table_baselines:
+            logger.warning("Table '%s' has no baselines (blocked or handled elsewhere).", args.table)
+            print(f"[Table {args.table}] No baselines to run — see README benchmark taxonomy.")
+            return 0
+        requested = table_baselines
+        logger.info("Using --table %s baselines: %s", args.table, requested)
+    else:
+        requested = args.baselines
     if len(requested) == 1 and requested[0].lower() == "all":
         baselines_to_run = list(PATIENT_LONGITUDINAL_BASELINES)
     else:
