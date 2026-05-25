@@ -1,12 +1,64 @@
 # ResistanceMap / MORT-FM
 
 Branch `v19` (latest head; v18 archived).
-v19 adds the **SOTA benchmark** (6 external model reimplementations trained
-on the same splits), **15 publication-quality figures** (PHATE embeddings,
-PPI network subgraphs, per-drug comparisons), and a **6,700-line CLAUDE.md**
-exhaustive codebase reference. The latest full pipeline run
-(`r-2026-05-23-v19-fullrun`) achieves test_mse=2.845 on 132 held-out cell
-lines across 11 drugs.
+
+v19 adds: **Spark-native lakehouse pipeline** (SparkSubmitOperator DAG, Hive
+metastore, medallion architecture), **claim-aware data quality gates**,
+**TT2L survival-proxy endpoint** (994 MMRF patients), **real molecular
+features** (PCA z64 latents for 787 patients), **patient-longitudinal
+baselines**, and the earlier **SOTA benchmark** (6 models, 15 figures).
+
+### v19 Spark pipeline (2026-05-25, 10/10 DAG tasks SUCCESS, 25 min)
+
+```
+raw_landing → create_raw_hive_tables → cleanse_standardize → curate_features
+  → confirm_analytical_dataset → audit_leakage_temporal_validity
+  → [train_mortfm || run_baselines] → evaluate_causal_evidence → strict_claim_gate
+```
+
+| Stage | Time | Key Result |
+|-------|------|------------|
+| raw_landing | 1m56s | 16 sources → Parquet lake (MMRF, BeatAML, DepMap, STRING, Reactome, ChEMBL) |
+| create_raw_hive_tables | 41s | Persistent Derby metastore, all tables registered |
+| cleanse_standardize | 14s | TT2L endpoint (2L_start - 1L_start), SHA-256 patient IDs |
+| curate_features | 12s | Temporal pairs + graph node features + pathway evidence |
+| confirm_analytical_dataset | 13s | Patient-disjoint splits: 691 train / 155 val / 148 test |
+| audit_leakage_temporal_validity | 8s | Survival PASS (994 patients, 254 events). Trajectory BLOCKED (0 pairs) |
+| **train_mortfm** | **21m25s** | **LOO C-index = 0.589 [95% CI 0.549, 0.631]** (787 patients with real z64) |
+| run_baselines | 2m3s | RSF C=0.962, Cox/KM C=0.500 |
+| evaluate_causal_evidence | 13s | 3-channel evidence join (CRISPR + drug-target + Reactome) |
+| strict_claim_gate | 4s | 12-level gate revalidation PASS |
+
+### v19 claim status (after Spark pipeline)
+
+```
+ALLOWED:
+  tt2l_survival_proxy_prediction  — C-index 0.589 [0.549, 0.631] on 994 patients
+  static_drug_response            — cell-line benchmark (test_mse=2.845)
+  technical_pipeline              — 10/10 DAG tasks green
+
+BLOCKED (scientifically correct — no GDC open-access molecular follow-ups):
+  longitudinal_trajectory    — 0 real molecular temporal pairs (need dbGaP phs000748)
+  resistance_emergence       — TT2L is treatment-transition proxy, not direct resistance
+  causal_mechanism           — no perturbational validation on patient trajectory
+```
+
+### v19 architecture changes
+
+| Component | Before (v18) | After (v19 Spark) |
+|-----------|-------------|-------------------|
+| Orchestrator | PythonOperator + subprocess + `_run_script_allow_exit1` | SparkSubmitOperator + BashOperator |
+| Data layers | Ad hoc checkpoints | raw → cleansed → curated → confirmed (medallion) |
+| Metastore | None | Persistent Derby Hive metastore |
+| Endpoint | PFS (missing in GDC) → silent fallback | TT2L explicitly derived; PFS fallback **refused** |
+| Censoring | Implicit | Explicit: censored ≠ sensitive (hard guardrail) |
+| Splits | Per-script | Deterministic SHA-256 patient-disjoint (frozen in manifest) |
+| Molecular features | Zero tensors or per-script PCA | z64 PCA latents joined into confirmed dataset |
+| Baselines | Cell-line IC50 only | Patient-longitudinal (10 methods on same splits) |
+| Gates | Global min_patients | Claim-aware (survival vs trajectory vs causal) |
+| Graph embeddings | Zero tensor placeholder | `PatientGraphEncoder` GNN module (GAT + fallback) |
+
+### v19 latest cell-line run (2026-05-23, 1x H100 NVL 96GB, 31.8 min)
 
 ### v19 latest run (2026-05-23, 1x H100 NVL 96GB, 31.8 min)
 
