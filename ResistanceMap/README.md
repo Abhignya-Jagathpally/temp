@@ -43,6 +43,121 @@ BLOCKED (scientifically correct — no GDC open-access molecular follow-ups):
   causal_mechanism           — no perturbational validation on patient trajectory
 ```
 
+### v19 benchmark taxonomy and comparison tables
+
+Results are split into four task-specific tables. **Do not compare
+incompatible metrics** (C-index vs F1 vs MMD vs enrichment p-value) in a
+single "best model" column.
+
+#### Reference roles
+
+| Reference | Role | Direct baseline? | Rationale |
+|-----------|------|:-:|-----------|
+| MOFA+ (Argelaguet 2020) | Multi-omic latent-factor baseline | Yes | Unsupervised multi-omic integration; compare MOFA+ factors + Cox against MORT-FM latent + survival head |
+| Xiong et al. 2026 | Clinical dynamic-biomarker comparator | Yes (if same endpoint) | Predicts short-term response via dynamic biomarkers; F1=0.75 at Cycle 4 vs R-ISS F1=0.32 in 662 NDMM |
+| Li et al. 2026 | Multi-omics prognostic-signature comparator | Yes (if features available) | Platelet-related multi-omics ML prognostic signature in MM |
+| Jarrah et al. 2026 | Literature-positioning (review) | No | Justifies why treatment-specific prediction remains underdeveloped in MM |
+| PRESCIENT (Yeo 2021) | Trajectory-method baseline | Yes (time-series scRNA only) | Stochastic cell trajectories on learned potential landscape |
+| scNODE (Zhang 2024) | Neural ODE scRNA trajectory baseline | Yes (temporal scRNA only) | VAE + Neural ODE for single-cell expression at unobserved timepoints |
+| TrajectoryNet (Tong 2020) | Dynamic OT trajectory baseline | Yes (timepoint distributions only) | Continuous normalizing flows + dynamic optimal transport |
+| CellRank 2 (Weiler/Lange 2024) | Cell-fate probability baseline | Yes (single-cell fate task) | Multiview single-cell fate mapping across modalities |
+| PADIMAC / GSE116324 (Chapman 2018) | External RNA response-validation cohort | Yes (treatment-response) | 44 NDMM patients; seven-gene signature for bortezomib/lenalidomide outcome |
+| DepMap 23Q2 | External CRISPR evidence channel | No | CRISPR knockout screens + CCLE characterization for pathway plausibility |
+
+#### Table 1 — TT2L / survival-proxy prediction
+
+Current GDC open-access MMRF pipeline (994 patients, 254 observed TT2L events).
+
+| Model | Input | Endpoint | C-index | IBS | Notes |
+|-------|-------|----------|---------|-----|-------|
+| Clinical-only Cox | ISS + age + gender | TT2L proxy | 0.500 | — | v19 baseline |
+| z64 Cox | baseline RNA PCA-64 | TT2L proxy | — | — | to be computed |
+| MOFA+ + Cox | MOFA+ factors from omics | TT2L proxy | — | — | **required baseline** |
+| Li-style risk signature | platelet/multi-omic features | TT2L proxy | — | — | if features available |
+| Random Survival Forest | clinical + z64 | TT2L proxy | 0.962 | — | v19 baseline (upper bound) |
+| MORT-FM no graph | z64 + SDE survival head | TT2L proxy | **0.589** | 0.275 | v19 run |
+| MORT-FM full | z64 + graph + drug context | TT2L proxy | — | — | requires graph wiring |
+
+#### Table 2 — Short-term treatment-response classification
+
+Only if cycle-level response labels can be constructed. **Do not force TT2L
+into an F1 comparison.**
+
+| Model | Input | Endpoint | F1 | AUROC | Notes |
+|-------|-------|----------|-----|-------|-------|
+| R-ISS | staging variables | Cycle 2/4 response | 0.32 | — | Xiong et al. reference |
+| Xiong-style dynamic biomarker | serial biomarkers | Cycle 2/4 response | **0.75** | — | clinical ceiling (662 NDMM) |
+| PADIMAC 7-gene signature | baseline RNA | treatment outcome | — | — | external validation (n=44) |
+| MORT-FM baseline-only | baseline molecular + clinical | response | — | — | requires response head |
+| MORT-FM drug-conditioned | + drug context | response | — | — | requires response head |
+
+#### Table 3 — Trajectory / cell-state forecasting
+
+**Not claimable on current GDC open-access MMRF.** Requires dbGaP/Researcher
+Gateway or external longitudinal single-cell/multiome data. Do not run
+trajectory baselines on fabricated `visit_time_days`.
+
+| Model | Input | Output | Metrics | Notes |
+|-------|-------|--------|---------|-------|
+| PCA/LOCF baseline | baseline state | future state | MSE / cosine | trivial |
+| Mean future-state | cohort mean | future state | MSE / MMD | trivial |
+| TrajectoryNet | timepoint distributions | future distribution | Wasserstein / MMD | Tong 2020 |
+| scNODE | temporal scRNA | unobserved timepoint expr | MSE / correlation | Zhang 2024 |
+| PRESCIENT | time-series scRNA | stochastic trajectory | fate distribution | Yeo 2021 |
+| CellRank 2 | multiview single-cell | terminal fate prob | Brier / accuracy | Weiler 2024 |
+| MORT-FM LENS SDE | multi-omic + graph + drug | future resistance state | MMD / hitting-time cal | this work |
+
+#### Table 4 — Pathway and counterfactual mechanism evidence
+
+| Evidence channel | Comparator | Metric | v19 result | Notes |
+|------------------|-----------|--------|------------|-------|
+| DepMap CRISPR | random / degree-matched genes | top-k enrichment, Fisher p | 1/20 common-essential | evidence channel, not truth |
+| Drug-target graph | ChEMBL / DrugBank targets | target recovery | 40% support (v17.8) | |
+| Reactome / KEGG | random pathway baseline | pathway enrichment FDR | p=0.002 (v17.8) | |
+| PADIMAC 7-gene | external response signature | overlap / validation | — | n=44 external |
+| MORT-FM counterfactual | predicted pathway route | delta-risk / edge effect | 4.32σ separation (v16) | associational, not causal |
+
+#### Benchmark taxonomy (final layout for paper)
+
+```
+A. Clinical prognostic/staging comparators
+   - ISS / R-ISS
+   - clinical-only Cox
+   - Xiong-style dynamic biomarker model (F1 target, not C-index)
+
+B. Multi-omic integration comparators
+   - PCA z64
+   - MOFA+ (required)
+   - Li-style multi-omic signature
+   - MORT-FM latent
+
+C. Treatment-response comparators
+   - PADIMAC seven-gene signature
+   - z64 logistic model
+   - MORT-FM drug-conditioned response head
+
+D. Trajectory comparators (blocked until real time-series data)
+   - PRESCIENT / scNODE / TrajectoryNet / CellRank 2
+   - MORT-FM LENS SDE
+
+E. Mechanistic evidence comparators
+   - random gene set / PPI degree-matched baseline
+   - drug-target-only baseline
+   - DepMap CRISPR dependency enrichment
+   - MORT-FM pathway/counterfactual route
+```
+
+#### Staged claim language
+
+1. **Stage 1** (current): MORT-FM predicts TT2L treatment-transition risk
+   from baseline molecular state (C-index 0.589 [0.549, 0.631]).
+2. **Stage 2** (requires response labels): MORT-FM predicts short-term
+   treatment response better than conventional staging.
+3. **Stage 3** (requires dbGaP/longitudinal data): MORT-FM predicts future
+   molecular resistance state on real calendar timestamps.
+4. **Stage 4** (requires perturbation evidence): MORT-FM proposes pathway
+   mechanisms supported by DepMap, Reactome, and drug-target evidence.
+
 ### v19 architecture changes
 
 | Component | Before (v18) | After (v19 Spark) |
