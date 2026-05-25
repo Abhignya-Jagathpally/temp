@@ -1,0 +1,8 @@
+# Table 2: Short-Term Response Classification
+
+Clinical ceiling from Xiong et al. 2024 (F1 = 0.75).
+
+| Model | Endpoint | F1 | Note |
+| --- | --- | --- | --- |
+| Xiong et al. 2024 (clinical ceiling) | Short-term response (CR/VGPR vs PR/SD/PD) | 0.75 | Published clinical ceiling; no internal model trained yet |
+| MORT-FM | Short-term response (CR/VGPR vs PR/SD/PD) | Data not available | Response labels not yet wired into Spark DAG |

@@ -15,6 +15,7 @@ Dependency graph:
                             -> [train_mortfm, run_baselines]  (parallel)
                                 -> evaluate_causal_evidence
                                     -> strict_claim_gate
+                                        -> generate_results
 """
 
 from __future__ import annotations
@@ -282,6 +283,24 @@ with DAG(
     )
 
     # ------------------------------------------------------------------
+    # Stage 10: Generate Publication-Ready Results
+    # Produce tables (markdown + CSV) and figures (PNG + PDF) from all
+    # upstream result artifacts.
+    # ------------------------------------------------------------------
+    generate_results = BashOperator(
+        task_id="generate_results",
+        bash_command=(
+            "cd {{ params.root }} && "
+            "python -u scripts/generate_spark_pipeline_results.py "
+            "  --results-dir results "
+            "  --lake-dir data/lake "
+            "  --out-dir paper/v8_artifacts/spark_pipeline"
+        ),
+        params={"root": ROOT},
+        cwd=ROOT,
+    )
+
+    # ------------------------------------------------------------------
     # Dependency graph
     # ------------------------------------------------------------------
 
@@ -306,3 +325,6 @@ with DAG(
 
     # Final claim gate after evidence evaluation
     evaluate_causal_evidence >> strict_claim_gate
+
+    # Generate publication-ready tables and figures after claim gate
+    strict_claim_gate >> generate_results

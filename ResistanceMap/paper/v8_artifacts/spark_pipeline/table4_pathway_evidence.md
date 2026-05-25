@@ -1,0 +1,30 @@
+# Table 4: Pathway Evidence Summary (Top 20 Edges by Delta)
+
+Source: causal_edge_evidence_v2.csv (three-way join: CRISPR + drug-target + Reactome).
+
+| Source | Target | Delta | CRISPR_Essential | Drug_Target | Pathway | Pathway_Count |
+| --- | --- | --- | --- | --- | --- | --- |
+| NDUFAF7 | NDUFA7 | 0.1562 | False | False | Aerobic respiration and respiratory electron transport | 4 |
+| ARF5 | ARF1 | 0.1250 | False | False | Adaptive Immune System | 39 |
+| NDUFAF7 | NDUFA13 | 0.1250 | False | False | Aerobic respiration and respiratory electron transport | 6 |
+| FKBP4 | PHLPP1 | 0.0938 | False | False | Intracellular signaling by second messengers | 4 |
+| ARF5 | CTTN | 0.0938 | False | False | Clathrin-mediated endocytosis | 8 |
+| FKBP4 | DNAJB1 | 0.0938 | False | False | Attenuation phase | 10 |
+| FKBP4 | HSP90AA1 | 0.0938 | False | True | AURKA Activation by TPX2 | 119 |
+| FKBP4 | HSPA2 | 0.0938 | False | False | Antimicrobial mechanism of IFN-stimulated genes | 16 |
+| CFTR | SLC26A4 | 0.0938 | False | True | Defective SLC26A4 causes Pendred syndrome (PDS) | 8 |
+| CFTR | PRKAG3 | 0.0938 | False | True | AMPK-induced ERAD and lysosome mediated degradation of PD-L1(CD274) | 33 |
+| CFTR | PDZK1 | 0.0938 | False | True |  | 0 |
+| HS3ST1 | GLCE | 0.0938 | False | False | Glycosaminoglycan metabolism | 5 |
+| CYP26B1 | CYP4F3 | 0.0938 | False | False | Arachidonate metabolism | 11 |
+| NDUFAF7 | TMEM186 | 0.0938 | False | False | Aerobic respiration and respiratory electron transport | 4 |
+| FKBP4 | NR3C1 | 0.0938 | False | True | Cellular responses to stimuli | 28 |
+| NDUFAF7 | ACAD11 | 0.0625 | False | False | Fatty acid metabolism | 4 |
+| FKBP4 | ESR1 | 0.0625 | False | True | Cellular responses to stimuli | 43 |
+| FKBP4 | DCTN2 | 0.0625 | True | False | AURKA Activation by TPX2 | 34 |
+| FKBP4 | HSF1 | 0.0625 | False | False | Aggrephagy | 12 |
+| ARF5 | ARFIP2 | 0.0625 | False | False | Intra-Golgi and retrograde Golgi-to-ER traffic | 4 |
+
+**Total edges scored**: 200
+**Common-essential targets**: 11
+**Drug-target supported edges**: 80

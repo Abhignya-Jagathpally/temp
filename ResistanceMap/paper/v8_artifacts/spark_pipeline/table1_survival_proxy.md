@@ -1,0 +1,20 @@
+# Table 1: TT2L Survival-Proxy Comparison
+
+Endpoint: Time-to-next-treatment (TT2L) as a resistance proxy.
+
+| Model | Input | C-index | IBS | CI_low | CI_high |
+| --- | --- | --- | --- | --- | --- |
+| Clinical-Only Cox | ISS + age + gender + bort_1L + n_treatments | 0.500 | 0.250 | 0.500 | 0.500 |
+| Clinical Ridge Cox | ISS + age + gender + bort_1L + n_treatments (L2) | 0.500 | 0.250 | 0.500 | 0.500 |
+| RNA-Only Cox | Top-5000 RNA genes | 0.500 | N/A | 0.500 | 0.500 |
+| RNA + Clinical Cox | RNA + clinical features | 0.500 | N/A | 0.500 | 0.500 |
+| Random Survival Forest | Clinical features (tree ensemble) | 0.962 | 0.440 | 0.954 | 0.970 |
+| DeepSurv MLP | Clinical features (neural network) | 0.500 | N/A | 0.500 | 0.500 |
+| Mean Time Baseline | Cohort mean event time | 0.500 | 0.250 | 0.500 | 0.500 |
+| Kaplan-Meier Baseline | Non-parametric KM estimator | 0.500 | 0.250 | 0.500 | 0.500 |
+| LOCF Trajectory | Last observation carried forward | 0.500 | 0.250 | 0.500 | 0.500 |
+| Mean Future State | Population mean future state | 0.500 | 0.250 | 0.500 | 0.500 |
+| MORT-FM LENS | RNA + clinical + graph projector (LOO) | 0.601 | 0.270 | 0.561 | 0.640 |
+
+CI = 95% confidence interval (bootstrap or LOO).
+IBS = Integrated Brier Score (lower is better).
