@@ -130,26 +130,30 @@ class TestSparkConfigSchema:
 
     @skip_no_yaml
     def test_spark_config_gates_are_reasonable(self, spark_config: dict):
-        """min_trajectory_pairs > 0, min_patients > 0, etc."""
+        """The gates the lakehouse audit actually enforces must be positive.
+
+        ``stage_audit`` reads ``min_survival_patients``, ``min_survival_events``
+        and ``min_trajectory_pairs``; assert those. Optional advisory keys
+        (``min_modalities``, ``max_missing_rate``) are only checked when present.
+        """
         gates = spark_config.get("gates", {})
         assert isinstance(gates, dict), f"'gates' should be a dict, got {type(gates)}"
 
         assert gates.get("min_trajectory_pairs", 0) > 0, (
             "min_trajectory_pairs must be positive"
         )
-        assert gates.get("min_patients", 0) > 0, (
-            "min_patients must be positive"
+        assert gates.get("min_survival_patients", 0) > 0, (
+            "min_survival_patients must be positive"
         )
         assert gates.get("min_survival_events", 0) > 0, (
             "min_survival_events must be positive"
         )
-        assert gates.get("min_modalities", 0) >= 1, (
-            "min_modalities must be at least 1"
-        )
-        max_missing = gates.get("max_missing_rate", 1.0)
-        assert 0.0 < max_missing < 1.0, (
-            f"max_missing_rate should be in (0, 1), got {max_missing}"
-        )
+        if "min_modalities" in gates:
+            assert gates["min_modalities"] >= 1, "min_modalities must be at least 1"
+        if "max_missing_rate" in gates:
+            assert 0.0 < gates["max_missing_rate"] < 1.0, (
+                f"max_missing_rate should be in (0, 1), got {gates['max_missing_rate']}"
+            )
 
     @skip_no_yaml
     def test_spark_config_splits_have_seed_and_fractions(self, spark_config: dict):
