@@ -57,6 +57,9 @@ dependencies = [
     "xgboost>=2.0.0",
     "gseapy>=1.0.0",
     "adjustText>=0.8",
+    # Survival analysis — censoring-aware baselines (RSF, Cox, elastic-net Cox)
+    "scikit-survival>=0.22.0,<0.28",
+    "lifelines>=0.28.0,<0.31",
 ]
 
 [project.optional-dependencies]

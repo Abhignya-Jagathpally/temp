@@ -417,6 +417,92 @@ def _cleanse_clinical_outcomes(
             "Valid for survival_proxy claims. resistance_emergence blocked."
         )
 
+    elif endpoint == "imwg_pfs":
+        # Bug #2 fix: IMWG-defined progression-free survival from response
+        # assessments (STAND_ALONE_TRTRESP), NOT the treatment-transition proxy.
+        # Progression = best response of PD; event_observed = (had PD) OR (died),
+        # never "started 2L". When M-protein/FLC trajectories are available, IMWG
+        # biochemical-progression thresholds (>=25% rise from nadir) can be layered
+        # in upstream as additional progression events.
+        resp_source = cfg["lakehouse"]["cleansed"].get("imwg_response_source")
+        if not resp_source:
+            raise ValueError(
+                "Endpoint 'imwg_pfs' requires cfg.lakehouse.cleansed.imwg_response_source "
+                "(STAND_ALONE_TRTRESP response assessments). It does NOT fall back to "
+                "the TT2L treatment-transition proxy. Provide response data (MMRF "
+                "Virtual Lab STAND_ALONE_TRTRESP), or set endpoint='tt2l' to use the "
+                "explicitly-labelled proxy with resistance_emergence blocked."
+            )
+        resp_resp_col = cfg["lakehouse"]["cleansed"].get("imwg_response_col", "bestrespid")
+        resp_day_col = cfg["lakehouse"]["cleansed"].get(
+            "imwg_response_day_col", "days_to_assessment"
+        )
+        pd_values = [
+            str(v).lower()
+            for v in cfg["lakehouse"]["cleansed"].get(
+                "imwg_pd_values", ["pd", "progressive disease"]
+            )
+        ]
+        patient_col_r = cfg["lakehouse"]["cleansed"].get("patient_col", "submitter_id")
+
+        if "." in resp_source and not os.path.exists(resp_source):
+            resp_df = spark.table(resp_source)
+        else:
+            resp_df = spark.read.parquet(os.path.join(lake_root, "raw", resp_source))
+
+        progression = (
+            resp_df
+            .withColumn("resp_norm", F.lower(F.trim(F.col(resp_resp_col))))
+            .filter(F.col("resp_norm").isin(pd_values))
+            .groupBy(patient_col_r)
+            .agg(F.min(F.col(resp_day_col).cast("double")).alias("progression_day"))
+        )
+        df = df.join(progression, on=patient_col_r, how="left")
+
+        # Death-as-event (optional): IMWG PFS counts death without progression.
+        os_time_col = cfg["lakehouse"]["cleansed"].get("os_time_col", "days_to_death")
+        os_event_col = cfg["lakehouse"]["cleansed"].get("os_event_col", "vital_status")
+        dead_val = event_value or "Dead"
+        if os_event_col in available_cols and os_time_col in available_cols:
+            df = df.withColumn(
+                "death_day",
+                F.when(
+                    F.col(os_event_col) == dead_val, F.col(os_time_col).cast("double")
+                ),
+            )
+        else:
+            df = df.withColumn("death_day", F.lit(None).cast("double"))
+
+        censor_col = (
+            time_col if (time_col and time_col in available_cols)
+            else "days_to_last_follow_up"
+        )
+        df = df.withColumn(
+            "event_observed",
+            F.col("progression_day").isNotNull() | F.col("death_day").isNotNull(),
+        )
+        # PFS = earliest of progression/death; else censor at last follow-up.
+        # F.least ignores NULLs, so a patient with only progression (no death)
+        # gets progression_day, and vice-versa.
+        df = df.withColumn(
+            "event_time_days",
+            F.when(
+                F.col("event_observed"),
+                F.least(F.col("progression_day"), F.col("death_day")),
+            ).otherwise(F.col(censor_col).cast("double")),
+        )
+        df = df.withColumn("endpoint_type", F.lit("imwg_pfs"))
+        df = df.withColumn("endpoint_family", F.lit("progression_free_survival"))
+
+        # Hard audit: no non-positive PFS for observed events.
+        df = df.filter(~(F.col("event_observed") & (F.col("event_time_days") <= 0)))
+        df = df.filter(F.col("event_time_days").isNotNull())
+
+        logger.info(
+            "Using IMWG PFS endpoint (progression-or-death). "
+            "resistance_emergence claims permitted (real progression, not 2L-start)."
+        )
+
     elif endpoint in ("pfs", "relapse"):
         # PFS/relapse CANNOT fall back to OS/vital_status
         if time_col not in available_cols or event_col not in available_cols:
@@ -995,6 +1081,17 @@ def stage_audit(spark: SparkSession, cfg: Dict[str, Any]) -> None:
     n_patients = df.select("patient_id_hash").distinct().count()
     n_trajectory_rows = df.filter(F.col("has_valid_trajectory_supervision") == True).count()
     n_survival_rows = df.filter(F.col("has_valid_survival_supervision") == True).count()
+    # Bug #3 fix: the survival-events gate must count OBSERVED events, not all
+    # supervised rows. A cohort of 100 censored patients + 5 deaths has 5 events,
+    # not 105 — censored rows carry no event information for power/identifiability.
+    if "event_observed" in df.columns:
+        n_survival_events = df.filter(
+            (F.col("has_valid_survival_supervision") == True)
+            & (F.col("event_observed") == True)
+        ).count()
+    else:
+        # No event indicator present: cannot certify any observed events.
+        n_survival_events = 0
 
     report = {
         "audit_timestamp": _utcnow_iso(),
@@ -1002,6 +1099,7 @@ def stage_audit(spark: SparkSession, cfg: Dict[str, Any]) -> None:
         "n_patients": n_patients,
         "n_trajectory_rows": n_trajectory_rows,
         "n_survival_rows": n_survival_rows,
+        "n_survival_events": n_survival_events,
         "gates": {
             "min_trajectory_pairs": {
                 "threshold": min_trajectory_pairs,
@@ -1015,13 +1113,18 @@ def stage_audit(spark: SparkSession, cfg: Dict[str, Any]) -> None:
             },
             "min_survival_events": {
                 "threshold": min_survival_events,
-                "actual": n_survival_rows,
-                "passed": n_survival_rows >= min_survival_events,
+                "actual": n_survival_events,
+                "actual_supervised_rows": n_survival_rows,
+                "passed": n_survival_events >= min_survival_events,
+                "note": (
+                    "Counts observed events only (event_observed == True), "
+                    "not censored supervised rows."
+                ),
             },
         },
         "overall_passed": (
             n_patients >= min_survival_patients
-            and n_survival_rows >= min_survival_events
+            and n_survival_events >= min_survival_events
         ),
     }
 
@@ -1038,29 +1141,43 @@ def stage_audit(spark: SparkSession, cfg: Dict[str, Any]) -> None:
     logger.info("  Patients:          %d", n_patients)
     logger.info("  Trajectory rows:   %d", n_trajectory_rows)
     logger.info("  Survival rows:     %d", n_survival_rows)
+    logger.info("  Survival events:   %d (observed)", n_survival_events)
     logger.info("  Gate: min_survival_patients (%d) -> %s",
                 min_survival_patients,
                 "PASS" if n_patients >= min_survival_patients else "FAIL")
     logger.info("  Gate: min_survival_events (%d) -> %s",
                 min_survival_events,
-                "PASS" if n_survival_rows >= min_survival_events else "FAIL")
+                "PASS" if n_survival_events >= min_survival_events else "FAIL")
     logger.info("  Gate: min_trajectory_pairs (%d) -> %s",
                 min_trajectory_pairs,
                 "PASS" if n_trajectory_rows >= min_trajectory_pairs else "FAIL")
+
+    # Endpoint family drives which survival claim is legitimate. IMWG PFS
+    # (progression-or-death) is a real resistance endpoint; TT2L is only a
+    # treatment-transition proxy and must never unlock resistance_emergence.
+    endpoint_family = None
+    if "endpoint_family" in df.columns:
+        _ef = df.select("endpoint_family").first()
+        endpoint_family = _ef[0] if _ef is not None else None
+    is_imwg_pfs = endpoint_family == "progression_free_survival"
 
     # Claim-aware gates
     failures: List[str] = []
     blocked_claims: Dict[str, str] = {}
     allowed_claims: List[str] = ["technical_pipeline"]
 
-    # Survival gate
-    if n_patients >= min_survival_patients and n_survival_rows >= min_survival_events:
-        allowed_claims.append("tt2l_survival_proxy_prediction")
+    # Survival gate (Bug #3: count observed events, not censored supervised rows)
+    if n_patients >= min_survival_patients and n_survival_events >= min_survival_events:
+        if is_imwg_pfs:
+            allowed_claims.append("imwg_pfs_survival_prediction")
+        else:
+            allowed_claims.append("tt2l_survival_proxy_prediction")
         allowed_claims.append("static_drug_response")
     else:
         failures.append(
             f"Survival gate FAIL: need {min_survival_patients} patients "
-            f"(have {n_patients}) and {min_survival_events} events (have {n_survival_rows})"
+            f"(have {n_patients}) and {min_survival_events} observed events "
+            f"(have {n_survival_events})"
         )
 
     # Trajectory gate (informational — blocks claims, does not halt pipeline)
@@ -1068,9 +1185,12 @@ def stage_audit(spark: SparkSession, cfg: Dict[str, Any]) -> None:
         blocked_claims["longitudinal_trajectory"] = (
             f"Need {min_trajectory_pairs} real molecular trajectory pairs, found {n_trajectory_rows}."
         )
-        blocked_claims["resistance_emergence"] = (
-            "TT2L is a treatment-transition proxy, not direct molecular resistance emergence."
-        )
+        # resistance_emergence is supported by an IMWG-PFS endpoint; only the
+        # TT2L proxy fails this claim on endpoint grounds.
+        if not is_imwg_pfs:
+            blocked_claims["resistance_emergence"] = (
+                "TT2L is a treatment-transition proxy, not direct molecular resistance emergence."
+            )
         blocked_claims["causal_mechanism"] = (
             "No perturbational validation tied to longitudinal patient trajectory."
         )

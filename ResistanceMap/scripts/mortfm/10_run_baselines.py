@@ -912,9 +912,11 @@ class _PatientLongitudinalBaseline:
             )
 
         elif self.name == "random_survival_forest":
-            # Simplified: use random forest on features to predict event_time,
-            # then invert as risk score.
-            from sklearn.ensemble import RandomForestRegressor
+            # Bug #4 fix: use a PROPER censoring-aware Random Survival Forest
+            # (sksurv) with log-rank splitting, NOT a RandomForestRegressor on
+            # raw event times (which discards the censoring indicator entirely
+            # and silently treats censored follow-up as if it were an event).
+            from sksurv.ensemble import RandomSurvivalForest
             from sklearn.decomposition import PCA
             n_comp = min(20, X_train.shape[1], X_train.shape[0] - 1)
             pca = PCA(n_components=n_comp, random_state=self.seed)
@@ -923,12 +925,23 @@ class _PatientLongitudinalBaseline:
                 X_combined = np.hstack([X_pca, clinical_train])
             else:
                 X_combined = X_pca
-            rf = RandomForestRegressor(
-                n_estimators=100, random_state=self.seed, max_depth=5,
+            # sksurv requires a structured array of (event_indicator, time).
+            y_surv = np.array(
+                [
+                    (bool(e), float(t))
+                    for e, t in zip(event_observed_train, event_time_train)
+                ],
+                dtype=[("event", bool), ("time", float)],
             )
-            rf.fit(X_combined, event_time_train)
+            rsf = RandomSurvivalForest(
+                n_estimators=100,
+                random_state=self.seed,
+                max_depth=5,
+                min_samples_leaf=10,
+            )
+            rsf.fit(X_combined, y_surv)
             self._params["pca"] = pca
-            self._params["rf"] = rf
+            self._params["rsf"] = rsf
             self._params["has_clinical"] = (
                 clinical_train is not None and clinical_train.shape[1] > 0
             )
@@ -1007,9 +1020,9 @@ class _PatientLongitudinalBaseline:
                 X_combined = np.hstack([X_pca, clinical_test])
             else:
                 X_combined = X_pca
-            # RF predicts time; invert to get risk.
-            pred_time = self._params["rf"].predict(X_combined)
-            return -pred_time  # Negative time = higher risk.
+            # sksurv RSF.predict returns the ensemble risk score directly
+            # (higher = higher risk), so no time-inversion is needed.
+            return self._params["rsf"].predict(X_combined)
 
         elif self.name == "deepsurv_mlp":
             X_pca = self._params["pca"].transform(X_test)
