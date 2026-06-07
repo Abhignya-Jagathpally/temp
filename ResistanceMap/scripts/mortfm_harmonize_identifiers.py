@@ -52,7 +52,28 @@ def main() -> int:
     feature_genes = {g for g in feature_genes if g and g != "nan"}
     logger.info("Reference feature gene set: %d unique symbols", len(feature_genes))
 
+    # P0-1 (Issue 6 fix): fail closed, not crash. When every feature matrix is
+    # missing/empty, `feature_genes` is empty -> the mapping would be a columnless
+    # DataFrame and `mapping["tier"]` raised an opaque KeyError. Surface the real
+    # cause (the feature matrices are produced by the DepMap/BeatAML ingests that
+    # must run BEFORE harmonize — see DAG P0-2 reorder) instead of masking it.
+    if not feature_genes:
+        raise SystemExit(
+            "harmonize_identifiers: no feature genes found — every feature matrix "
+            f"was missing/empty: {[args.features] + list(args.extra_features)}. "
+            "These are produced by the DepMap/BeatAML ingests; run them BEFORE "
+            "harmonize (DAG P0-2 reorder), or pass --features pointing at a real "
+            "samples x genes matrix. Refusing to emit an empty mapping."
+        )
+
     # 2. UniProt nodes table: gene_symbol -> uniprot_id (Tier 1: exact HGNC).
+    # P0-3: actionable error when the upstream ingest output is absent.
+    up_path = Path(args.uniprot_nodes)
+    if not up_path.exists():
+        raise SystemExit(
+            f"harmonize_identifiers: UniProt nodes table not found: {up_path}. "
+            "Run scripts/mortfm_ingest_uniprot.py BEFORE harmonize (DAG P0-2 reorder)."
+        )
     uniprot = pd.read_csv(args.uniprot_nodes)
     uniprot["gene_symbol"] = uniprot["gene_symbol"].astype(str)
     tier1 = uniprot.dropna(subset=["gene_symbol"])
@@ -64,6 +85,13 @@ def main() -> int:
     # 3. STRING aliases — extract HGNC-symbol-shaped aliases (uppercase, len<=15)
     #    that map onto a STRING protein that we can resolve back to UniProt via
     #    Tier 1. This lets us catch HGNC aliases (e.g. "AAA1" for the new symbol).
+    # P0-3: actionable error when the STRING ingest output is absent.
+    sa_path = Path(args.string_aliases)
+    if not sa_path.exists():
+        raise SystemExit(
+            f"harmonize_identifiers: STRING aliases not found: {sa_path}. "
+            "Run scripts/mortfm_ingest_string.py BEFORE harmonize (DAG P0-2 reorder)."
+        )
     string_aliases = pd.read_parquet(args.string_aliases)
     string_to_uniprot: dict[str, str] = (
         string_aliases.drop_duplicates("string_id")
@@ -103,7 +131,9 @@ def main() -> int:
             rows.append({"feature_gene": gene, "uniprot_id": tier5_map[gene.upper()], "tier": 5, "source": "STRING_alias"})
         else:
             rows.append({"feature_gene": gene, "uniprot_id": "", "tier": 0, "source": "unmapped"})
-    mapping = pd.DataFrame(rows)
+    # P0-1: explicit schema so the DataFrame is never columnless even if `rows`
+    # is empty (belt-and-suspenders alongside the fail-closed guard above).
+    mapping = pd.DataFrame(rows, columns=["feature_gene", "uniprot_id", "tier", "source"])
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     mapping.to_csv(args.out, index=False)
     n_mapped = int((mapping["tier"] > 0).sum())

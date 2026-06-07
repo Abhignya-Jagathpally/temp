@@ -139,7 +139,9 @@ with DAG(
         op_args=["scripts/mortfm/01_harmonize_identifiers.py"],
     )
 
-    acquire_public >> harmonize_ids
+    # P0-2 (Issue 3 fix): harmonize CONSUMES the UniProt/STRING ingest outputs,
+    # so it must run AFTER them — wired below where those tasks are defined.
+    # (acquire -> ingests -> harmonize, not acquire -> harmonize -> ingests.)
 
     # =================================================================
     # TRACK A: Cell-Line Foundation (v19 inherited, optional)
@@ -198,7 +200,11 @@ with DAG(
 
     # Cell-line track dependencies
     check_cellline >> [ingest_depmap, ingest_gdsc, ingest_prism]
-    harmonize_ids >> [ingest_string, ingest_uniprot, ingest_reactome, ingest_chembl]
+    # P0-2 (Issue 3 fix): bio-knowledge ingests run on acquire, BEFORE harmonize,
+    # because 01_harmonize_identifiers reads protein_nodes.csv (uniprot ingest) and
+    # string_aliases.parquet (string ingest). harmonize then depends on those two.
+    acquire_public >> [ingest_string, ingest_uniprot, ingest_reactome, ingest_chembl]
+    [ingest_string, ingest_uniprot] >> harmonize_ids
     [ingest_string, ingest_uniprot, ingest_reactome, ingest_chembl] >> build_bio_graph
     harmonize_ids >> [ingest_depmap, ingest_gdsc, ingest_prism]
     [ingest_depmap, ingest_gdsc, ingest_prism, build_bio_graph] >> train_cellline
