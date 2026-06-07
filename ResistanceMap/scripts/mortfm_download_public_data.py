@@ -216,7 +216,7 @@ def download_string(data_root: Path, *, dry_run: bool) -> bool:
     out = data_root / "string"
     files = {
         "9606.protein.links.full.v12.0.txt.gz":
-            "https://stringdb-downloads.org/download/protein.links.v12.0/9606.protein.links.full.v12.0.txt.gz",
+            "https://stringdb-downloads.org/download/protein.links.full.v12.0/9606.protein.links.full.v12.0.txt.gz",
         "9606.protein.aliases.v12.0.txt.gz":
             "https://stringdb-downloads.org/download/protein.aliases.v12.0/9606.protein.aliases.v12.0.txt.gz",
     }
