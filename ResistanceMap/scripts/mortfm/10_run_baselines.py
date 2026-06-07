@@ -667,7 +667,19 @@ PATIENT_LONGITUDINAL_BASELINES = [
     "mean_future_state_baseline",
     "mofa_plus_cox",
     "padimac_7gene",
+    # v20 Phase 2 cascade — censoring-aware survival baselines.
+    "elasticnet_cox",                # sksurv CoxnetSurvivalAnalysis (static)
+    "gradient_boosted_survival",     # sksurv GradientBoostingSurvivalAnalysis (static)
+    "pangea_landmark_cox",           # landmark Cox on lab deltas (needs trajectories)
+    "ferle_lstm_crbm",               # LSTM survival net (needs trajectories)
 ]
+
+# v20 Phase 2 longitudinal models require real lab trajectories (N, T, F),
+# which the cross-sectional confirmed dataset does not yet carry (those labs
+# live behind the MMRF Virtual Lab visit table). They are registered so the
+# methodology is in place and unit-tested; the runner records an honest
+# "skipped" status rather than degrading them to a single landmark.
+LONGITUDINAL_TRAJECTORY_BASELINES = {"pangea_landmark_cox", "ferle_lstm_crbm"}
 
 # v19 4-table benchmark taxonomy
 BENCHMARK_TABLES = {
@@ -675,6 +687,7 @@ BENCHMARK_TABLES = {
         "clinical_only_cox", "clinical_ridge_cox", "rna_only_cox",
         "rna_plus_clinical_cox", "random_survival_forest", "deepsurv_mlp",
         "kaplan_meier_baseline", "mofa_plus_cox",
+        "elasticnet_cox", "gradient_boosted_survival",
     ],
     "response_classification": [
         "clinical_only_cox", "padimac_7gene",
@@ -966,6 +979,60 @@ class _PatientLongitudinalBaseline:
                 clinical_train is not None and clinical_train.shape[1] > 0
             )
 
+        elif self.name == "elasticnet_cox":
+            # v20: L1/L2 Cox on [RNA PCA + clinical], censoring-aware (sksurv).
+            from resistancemap.baselines.survival_baselines import ElasticNetCoxBaseline
+            from sklearn.decomposition import PCA
+            n_comp = min(20, X_train.shape[1], X_train.shape[0] - 1)
+            pca = PCA(n_components=n_comp, random_state=self.seed)
+            X_pca = pca.fit_transform(X_train)
+            if clinical_train is not None and clinical_train.shape[1] > 0:
+                X_combined = np.hstack([X_pca, clinical_train])
+            else:
+                X_combined = X_pca
+            model = ElasticNetCoxBaseline(seed=self.seed)
+            model.fit(X_combined, event_time_train, event_observed_train)
+            self._params["pca"] = pca
+            self._params["model"] = model
+            self._params["has_clinical"] = (
+                clinical_train is not None and clinical_train.shape[1] > 0
+            )
+
+        elif self.name == "gradient_boosted_survival":
+            # v20: gradient-boosted Cox on [RNA PCA + clinical] (sksurv).
+            from resistancemap.baselines.survival_baselines import (
+                GradientBoostedSurvivalBaseline,
+            )
+            from sklearn.decomposition import PCA
+            n_comp = min(20, X_train.shape[1], X_train.shape[0] - 1)
+            pca = PCA(n_components=n_comp, random_state=self.seed)
+            X_pca = pca.fit_transform(X_train)
+            if clinical_train is not None and clinical_train.shape[1] > 0:
+                X_combined = np.hstack([X_pca, clinical_train])
+            else:
+                X_combined = X_pca
+            model = GradientBoostedSurvivalBaseline(seed=self.seed)
+            model.fit(X_combined, event_time_train, event_observed_train)
+            self._params["pca"] = pca
+            self._params["model"] = model
+            self._params["has_clinical"] = (
+                clinical_train is not None and clinical_train.shape[1] > 0
+            )
+
+        elif self.name in LONGITUDINAL_TRAJECTORY_BASELINES:
+            # PANGEA landmark / Ferle LSTM need (N, T, F) lab trajectories that
+            # the cross-sectional confirmed dataset does not carry. Refuse to
+            # fabricate a single-timestep sequence; the runner turns this into
+            # an honest "skipped" leaderboard row.
+            from resistancemap.baselines.survival_baselines import (
+                RequiresLongitudinalTrajectories,
+            )
+            raise RequiresLongitudinalTrajectories(
+                f"{self.name} requires longitudinal lab trajectories (N, T, F) "
+                "from the MMRF Virtual Lab PER_PATIENT_VISIT table; the current "
+                "confirmed dataset is cross-sectional. Not fabricating sequences."
+            )
+
         elif self.name == "mean_time_baseline":
             self._params["mean_time"] = float(np.mean(event_time_train))
 
@@ -1031,6 +1098,14 @@ class _PatientLongitudinalBaseline:
             else:
                 X_combined = X_pca
             return X_combined @ self._params["beta"]
+
+        elif self.name in ("elasticnet_cox", "gradient_boosted_survival"):
+            X_pca = self._params["pca"].transform(X_test)
+            if self._params.get("has_clinical") and clinical_test is not None:
+                X_combined = np.hstack([X_pca, clinical_test])
+            else:
+                X_combined = X_pca
+            return self._params["model"].predict_risk(X_combined)
 
         elif self.name in ("mean_time_baseline", "kaplan_meier_baseline",
                            "locf_trajectory_baseline", "mean_future_state_baseline"):
@@ -1210,6 +1285,13 @@ def run_patient_longitudinal(args: argparse.Namespace) -> int:
             t0 = time.time()
 
             try:
+                from resistancemap.baselines.survival_baselines import (
+                    RequiresLongitudinalTrajectories,
+                )
+            except Exception:  # pragma: no cover - survival_baselines always importable
+                RequiresLongitudinalTrajectories = ()  # type: ignore
+
+            try:
                 model = _PatientLongitudinalBaseline(bl_name, seed=seed)
                 model.fit(X_train, event_time_train, event_obs_train, clinical_train)
                 risk_scores = model.predict_risk(X_test, clinical_test)
@@ -1217,6 +1299,20 @@ def run_patient_longitudinal(args: argparse.Namespace) -> int:
                 # Compute metrics.
                 c_index = _concordance_index(event_time_test, event_obs_test, risk_scores)
                 ibs = _integrated_brier_score(event_time_test, event_obs_test, risk_scores)
+            except RequiresLongitudinalTrajectories as exc:
+                logger.warning("    SKIPPED %s (seed=%d): %s", bl_name, seed, exc)
+                all_results.append({
+                    "model": bl_name,
+                    "seed": seed,
+                    "status": "skipped",
+                    "reason": str(exc),
+                    "c_index": None,
+                    "ibs": None,
+                    "n_train": int(train_mask.sum()),
+                    "n_test": int(test_mask.sum()),
+                    "n_events_test": int(event_obs_test.sum()),
+                })
+                continue
             except Exception as exc:
                 logger.error("    FAILED %s (seed=%d): %s", bl_name, seed, exc)
                 continue
@@ -1277,10 +1373,15 @@ def run_patient_longitudinal(args: argparse.Namespace) -> int:
         from collections import defaultdict
         agg: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         for r in all_results:
+            if r.get("c_index") is None:  # skipped row — no metric to aggregate
+                continue
             agg[r["model"]].append(r)
 
+        skipped = sorted({r["model"] for r in all_results if r.get("c_index") is None})
         for bl_name in baselines_to_run:
             if bl_name not in agg:
+                if bl_name in skipped:
+                    print(f"  {bl_name:35s} {'SKIPPED — needs longitudinal trajectories':>40s}")
                 continue
             entries = agg[bl_name]
             mean_ci = np.mean([e["c_index"] for e in entries])
@@ -1322,9 +1423,11 @@ def _build_claim_comparison(all_results: List[Dict[str, Any]]) -> Dict[str, Any]
     """Build a comparison table showing which baselines MORT-FM must beat."""
     from collections import defaultdict
 
-    # Aggregate results per model across seeds.
+    # Aggregate results per model across seeds (skip rows with no metric).
     agg: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for r in all_results:
+        if r.get("c_index") is None:
+            continue
         agg[r["model"]].append(r)
 
     model_summary: Dict[str, Dict[str, float]] = {}

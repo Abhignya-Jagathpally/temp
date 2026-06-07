@@ -70,6 +70,25 @@ class DataConfig:
     depmap_model_path: Optional[Path] = None  # 24Q4 Model.csv replaces sample_info.csv
     prism_24q2_path: Optional[Path] = None    # PRISM Repurposing 24Q2 secondary screen
 
+    # v20 lab-first pivot — open-access data roots + scVI biology layer.
+    # All optional; loaders raise FileNotFoundError when the directory is empty
+    # rather than fabricating data (see resistancemap/data/gdc_open_loader.py,
+    # geo_scrna_loader.py, geo_bulk_loader.py).
+    gdc_open_dir: Path = Path("data/gdc_mmrf_open")     # GDC open-tier MMRF RNA + clinical
+    geo_scrna_dir: Path = Path("data/geo_scrna")        # GEO scRNA-seq tarballs/h5ad
+    geo_bulk_dir: Path = Path("data/geo_bulk")          # GSE24080 / GSE136337 bulk + survival
+    zenodo_atlas_path: Optional[Path] = None            # pre-built MM atlas .h5ad
+    depmap_dir: Path = Path("data/depmap")              # DepMap gene dependency
+
+    # scVI single-cell integration (resistancemap/models/scvi_encoder.py).
+    scvi_n_latent: int = 30
+    scvi_gene_likelihood: str = "zinb"
+    scvi_max_epochs: int = 400
+    contrastive_n_salient: int = 10                     # contrastiveVI salient dims
+
+    # Survival endpoint (v20 Bug #2 fix): IMWG-defined PFS, NOT the TT2L proxy.
+    survival_endpoint: str = "imwg_pfs"                 # imwg_pfs | os | tt2l (legacy)
+
     # Preprocessing
     min_coverage: float = 0.7  # Drop proteins missing in >30% of samples
     imputation: str = "knn"  # knn | median | zero
