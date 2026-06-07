@@ -1,393 +1,489 @@
 """
-mortfm_evidence_pipeline.py — Airflow DAG for the MORT-FM evidence pipeline.
+ResistanceMap v20 — MORT-FM Evidence Pipeline (Airflow DAG)
+============================================================
+Refactored from v19 to support the lab-first, open-access-only data path.
 
-Evidence-first, not model-first. Full Block A-D data ingestion wired in.
-Each task is a thin subprocess wrapper — no pipeline logic reimplemented here.
+Two parallel tracks:
+  Track A (v19, inherited): Cell-line foundation → BeatAML → integration
+  Track B (v20, new):       GDC open + GEO scRNA → scVI → PK-SSM → baselines
+
+Both tracks converge at the evaluation/gating phase.
+
+Track B runs entirely on open-access data (no MMRF Virtual Lab, no dbGaP).
+Track A is optional — set ENABLE_CELLLINE_TRACK=False to skip.
+
+Usage:
+  airflow dags trigger mortfm_evidence_pipeline_v20
+  airflow dags trigger mortfm_evidence_pipeline_v20 --conf '{"track": "open_access_only"}'
 """
 
 from __future__ import annotations
 
-import datetime
 import os
 import subprocess
-import textwrap
+import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
-try:
-    from airflow import DAG
-    from airflow.operators.python import PythonOperator
-    try:
-        from airflow.sdk.definitions.asset import Asset as Dataset
-    except ImportError:
-        from airflow.datasets import Dataset
-    HAS_AIRFLOW = True
-except ImportError:
-    HAS_AIRFLOW = False
-    Dataset = None
+from airflow import DAG
+from airflow.operators.python import PythonOperator, ShortCircuitOperator
+from airflow.models.param import Param
+from airflow.utils.trigger_rule import TriggerRule
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "scripts" / "mortfm"
-SCRIPTS_TOP = ROOT / "scripts"
-LOG_DIR = ROOT / "logs" / "airflow"
+# =============================================================================
+# Configuration
+# =============================================================================
 
+REPO_ROOT = Path(os.environ.get(
+    "RESISTANCEMAP_ROOT",
+    Path(__file__).resolve().parent.parent,
+))
+SCRIPTS = REPO_ROOT / "scripts"
+MORTFM_SCRIPTS = SCRIPTS / "mortfm"
 
-def _run_script(script: str | Path, *extra_args: str, task_id: str = "unknown") -> None:
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = LOG_DIR / f"{task_id}.log"
-    cmd = ["python", "-u", str(script), *extra_args]
-    with open(log_path, "a") as log_fh:
-        log_fh.write(
-            f"\n{'=' * 72}\n"
-            f"  task_id : {task_id}\n"
-            f"  cmd     : {' '.join(cmd)}\n"
-            f"  started : {datetime.datetime.utcnow().isoformat()}Z\n"
-            f"{'=' * 72}\n"
-        )
-        log_fh.flush()
-        subprocess.run(
-            cmd, cwd=str(ROOT), check=True,
-            stdout=log_fh, stderr=subprocess.STDOUT,
-            env={**os.environ, "PYTHONUNBUFFERED": "1"},
-        )
+# Toggle cell-line track (set False for open-access-only mode)
+ENABLE_CELLLINE_TRACK = os.environ.get("ENABLE_CELLLINE_TRACK", "false").lower() == "true"
 
-
-def _run_script_allow_exit1(script, *extra_args, task_id="unknown"):
-    """Run script, treating exit code 1 as honest-negative (gates failed)."""
-    try:
-        _run_script(script, *extra_args, task_id=task_id)
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 1:
-            import logging
-            logging.getLogger("airflow.task").warning(
-                f"{task_id} exited 1 (honest negative / gates did not pass). Continuing."
-            )
-        else:
-            raise
-
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 1: Raw data download + identifier harmonization
-# ───────────────────────────────────────────────────────────────────────
-def acquire_public_data(**ctx):
-    _run_script(SCRIPTS / "00_download_public_data.py", task_id="acquire_public_data")
-
-def harmonize_identifiers(**ctx):
-    _run_script(SCRIPTS / "01_harmonize_identifiers.py", task_id="harmonize_identifiers")
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 2: Block A — DepMap + GDSC + PRISM + STRING + UniProt + Reactome + ChEMBL
-# ───────────────────────────────────────────────────────────────────────
-def ingest_depmap(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_depmap.py", task_id="ingest_depmap")
-
-def ingest_gdsc(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_gdsc.py", task_id="ingest_gdsc")
-
-def ingest_prism(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_prism.py", task_id="ingest_prism")
-
-def ingest_string(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_string.py", task_id="ingest_string")
-
-def ingest_uniprot(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_uniprot.py", task_id="ingest_uniprot")
-
-def ingest_reactome(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_reactome.py", task_id="ingest_reactome")
-
-def ingest_chembl(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_chembl.py", task_id="ingest_chembl")
-
-def build_biological_graph(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_build_biological_graph.py", task_id="build_biological_graph")
-
-def train_cellline_foundation(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_train_cellline_foundation.py", task_id="train_cellline_foundation")
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 3: Block B — BeatAML ingestion + alignment + finetune
-# ───────────────────────────────────────────────────────────────────────
-def ingest_beataml(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_beataml.py", "--mode", "auto", task_id="ingest_beataml")
-
-def align_beataml_features(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_align_beataml_features.py", task_id="align_beataml_features")
-
-def train_beataml_finetune(**ctx):
-    _run_script_allow_exit1(
-        SCRIPTS_TOP / "mortfm_train_beataml_finetune.py",
-        "--pretrain-epochs", "30", "--finetune-epochs", "30",
-        task_id="train_beataml_finetune",
-    )
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 4: Block C — scRNA ingestion + preprocessing + state encoder
-# ───────────────────────────────────────────────────────────────────────
-def ingest_geo_singlecell(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_geo_singlecell.py", task_id="ingest_geo_singlecell")
-
-def build_scrna_manifest(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_build_scrna_manifest.py", task_id="build_scrna_manifest")
-
-def train_state_encoder(**ctx):
-    _run_script(SCRIPTS / "05_train_block_c_contrastive.py", task_id="train_state_encoder")
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 5: Block D — ESM-2 embeddings + CRISPR external evidence
-# ───────────────────────────────────────────────────────────────────────
-def compute_esm2_embeddings(**ctx):
-    uniprot_dir = ROOT / "data" / "raw_public" / "uniprot"
-    if not uniprot_dir.exists():
-        uniprot_dir = ROOT / "data" / "raw" / "uniprot"
-    _run_script(
-        SCRIPTS_TOP / "mortfm_compute_esm2_embeddings.py",
-        "--uniprot-dir", str(uniprot_dir),
-        task_id="compute_esm2_embeddings",
-    )
-
-def ingest_crispr(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_ingest_crispr.py", task_id="ingest_crispr")
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 6: Block E — Integration + longitudinal substrate
-# ───────────────────────────────────────────────────────────────────────
-def integrate_blocks(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_integrate_blocks_bcd.py", task_id="integrate_blocks")
-
-def prepare_mmrf(**ctx):
-    _run_script(
-        SCRIPTS / "03_prepare_mmrf.py",
-        "--data-dir", str(ROOT / "data" / "raw" / "mmrf_commpass"),
-        task_id="prepare_mmrf",
-    )
-
-def build_longitudinal_dataset(**ctx):
-    _run_script(SCRIPTS / "02_build_longitudinal_dataset.py", task_id="build_longitudinal_dataset")
-
-def build_mmrf_snapshots(**ctx):
-    """Build PatientCellSnapshot objects from MMRF RNA-seq + clinical data."""
-    build_script = textwrap.dedent(f"""\
-        import pickle, sys, logging
-        logging.basicConfig(level=logging.INFO)
-        sys.path.insert(0, "{ROOT}")
-        from resistancemap.data.clinical_outcome_loader import build_mmrf_snapshots
-        snapshots = build_mmrf_snapshots("{ROOT / 'data' / 'raw' / 'mmrf_commpass'}", top_k_genes=5000)
-        out = "{ROOT / 'data' / 'processed' / 'mortfm' / 'snapshots.pkl'}"
-        import pathlib; pathlib.Path(out).parent.mkdir(parents=True, exist_ok=True)
-        with open(out, "wb") as f:
-            pickle.dump(snapshots, f)
-        print(f"Built {{len(snapshots)}} snapshots -> {{out}}")
-    """)
-    subprocess.run(
-        ["python", "-c", build_script],
-        cwd=str(ROOT), check=True,
-        env={**os.environ, "PYTHONUNBUFFERED": "1"},
-    )
-
-def build_temporal_pairs(**ctx):
-    """Build real TemporalTrainingPairs from RNA snapshots + clinical outcomes."""
-    build_script = textwrap.dedent(f"""\
-        import pickle, sys, logging
-        logging.basicConfig(level=logging.INFO)
-        sys.path.insert(0, "{ROOT}")
-        from resistancemap.data.trajectory_pair_builder import build_temporal_pairs
-        from resistancemap.data.clinical_outcome_loader import load_mortfm_outcomes
-
-        snap_path = "{ROOT / 'data' / 'processed' / 'mortfm' / 'snapshots.pkl'}"
-        out_path = "{ROOT / 'data' / 'processed' / 'mortfm' / 'temporal_pairs.pkl'}"
-        import pathlib; pathlib.Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-
-        with open(snap_path, "rb") as f:
-            snapshots = pickle.load(f)
-        outcomes = load_mortfm_outcomes("{ROOT / 'data' / 'raw' / 'mmrf_commpass'}")
-        pairs = build_temporal_pairs(snapshots, outcomes, include_survival_only=True, include_unlabelled=True)
-        n_with_followup = sum(1 for p in pairs if p.x_t_delta is not None)
-        with open(out_path, "wb") as f:
-            pickle.dump(pairs, f)
-        print(f"Built {{len(pairs)}} pairs ({{n_with_followup}} with follow-up RNA snapshot) -> {{out_path}}")
-    """)
-    subprocess.run(
-        ["python", "-c", build_script],
-        cwd=str(ROOT), check=True,
-        env={**os.environ, "PYTHONUNBUFFERED": "1"},
-    )
-
-def audit_leakage(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_longitudinal_pair_audit.py", task_id="audit_leakage")
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 7: LENS training (trajectory, survival, resistance)
-# ───────────────────────────────────────────────────────────────────────
-def pretrain_foundation(**ctx):
-    pairs_pkl = str(ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl")
-    if Path(pairs_pkl).exists():
-        import pickle
-        with open(pairs_pkl, "rb") as f:
-            pairs = pickle.load(f)
-        if pairs:
-            _run_script_allow_exit1(
-                SCRIPTS / "04_pretrain_foundation.py", "--pairs", pairs_pkl,
-                task_id="pretrain_foundation",
-            )
-            return
-    import logging
-    logging.getLogger("airflow.task").warning("No temporal pairs — skipping pretrain_foundation.")
-
-def train_lens_resistance(**ctx):
-    _run_script_allow_exit1(SCRIPTS / "06_train_lens_resistance.py", task_id="train_lens_resistance")
-
-def train_survival(**ctx):
-    pairs_pkl = str(ROOT / "data" / "processed" / "mortfm" / "temporal_pairs.pkl")
-    if Path(pairs_pkl).exists():
-        import pickle
-        with open(pairs_pkl, "rb") as f:
-            pairs = pickle.load(f)
-        if pairs:
-            _run_script_allow_exit1(SCRIPTS / "07_train_survival.py", "--pairs", pairs_pkl,
-                                    "--canonical", task_id="train_survival")
-            return
-    import logging
-    logging.getLogger("airflow.task").warning("No temporal pairs — skipping train_survival.")
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 8: Evidence evaluation + baselines + gates
-# ───────────────────────────────────────────────────────────────────────
-def run_baselines(**ctx):
-    _run_script_allow_exit1(SCRIPTS / "10_run_baselines.py", task_id="run_baselines")
-
-def evaluate_causal_evidence(**ctx):
-    _run_script_allow_exit1(SCRIPTS / "08_eval_causal_evidence_v2.py", task_id="evaluate_causal_evidence")
-
-def gate_revalidate(**ctx):
-    _run_script_allow_exit1(SCRIPTS / "09_gate_revalidate.py", task_id="gate_revalidate")
-
-def emit_registries(**ctx):
-    _run_script(SCRIPTS_TOP / "mortfm_emit_registries.py", task_id="emit_registries")
-
-# ───────────────────────────────────────────────────────────────────────
-# Phase 9: Figures + publication bundle
-# ───────────────────────────────────────────────────────────────────────
-def generate_figures(**ctx):
-    _run_script(SCRIPTS_TOP / "sota_benchmark_and_visualizations.py", task_id="generate_figures")
-
-def export_publication_bundle(**ctx):
-    _run_script(SCRIPTS_TOP / "export_publication_bundle.py", task_id="export_publication_bundle")
-
-
-# ═══════════════════════════════════════════════════════════════════════
-# DAG definition
-# ═══════════════════════════════════════════════════════════════════════
-default_args = {
-    "owner": "mortfm",
-    "retries": 0,
-    "execution_timeout": datetime.timedelta(hours=12),
+DEFAULT_ARGS = {
+    "owner": "resistancemap",
+    "depends_on_past": False,
+    "email_on_failure": False,
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
+    "execution_timeout": timedelta(hours=4),
 }
 
-with DAG(
-    dag_id="mortfm_evidence_pipeline",
-    description="End-to-end MORT-FM evidence pipeline with full Block A-D ingestion.",
-    schedule=None,
-    start_date=datetime.datetime(2026, 5, 23),
-    catchup=False,
-    default_args=default_args,
-    tags=["mortfm", "evidence", "pipeline"],
-    doc_md=textwrap.dedent("""\
-        ## MORT-FM Evidence Pipeline (Full)
 
-        Phases 1-9 covering data download, Block A-D ingestion, LENS training,
-        evidence evaluation, and publication bundle export.
-    """),
+# =============================================================================
+# Helpers
+# =============================================================================
+
+def _run_script(script_path: str, *args, allow_exit1: bool = False, **kwargs):
+    """Run a Python script as a subprocess. Raises on non-zero exit unless allow_exit1."""
+    cmd = [sys.executable, "-u", str(REPO_ROOT / script_path)] + list(args)
+    env = {**os.environ, "PYTHONPATH": str(REPO_ROOT)}
+    result = subprocess.run(cmd, env=env, cwd=str(REPO_ROOT))
+    if result.returncode != 0:
+        if allow_exit1 and result.returncode == 1:
+            print(f"[WARN] {script_path} exited with code 1 (honest negative / gate not passed)")
+        else:
+            raise subprocess.CalledProcessError(result.returncode, cmd)
+
+
+def _check_cellline_enabled(**kwargs):
+    """ShortCircuit: skip cell-line track if disabled."""
+    conf = kwargs.get("dag_run", {})
+    if hasattr(conf, "conf") and conf.conf:
+        track = conf.conf.get("track", "")
+        if track == "open_access_only":
+            return False
+    return ENABLE_CELLLINE_TRACK
+
+
+# =============================================================================
+# DAG Definition
+# =============================================================================
+
+with DAG(
+    dag_id="mortfm_evidence_pipeline_v20",
+    default_args=DEFAULT_ARGS,
+    description="MORT-FM v20 evidence pipeline — lab-first with open-access data",
+    schedule=None,  # Manual trigger only (Airflow 3.x renamed schedule_interval -> schedule)
+    start_date=datetime(2026, 6, 1),
+    catchup=False,
+    tags=["resistancemap", "v20", "open-access", "lab-first"],
+    params={
+        "track": Param(
+            default="full",
+            type="string",
+            enum=["full", "open_access_only", "cellline_only"],
+            description="Which track to run",
+        ),
+    },
+    max_active_runs=1,
 ) as dag:
 
-    # Phase 1: Download + harmonize
-    t_acquire       = PythonOperator(task_id="acquire_public_data", python_callable=acquire_public_data)
-    t_harmonize     = PythonOperator(task_id="harmonize_identifiers", python_callable=harmonize_identifiers)
+    # =================================================================
+    # PHASE 0: Gate — which track(s) to run
+    # =================================================================
 
-    # Phase 2: Block A — cell-line foundation data + training
-    t_depmap        = PythonOperator(task_id="ingest_depmap", python_callable=ingest_depmap)
-    t_gdsc          = PythonOperator(task_id="ingest_gdsc", python_callable=ingest_gdsc)
-    t_prism         = PythonOperator(task_id="ingest_prism", python_callable=ingest_prism)
-    t_string        = PythonOperator(task_id="ingest_string", python_callable=ingest_string)
-    t_uniprot       = PythonOperator(task_id="ingest_uniprot", python_callable=ingest_uniprot)
-    t_reactome      = PythonOperator(task_id="ingest_reactome", python_callable=ingest_reactome)
-    t_chembl        = PythonOperator(task_id="ingest_chembl", python_callable=ingest_chembl)
-    t_bio_graph     = PythonOperator(task_id="build_biological_graph", python_callable=build_biological_graph)
-    t_block_a       = PythonOperator(task_id="train_cellline_foundation", python_callable=train_cellline_foundation)
+    check_cellline = ShortCircuitOperator(
+        task_id="check_cellline_track_enabled",
+        python_callable=_check_cellline_enabled,
+        # Airflow 3.x always injects context; `provide_context` was removed.
+    )
 
-    # Phase 3: Block B — BeatAML
-    t_beataml       = PythonOperator(task_id="ingest_beataml", python_callable=ingest_beataml)
-    t_align_beat    = PythonOperator(task_id="align_beataml_features", python_callable=align_beataml_features)
-    t_block_b       = PythonOperator(task_id="train_beataml_finetune", python_callable=train_beataml_finetune)
+    # =================================================================
+    # PHASE 1: Common — Acquire & Harmonize (shared by both tracks)
+    # =================================================================
 
-    # Phase 4: Block C — scRNA
-    t_geo_sc        = PythonOperator(task_id="ingest_geo_singlecell", python_callable=ingest_geo_singlecell)
-    t_scrna_man     = PythonOperator(task_id="build_scrna_manifest", python_callable=build_scrna_manifest)
-    t_block_c       = PythonOperator(task_id="train_state_encoder", python_callable=train_state_encoder)
+    acquire_public = PythonOperator(
+        task_id="acquire_public_data",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/00_download_public_data.py"],
+    )
 
-    # Phase 5: Block D — ESM-2 + CRISPR
-    t_esm2          = PythonOperator(task_id="compute_esm2_embeddings", python_callable=compute_esm2_embeddings)
-    t_crispr        = PythonOperator(task_id="ingest_crispr", python_callable=ingest_crispr)
+    harmonize_ids = PythonOperator(
+        task_id="harmonize_identifiers",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/01_harmonize_identifiers.py"],
+    )
 
-    # Phase 6: Integration + longitudinal
-    t_integrate     = PythonOperator(task_id="integrate_blocks", python_callable=integrate_blocks)
-    t_mmrf          = PythonOperator(task_id="prepare_mmrf", python_callable=prepare_mmrf)
-    t_snapshots     = PythonOperator(task_id="build_mmrf_snapshots", python_callable=build_mmrf_snapshots)
-    t_longitudinal  = PythonOperator(task_id="build_longitudinal_dataset", python_callable=build_longitudinal_dataset)
-    t_pairs         = PythonOperator(task_id="build_temporal_pairs", python_callable=build_temporal_pairs)
-    t_audit         = PythonOperator(task_id="audit_leakage", python_callable=audit_leakage)
+    acquire_public >> harmonize_ids
 
-    # Phase 7: LENS training
-    t_pretrain      = PythonOperator(task_id="pretrain_foundation", python_callable=pretrain_foundation)
-    t_lens          = PythonOperator(task_id="train_lens_resistance", python_callable=train_lens_resistance)
-    t_survival      = PythonOperator(task_id="train_survival", python_callable=train_survival)
+    # =================================================================
+    # TRACK A: Cell-Line Foundation (v19 inherited, optional)
+    # =================================================================
 
-    # Phase 8: Evidence + baselines + gates
-    t_baselines     = PythonOperator(task_id="run_baselines", python_callable=run_baselines)
-    t_causal        = PythonOperator(task_id="evaluate_causal_evidence", python_callable=evaluate_causal_evidence)
-    t_registries    = PythonOperator(task_id="emit_registries", python_callable=emit_registries)
-    t_gate          = PythonOperator(task_id="gate_revalidate", python_callable=gate_revalidate)
+    # --- Phase 2A: Ingest cell-line data ---
+    ingest_depmap = PythonOperator(
+        task_id="ingest_depmap",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_depmap.py"],
+    )
+    ingest_gdsc = PythonOperator(
+        task_id="ingest_gdsc",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_gdsc.py"],
+    )
+    ingest_prism = PythonOperator(
+        task_id="ingest_prism",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_prism.py"],
+    )
 
-    # Phase 9: Figures + bundle
-    t_figures       = PythonOperator(task_id="generate_figures", python_callable=generate_figures)
-    t_bundle        = PythonOperator(task_id="export_publication_bundle", python_callable=export_publication_bundle)
+    # --- Phase 2A: Ingest bio knowledge (shared) ---
+    ingest_string = PythonOperator(
+        task_id="ingest_string",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_string.py"],
+    )
+    ingest_uniprot = PythonOperator(
+        task_id="ingest_uniprot",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_uniprot.py"],
+    )
+    ingest_reactome = PythonOperator(
+        task_id="ingest_reactome",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_reactome.py"],
+    )
+    ingest_chembl = PythonOperator(
+        task_id="ingest_chembl",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_chembl.py"],
+    )
+    build_bio_graph = PythonOperator(
+        task_id="build_biological_graph",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_build_biological_graph.py"],
+    )
 
-    # ──────────────────────────────────────────────────────────────────
-    # Dependencies
-    # ──────────────────────────────────────────────────────────────────
+    # --- Phase 2A: Cell-line foundation training ---
+    train_cellline = PythonOperator(
+        task_id="train_cellline_foundation",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_train_cellline_foundation.py"],
+    )
 
-    # Phase 1: download → harmonize
-    t_acquire >> t_harmonize
+    # Cell-line track dependencies
+    check_cellline >> [ingest_depmap, ingest_gdsc, ingest_prism]
+    harmonize_ids >> [ingest_string, ingest_uniprot, ingest_reactome, ingest_chembl]
+    [ingest_string, ingest_uniprot, ingest_reactome, ingest_chembl] >> build_bio_graph
+    harmonize_ids >> [ingest_depmap, ingest_gdsc, ingest_prism]
+    [ingest_depmap, ingest_gdsc, ingest_prism, build_bio_graph] >> train_cellline
 
-    # Phase 2: Block A ingestion (parallel after harmonize) → graph → foundation training
-    t_harmonize >> [t_depmap, t_gdsc, t_prism, t_string, t_uniprot, t_reactome, t_chembl]
-    [t_string, t_uniprot, t_reactome, t_chembl] >> t_bio_graph
-    [t_depmap, t_gdsc, t_prism, t_bio_graph] >> t_block_a
+    # --- Phase 3A: BeatAML finetune (Block B) ---
+    ingest_beataml = PythonOperator(
+        task_id="ingest_beataml",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_beataml.py", "--mode", "auto"],
+    )
+    align_beataml = PythonOperator(
+        task_id="align_beataml_features",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_align_beataml_features.py"],
+    )
+    train_beataml = PythonOperator(
+        task_id="train_beataml_finetune",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_train_beataml_finetune.py"],
+    )
 
-    # Phase 3: Block B (after Block A + BeatAML ingestion)
-    t_harmonize >> t_beataml
-    [t_block_a, t_beataml] >> t_align_beat >> t_block_b
+    check_cellline >> ingest_beataml
+    harmonize_ids >> ingest_beataml
+    [train_cellline, ingest_beataml] >> align_beataml >> train_beataml
 
-    # Phase 4: Block C (parallel with Block A/B)
-    t_harmonize >> t_geo_sc >> t_scrna_man >> t_block_c
+    # =================================================================
+    # TRACK B: Open-Access Lab-First (v20 NEW)
+    # =================================================================
 
-    # Phase 5: Block D (after graph + uniprot)
-    [t_bio_graph, t_uniprot] >> t_esm2
-    t_depmap >> t_crispr
+    # --- Phase 2B: Download open-access data ---
 
-    # Phase 6: Integration → snapshots → longitudinal → audit
-    [t_block_a, t_block_b, t_block_c, t_esm2] >> t_integrate
-    t_harmonize >> t_mmrf >> t_snapshots >> t_longitudinal >> t_pairs
-    [t_integrate, t_pairs] >> t_audit
+    download_gdc_open = PythonOperator(
+        task_id="download_gdc_open_mmrf",
+        python_callable=_run_script,
+        op_args=["scripts/run_first_results.py"],  # Downloads GDC clinical + runs baselines
+        doc_md="""
+        Downloads MMRF-COMMPASS clinical data from GDC open tier (no dbGaP).
+        Runs the corrected baseline cascade (CoxPH, EN-Cox, sksurv RSF, GBM).
+        Produces: results/v20_first_baselines/
+        """,
+    )
 
-    # Phase 7: LENS training (after audit passes)
-    t_audit >> t_pretrain >> t_lens
-    t_audit >> t_survival
+    download_geo_scrna = PythonOperator(
+        task_id="download_geo_scrna",
+        python_callable=_run_script,
+        op_args=["scripts/download_geo_scrna.py"],
+        doc_md="""
+        Downloads open-access scRNA-seq for MM:
+        - Zenodo panImmune.h5ad (~2.7 GB, CC-BY-4.0)
+        - GSE161801 (RRMM pre/post-treatment)
+        - GSE189460 (bortezomib responders vs non-responders)
+        Produces: data/open_access/geo_scrna/
+        """,
+        execution_timeout=timedelta(hours=2),  # Large downloads
+    )
 
-    # Phase 8: Evidence (after LENS + baselines)
-    t_audit >> t_baselines
-    t_lens >> t_causal
-    [t_integrate, t_lens] >> t_registries
-    [t_survival, t_baselines, t_causal, t_registries] >> t_gate
+    # Both download tasks start after harmonize_ids
+    harmonize_ids >> download_gdc_open
+    harmonize_ids >> download_geo_scrna
 
-    # Phase 9: Figures + bundle
-    t_gate >> t_figures >> t_bundle
+    # --- Phase 3B: scVI Integration ---
+
+    run_scvi = PythonOperator(
+        task_id="train_scvi_integration",
+        python_callable=_run_script,
+        op_args=["scripts/run_scvi_integration.py"],
+        doc_md="""
+        Trains scVI on merged MM scRNA-seq data. Produces:
+        - data/processed/scvi_latent_z.npy (batch-corrected latent, R^30)
+        - data/processed/chromatin_expression.csv (20 reader/writer genes for ChromatinODE)
+        - data/processed/biomarker_proxy_expression.csv (Ig genes, B2M, ALB for PK decoder)
+        - checkpoints/scvi/scvi_model/
+        """,
+        execution_timeout=timedelta(hours=3),  # GPU training
+    )
+
+    download_geo_scrna >> run_scvi
+
+    # --- Phase 4B: PK-SSM Forward Pass ---
+
+    run_pkssm = PythonOperator(
+        task_id="run_pkssm_forward",
+        python_callable=_run_script,
+        op_args=["scripts/run_pkssm_forward.py"],
+        doc_md="""
+        Runs the PK-SSM forward pass on scVI outputs:
+        scVI latent z → PK observation model → mechanism classification → hazard.
+        NOTE: UNTRAINED — demonstrates architecture, not predictions.
+        Training requires MMRF Virtual Lab outcome data.
+        Produces: results/v20_pkssm/
+        """,
+    )
+
+    run_scvi >> run_pkssm
+
+    # =================================================================
+    # PHASE 4: Shared — scRNA State Encoder (Block C)
+    # Rewired to use scVI from Track B instead of custom encoder
+    # =================================================================
+
+    ingest_geo_sc = PythonOperator(
+        task_id="ingest_geo_singlecell",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_geo_singlecell.py"],
+    )
+    build_scrna_manifest = PythonOperator(
+        task_id="build_scrna_manifest",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_build_scrna_manifest.py"],
+    )
+    train_state_encoder = PythonOperator(
+        task_id="train_state_encoder",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/05_train_block_c_contrastive.py"],
+    )
+
+    harmonize_ids >> ingest_geo_sc >> build_scrna_manifest >> train_state_encoder
+    # scVI latent can augment the state encoder
+    run_scvi >> train_state_encoder
+
+    # =================================================================
+    # PHASE 5: Shared — Protein Embeddings (Block D)
+    # =================================================================
+
+    compute_esm2 = PythonOperator(
+        task_id="compute_esm2_embeddings",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_compute_esm2_embeddings.py"],
+    )
+    ingest_crispr = PythonOperator(
+        task_id="ingest_crispr",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_ingest_crispr.py"],
+    )
+
+    [build_bio_graph, ingest_uniprot] >> compute_esm2
+    ingest_depmap >> ingest_crispr
+
+    # =================================================================
+    # PHASE 6: Integration + MMRF Patient Data
+    # =================================================================
+
+    integrate_blocks = PythonOperator(
+        task_id="integrate_blocks",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_integrate_blocks_bcd.py"],
+        trigger_rule=TriggerRule.NONE_FAILED,  # Proceed even if cell-line track skipped
+    )
+
+    prepare_mmrf = PythonOperator(
+        task_id="prepare_mmrf",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/03_prepare_mmrf.py"],
+    )
+
+    build_snapshots = PythonOperator(
+        task_id="build_mmrf_snapshots",
+        python_callable=lambda: _run_script(
+            "scripts/mortfm/02_build_longitudinal_dataset.py", "--mode", "snapshots"
+        ),
+    )
+
+    build_longitudinal = PythonOperator(
+        task_id="build_longitudinal_dataset",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/02_build_longitudinal_dataset.py"],
+    )
+
+    build_temporal_pairs = PythonOperator(
+        task_id="build_temporal_pairs",
+        python_callable=lambda: _run_script(
+            "scripts/mortfm/02_build_longitudinal_dataset.py", "--mode", "pairs"
+        ),
+    )
+
+    audit_leakage = PythonOperator(
+        task_id="audit_leakage",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_longitudinal_pair_audit.py"],
+    )
+
+    # Integration dependencies — converge both tracks
+    [train_beataml, train_state_encoder, compute_esm2] >> integrate_blocks
+    # Also allow Track B outputs to feed integration
+    run_scvi >> integrate_blocks
+
+    harmonize_ids >> prepare_mmrf >> build_snapshots >> build_longitudinal >> build_temporal_pairs
+    [integrate_blocks, build_temporal_pairs] >> audit_leakage
+
+    # =================================================================
+    # PHASE 7: Training — LENS + Survival + PK-SSM
+    # =================================================================
+
+    pretrain_foundation = PythonOperator(
+        task_id="pretrain_foundation",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/04_pretrain_foundation.py"],
+        trigger_rule=TriggerRule.NONE_FAILED,
+    )
+
+    train_lens = PythonOperator(
+        task_id="train_lens_resistance",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/06_train_lens_resistance.py"],
+    )
+
+    train_survival = PythonOperator(
+        task_id="train_survival",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/07_train_survival.py"],
+    )
+
+    audit_leakage >> pretrain_foundation >> train_lens
+    audit_leakage >> train_survival
+
+    # =================================================================
+    # PHASE 8: Evaluation — Baselines + Causal Evidence + Gates
+    # =================================================================
+
+    run_baselines = PythonOperator(
+        task_id="run_baselines",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/10_run_baselines.py"],
+        doc_md="Corrected baselines: sksurv RSF (Bug #4 fix), EN-Cox, GBM-Surv, CoxPH (Bug #1 fix).",
+    )
+
+    eval_causal = PythonOperator(
+        task_id="evaluate_causal_evidence",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/08_eval_causal_evidence_v2.py"],
+        trigger_rule=TriggerRule.NONE_FAILED,
+    )
+
+    gate_revalidate = PythonOperator(
+        task_id="gate_revalidate",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/09_gate_revalidate.py"],
+        trigger_rule=TriggerRule.NONE_FAILED,
+    )
+
+    emit_registries = PythonOperator(
+        task_id="emit_registries",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm_emit_registries.py"],
+        trigger_rule=TriggerRule.NONE_FAILED,
+    )
+
+    audit_leakage >> run_baselines
+    train_lens >> eval_causal
+    [integrate_blocks, train_lens] >> emit_registries
+    [train_survival, run_baselines, eval_causal, emit_registries] >> gate_revalidate
+
+    # --- v20 Track B baselines also feed gating ---
+    download_gdc_open >> gate_revalidate
+    run_pkssm >> gate_revalidate
+
+    # =================================================================
+    # PHASE 9: Results — Figures + Report + Publication Bundle
+    # =================================================================
+
+    # v20 Phase 6 — external validation on open-access cohorts (GDC OS /
+    # GSE136337 / GSE24080). Consumes model predictions if present; otherwise
+    # reports each path as "skipped" (no fabrication). Runs even if upstream
+    # training was blocked.
+    validate_open_access = PythonOperator(
+        task_id="validate_open_access",
+        python_callable=_run_script,
+        op_args=["scripts/mortfm/11_validate_open_access.py",
+                 "--gdc-open-dir", "data/gdc_mmrf_open",
+                 "--geo-bulk-dir", "data/geo_bulk"],
+        trigger_rule=TriggerRule.NONE_FAILED,
+    )
+    run_baselines >> validate_open_access
+
+    gen_figures = PythonOperator(
+        task_id="generate_figures",
+        python_callable=_run_script,
+        op_args=["scripts/sota_benchmark_and_visualizations.py"],
+        trigger_rule=TriggerRule.NONE_FAILED,
+    )
+
+    gen_v20_report = PythonOperator(
+        task_id="generate_v20_report",
+        python_callable=_run_script,
+        op_args=["scripts/generate_report.py"],
+        doc_md="Combines baseline results, scVI outputs, and PK-SSM forward pass into one report.",
+    )
+
+    export_bundle = PythonOperator(
+        task_id="export_publication_bundle",
+        python_callable=_run_script,
+        op_args=["scripts/export_publication_bundle.py"],
+        trigger_rule=TriggerRule.NONE_FAILED,
+    )
+
+    gate_revalidate >> gen_figures
+    gate_revalidate >> gen_v20_report
+    [gen_figures, gen_v20_report, validate_open_access] >> export_bundle

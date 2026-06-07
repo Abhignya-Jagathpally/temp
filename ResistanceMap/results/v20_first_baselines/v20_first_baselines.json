@@ -1,0 +1,28 @@
+{
+  "dataset": "GDC MMRF-COMMPASS open-tier",
+  "endpoint": "OS",
+  "n_patients": 994,
+  "n_events": 191,
+  "baselines": {
+    "CoxPH": {
+      "c_index": 0.6456192300992858,
+      "c_index_ci_low": 0.5781433892572682,
+      "c_index_ci_high": 0.7103758604822296
+    },
+    "ElasticNet_Cox": {
+      "c_index": 0.6634732624978227,
+      "c_index_ci_low": 0.589638998522017,
+      "c_index_ci_high": 0.7393044940045109
+    },
+    "RSF_sksurv": {
+      "c_index": 0.5574377286187076,
+      "c_index_ci_low": 0.478088248492366,
+      "c_index_ci_high": 0.6411329723439148
+    },
+    "GBM_Survival": {
+      "c_index": 0.55530395401498,
+      "c_index_ci_low": 0.4687583275140179,
+      "c_index_ci_high": 0.6399748138446052
+    }
+  }
+}
