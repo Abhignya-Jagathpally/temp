@@ -111,6 +111,10 @@ with DAG(
         task_id="check_cellline_track_enabled",
         python_callable=_check_cellline_enabled,
         # Airflow 3.x always injects context; `provide_context` was removed.
+        # Issue 2 fix: only skip the DIRECT cell-line downstream, NOT the whole
+        # subgraph. Without this, disabling the cell-line track also skips the
+        # Track-B convergence + evaluation tasks (run_baselines, gate_revalidate).
+        ignore_downstream_trigger_rules=False,
     )
 
     # =================================================================
@@ -121,6 +125,12 @@ with DAG(
         task_id="acquire_public_data",
         python_callable=_run_script,
         op_args=["scripts/mortfm/00_download_public_data.py"],
+        # Issue 1 fix: the downloader exits 1 when ANY source fails, but two
+        # "failures" are by-design non-fatal for the open-access path —
+        # BeatAML has no public auto-download (controlled; fetched separately
+        # from AWS Open Data) and STRING can hiccup. Tolerate exit 1 so one
+        # expected miss does not kill the whole pipeline at its root.
+        op_kwargs={"allow_exit1": True},
     )
 
     harmonize_ids = PythonOperator(
