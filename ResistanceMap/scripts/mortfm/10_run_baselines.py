@@ -266,6 +266,11 @@ def split_arrays(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
+# Shared PCA width for registry baselines (matches the deep-static prepare_tensors
+# pca_dim). Keeps tree/kernel/token baselines tractable on the ~19k-gene matrix.
+REGISTRY_BASELINE_PCA_DIM = 256
+
+
 def run_registry_baseline(
     model_name: str,
     X_full: np.ndarray,
@@ -280,6 +285,25 @@ def run_registry_baseline(
     on the non-NaN training rows for that drug.
     """
     Xtr, ytr, Xva, yva, Xte, yte = split_arrays(X_full, y_full, splits)
+
+    # Tractability + comparability: registry baselines (tree ensembles, kernels,
+    # token/conv nets) are intractable on the raw ~19k-gene matrix -- a single
+    # RandomForest or XGBoost fit over 11 drugs takes ~50 min and ft_transformer
+    # OOMs. Project onto a train-fit PCA basis (256 dims) first. This is the same
+    # dimensionality the deep-static path already uses (prepare_tensors pca_dim=
+    # 256), it is leakage-safe (PCA is fit on TRAIN rows only), it is standard
+    # genomic preprocessing (not fabrication), and it puts every baseline on one
+    # shared, comparable representation. Linear baselines barely move; the heavy
+    # ones drop from ~50 min to seconds.
+    if X_full.shape[1] > REGISTRY_BASELINE_PCA_DIM:
+        from sklearn.decomposition import PCA
+        n_comp = min(REGISTRY_BASELINE_PCA_DIM, Xtr.shape[0] - 1, Xtr.shape[1])
+        pca = PCA(n_components=n_comp, random_state=seed)
+        pca.fit(np.nan_to_num(Xtr, nan=0.0))          # fit on TRAIN only
+        Xtr = pca.transform(np.nan_to_num(Xtr, nan=0.0))
+        Xva = pca.transform(np.nan_to_num(Xva, nan=0.0))
+        Xte = pca.transform(np.nan_to_num(Xte, nan=0.0))
+
     n_drugs = ytr.shape[1]
 
     test_sq_resid = []
@@ -1570,25 +1594,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     comparison_rows: List[ComparisonRow] = []
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Feasibility guard: token-attention baselines build one embedding per input
-    # feature and have O(n_features^2) attention, so on the raw ~19k-gene feature
-    # matrix ft_transformer tries to allocate ~400 GB and OOM-fails after ~40 min
-    # of wasted compute. Skip it honestly above a feasibility width rather than
-    # burning the slot; all other baselines fit on the full feature matrix
-    # unchanged. (Reduce the feature dim upstream to re-enable it.)
-    _O_N2_INFEASIBLE = {"ft_transformer"}
-    _MAX_FEATURES_FOR_TOKEN_ATTENTION = 4000
-    n_features_full = X_full.shape[1]
-
+    # NOTE: registry baselines are projected onto a train-fit PCA-256 basis inside
+    # run_registry_baseline(), which keeps every baseline (incl. ft_transformer's
+    # O(n^2) token attention) tractable -- no per-baseline feasibility skip needed.
     for model_name in baselines:
-        if (model_name in _O_N2_INFEASIBLE
-                and n_features_full > _MAX_FEATURES_FOR_TOKEN_ATTENTION):
-            logger.warning(
-                "SKIP %s: %d features > %d feasibility cap for O(n^2) token "
-                "attention (would OOM). Reduce feature dim upstream to enable.",
-                model_name, n_features_full, _MAX_FEATURES_FOR_TOKEN_ATTENTION,
-            )
-            continue
         for seed in args.seeds:
             logger.info("Fitting %s (seed=%d) ...", model_name, seed)
             t0 = time.time()
