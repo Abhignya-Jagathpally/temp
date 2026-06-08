@@ -1149,8 +1149,17 @@ def run_patient_longitudinal(args: argparse.Namespace) -> int:
     # ── Identify feature columns ───────────────────────────────────────────
     # Standard columns expected in the confirmed dataset.
     meta_cols = {
-        "patient_id", "event_time", "event_observed", "split",
+        "patient_id", "patient_id_hash", "event_time", "event_observed", "split",
         "event_time_days", "event_observed_bool",
+        # Leakage denylist: raw outcome / post-baseline / time-to-event columns
+        # that directly encode the label. Without this, tree models trivially
+        # memorise the outcome (observed C-index ~0.99 = target leakage). Only
+        # BASELINE covariates may be features.
+        "tt2l_days", "days_to_death", "days_to_last_follow_up", "vital_status",
+        "first_line_start_days", "second_line_start_days", "n_followups",
+        "baseline_visit_time_days", "followup_visit_time_days", "delta_t_days",
+        "has_valid_survival_supervision", "allowed_loss_survival",
+        "os_time", "os_event", "pfs_time", "pfs_event", "progression_day",
     }
     clinical_cols = [
         c for c in df.columns
