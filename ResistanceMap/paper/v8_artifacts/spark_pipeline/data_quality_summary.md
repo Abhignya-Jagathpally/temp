@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | min_trajectory_pairs | 10 | 0 | FAIL |
 | min_survival_patients | 50 | 994 | PASS |
-| min_survival_events | 20 | 994 | PASS |
+| min_survival_events | 20 | 254 | PASS |
 
 ## Allowed Claims
 
