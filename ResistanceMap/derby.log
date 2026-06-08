@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Sun Jun 07 19:41:43 CDT 2026:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.16.1.1 - (1901046): instance a816c00e-019e-a4ad-a23d-000003191140 
+on database directory /home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data/lake/metastore_db with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@76ed5528 
+Loaded from file:/home/aj0486@students.ad.unt.edu/pipeline3/venv/lib/python3.12/site-packages/pyspark/jars/derby-10.16.1.1.jar
+java.vendor=Ubuntu
+java.runtime.version=21.0.11+10-1-24.04.2-Ubuntu
+user.dir=/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap
+os.name=Linux
+os.arch=amd64
+os.version=6.8.0-57-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

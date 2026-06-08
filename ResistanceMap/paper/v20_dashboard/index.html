@@ -19,7 +19,7 @@
     figure img{max-width:100%;height:auto;display:block} figcaption{color:#333;font-size:11px;text-align:center;margin-top:4px}
     pre{background:#10161e;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px}
     details{margin:8px 0} summary{cursor:pointer;color:var(--accent)} h3,h4,h5{margin:12px 0 4px}
-    </style></head><body><header><h1>ResistanceMap — Unified Results Dashboard</h1><div class='sub'>All pipelines · figures, tables &amp; scores in one place · generated 2026-06-07 19:46</div></header><main><div class='card'><h2>Scoreboard</h2><p class='muted'>Only real, leakage-checked numbers. Spark tree models are age-driven (~0.6); Cox arms degenerate pending the clinical-feature fix.</p><div class='scoreboard'><div class='score'><div class='v'>0.663</div><div class='k'>GDC OS · EN-Cox C-index</div></div><div class='score'><div class='v'>994 pts / 191 events</div><div class='k'>GDC cohort</div></div><div class='score'><div class='v'>0.739</div><div class='k'>Spark survival-proxy · best C-index</div></div></div></div><div class='card'><h2>Spark Lakehouse Pipeline (mortfm_spark_evidence_pipeline · 13 tasks)</h2><p class='muted'>Ran green end-to-end (raw→audit→baselines→gate→results) on staged MMRF/processed data.</p><h3>Data Quality and Audit Summary</h3>
+    </style></head><body><header><h1>ResistanceMap — Unified Results Dashboard</h1><div class='sub'>All pipelines · figures, tables &amp; scores in one place · generated 2026-06-07 20:05</div></header><main><div class='card'><h2>Scoreboard</h2><p class='muted'>Only real, leakage-checked numbers. Spark tree models are age-driven (~0.6); Cox arms degenerate pending the clinical-feature fix.</p><div class='scoreboard'><div class='score'><div class='v'>0.663</div><div class='k'>GDC OS · EN-Cox C-index</div></div><div class='score'><div class='v'>994 pts / 191 events</div><div class='k'>GDC cohort</div></div><div class='score'><div class='v'>0.739</div><div class='k'>Spark survival-proxy · best C-index</div></div></div></div><div class='card'><h2>Spark Lakehouse Pipeline (mortfm_spark_evidence_pipeline · 13 tasks)</h2><p class='muted'>Ran green end-to-end (raw→audit→baselines→gate→results) on staged MMRF/processed data.</p><h3>Data Quality and Audit Summary</h3>
 <h4>Cohort</h4>
 <p>- **Total patients**: 994</p>
 <p>- **Total rows**: 994</p>
@@ -415,7 +415,8 @@
 <p>---</p>
 <p>*No ResistanceMap C-index is asserted for the proposed model anywhere in this document. All comparator</p>
 <p>numbers are attributed; PANGEA-SMM, mmSYGNAL, and Maura 2025 are PubMed-verified; Ferle 2025 and</p>
-<p>SCOPE/Sontag are explicitly marked unverified-via-MCP pending manual DOI retrieval.*</p></details></div><div class='card'><h2>Provenance (recent commits)</h2><pre>e0c3a1a Refresh dashboard + Spark results with honest clinical-encoded survival (C-index 0.660)
+<p>SCOPE/Sontag are explicitly marked unverified-via-MCP pending manual DOI retrieval.*</p></details></div><div class='card'><h2>Provenance (recent commits)</h2><pre>e6c5705 Curate-stage RNA join: survival model now uses MMRF expression (honest C-index 0.726)
+e0c3a1a Refresh dashboard + Spark results with honest clinical-encoded survival (C-index 0.660)
 1deb79e Clinical-feature encoding + MMRF RNA staging + unified results dashboard
 1ff7cc7 Fix target leakage in patient-longitudinal baseline feature selection
 0918521 v20 P0 fixes (harmonize fail-closed + DAG reorder) + multi-agent review artifacts
@@ -426,5 +427,4 @@ f8ebe58 Fix STRING v12 full-links download URL (root cause of acquire&#x27;s STR
 46f5544 v20 Phase 1: GDC open-tier MMRF loader (no dbGaP/token)
 c56f523 Fix stale spark-config gate test (min_patients -&gt; min_survival_patients)
 8de925a v20 Phase 0: fix 4 survival-inflation bugs
-4bd04cc Add result tables and figures generation from Spark pipeline outputs
 </pre></div></main></body></html>

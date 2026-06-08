@@ -1,84 +1,74 @@
 {
-  "generated": "2026-05-24T20:28:10",
+  "generated": "2026-06-07T19:45:28",
   "mode": "patient_longitudinal",
-  "confirmed_dataset": "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data/lake/confirmed/mortfm_training_dataset",
-  "split_manifest": "/home/aj0486@students.ad.unt.edu/pipeline3/ResistanceMap/data/lake/confirmed/split_manifest.json",
+  "confirmed_dataset": "data/lake/confirmed/mortfm_training_dataset",
+  "split_manifest": "data/lake/confirmed/split_manifest.json",
   "seeds": [
     0,
     1,
     2
   ],
-  "n_results": 30,
+  "n_results": 27,
   "results": [
     {
       "model": "clinical_only_cox",
       "seed": 0,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.659785,
+      "ibs": 0.250547,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 9.7
     },
     {
       "model": "clinical_ridge_cox",
       "seed": 0,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.659785,
+      "ibs": 0.249851,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 9.68
     },
     {
       "model": "rna_only_cox",
       "seed": 0,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.72564,
+      "ibs": 0.237281,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 9.88
+      "wall_seconds": 9.91
     },
     {
       "model": "rna_plus_clinical_cox",
       "seed": 0,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.720066,
+      "ibs": 0.238706,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 9.78
+      "wall_seconds": 9.93
     },
     {
       "model": "random_survival_forest",
       "seed": 0,
-      "c_index": 0.956441,
-      "ibs": 0.437876,
+      "c_index": 0.715937,
+      "ibs": 0.409687,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.17
+      "wall_seconds": 1.26
     },
     {
       "model": "deepsurv_mlp",
       "seed": 0,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.739884,
+      "ibs": 0.270871,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 19.56
-    },
-    {
-      "model": "mean_time_baseline",
-      "seed": 0,
-      "c_index": 0.5,
-      "ibs": 0.25,
-      "n_train": 691,
-      "n_test": 148,
-      "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 19.89
     },
     {
       "model": "kaplan_meier_baseline",
@@ -91,94 +81,84 @@
       "wall_seconds": 0.0
     },
     {
-      "model": "locf_trajectory_baseline",
+      "model": "elasticnet_cox",
       "seed": 0,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.732865,
+      "ibs": 0.261207,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 0.02
     },
     {
-      "model": "mean_future_state_baseline",
+      "model": "gradient_boosted_survival",
       "seed": 0,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.623452,
+      "ibs": 0.283027,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 0.6
     },
     {
       "model": "clinical_only_cox",
       "seed": 1,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.659785,
+      "ibs": 0.250547,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 9.7
     },
     {
       "model": "clinical_ridge_cox",
       "seed": 1,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.659785,
+      "ibs": 0.249851,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 9.67
     },
     {
       "model": "rna_only_cox",
       "seed": 1,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.497729,
+      "ibs": 0.309241,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 9.79
+      "wall_seconds": 9.9
     },
     {
       "model": "rna_plus_clinical_cox",
       "seed": 1,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.721718,
+      "ibs": 0.238153,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 9.79
+      "wall_seconds": 9.93
     },
     {
       "model": "random_survival_forest",
       "seed": 1,
-      "c_index": 0.964079,
-      "ibs": 0.442871,
+      "c_index": 0.708918,
+      "ibs": 0.41849,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.17
+      "wall_seconds": 1.26
     },
     {
       "model": "deepsurv_mlp",
       "seed": 1,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.734517,
+      "ibs": 0.272411,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 19.56
-    },
-    {
-      "model": "mean_time_baseline",
-      "seed": 1,
-      "c_index": 0.5,
-      "ibs": 0.25,
-      "n_train": 691,
-      "n_test": 148,
-      "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 19.91
     },
     {
       "model": "kaplan_meier_baseline",
@@ -191,94 +171,84 @@
       "wall_seconds": 0.0
     },
     {
-      "model": "locf_trajectory_baseline",
+      "model": "elasticnet_cox",
       "seed": 1,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.728737,
+      "ibs": 0.265099,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 0.02
     },
     {
-      "model": "mean_future_state_baseline",
+      "model": "gradient_boosted_survival",
       "seed": 1,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.682081,
+      "ibs": 0.274535,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 0.59
     },
     {
       "model": "clinical_only_cox",
       "seed": 2,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.659785,
+      "ibs": 0.250547,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 9.68
     },
     {
       "model": "clinical_ridge_cox",
       "seed": 2,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.659785,
+      "ibs": 0.249851,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 9.67
     },
     {
       "model": "rna_only_cox",
       "seed": 2,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.706647,
+      "ibs": 0.231801,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 9.78
+      "wall_seconds": 9.91
     },
     {
       "model": "rna_plus_clinical_cox",
       "seed": 2,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.735343,
+      "ibs": 0.236863,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 9.79
+      "wall_seconds": 9.94
     },
     {
       "model": "random_survival_forest",
       "seed": 2,
-      "c_index": 0.965318,
-      "ibs": 0.438057,
+      "c_index": 0.71924,
+      "ibs": 0.429959,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.17
+      "wall_seconds": 1.26
     },
     {
       "model": "deepsurv_mlp",
       "seed": 2,
-      "c_index": 0.5,
-      "ibs": NaN,
+      "c_index": 0.743187,
+      "ibs": 0.250506,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 19.56
-    },
-    {
-      "model": "mean_time_baseline",
-      "seed": 2,
-      "c_index": 0.5,
-      "ibs": 0.25,
-      "n_train": 691,
-      "n_test": 148,
-      "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 19.9
     },
     {
       "model": "kaplan_meier_baseline",
@@ -291,24 +261,24 @@
       "wall_seconds": 0.0
     },
     {
-      "model": "locf_trajectory_baseline",
+      "model": "elasticnet_cox",
       "seed": 2,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.728324,
+      "ibs": 0.261958,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 0.02
     },
     {
-      "model": "mean_future_state_baseline",
+      "model": "gradient_boosted_survival",
       "seed": 2,
-      "c_index": 0.5,
-      "ibs": 0.25,
+      "c_index": 0.630677,
+      "ibs": 0.283392,
       "n_train": 691,
       "n_test": 148,
       "n_events_test": 33,
-      "wall_seconds": 0.0
+      "wall_seconds": 0.6
     }
   ]
 }

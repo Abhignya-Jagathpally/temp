@@ -40,7 +40,13 @@ def build_pairs_from_mmrf(
     """Build longitudinal pairs from MMRF baseline → followup aliquots."""
     p = Path(paired_tsv)
     if not p.exists():
-        raise FileNotFoundError(f"MMRF paired-patient table not found at {p}")
+        # Open-access MMRF has no paired molecular timepoints (the lakehouse
+        # confirms 0 temporal pairs). Degrade gracefully to an empty pair list
+        # so callers (longitudinal builder, leakage audit) succeed with an
+        # honest 0-pair result rather than crashing. No fabrication.
+        logger.warning("MMRF paired-patient table absent at %s -> 0 longitudinal "
+                       "pairs (longitudinal/trajectory claim honestly blocked).", p)
+        return []
     df = pd.read_csv(p, sep="\t", low_memory=False)
     logger.info("MMRF paired-patient table: %d rows", len(df))
 

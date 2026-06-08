@@ -1,0 +1,25 @@
+{
+  "n_cells": 25000,
+  "pk_ssm_params": 12312,
+  "mechanism_distribution": {
+    "drug_efflux": 0,
+    "clonal_evolution": 0,
+    "immune_escape": 12093,
+    "microenvironmental": 12907
+  },
+  "mean_hazard": {
+    "biochemical": 0.4561106264591217,
+    "clinical": 0.49548205733299255
+  },
+  "model_config": {
+    "latent_dim": 5,
+    "n_biomarkers": 20,
+    "pk_priors": {
+      "flc_halflife_hours": 4.0,
+      "igg_halflife_days": 21.0,
+      "b2m_halflife_hours": 2.5,
+      "albumin_halflife_days": 20.0
+    }
+  },
+  "note": "UNTRAINED model \u2014 forward pass only. Mechanism assignments are random initialization, NOT trained predictions. Training requires MMRF Virtual Lab longitudinal outcome data."
+}
