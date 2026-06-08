@@ -1570,7 +1570,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     comparison_rows: List[ComparisonRow] = []
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Feasibility guard: token-attention baselines build one embedding per input
+    # feature and have O(n_features^2) attention, so on the raw ~19k-gene feature
+    # matrix ft_transformer tries to allocate ~400 GB and OOM-fails after ~40 min
+    # of wasted compute. Skip it honestly above a feasibility width rather than
+    # burning the slot; all other baselines fit on the full feature matrix
+    # unchanged. (Reduce the feature dim upstream to re-enable it.)
+    _O_N2_INFEASIBLE = {"ft_transformer"}
+    _MAX_FEATURES_FOR_TOKEN_ATTENTION = 4000
+    n_features_full = X_full.shape[1]
+
     for model_name in baselines:
+        if (model_name in _O_N2_INFEASIBLE
+                and n_features_full > _MAX_FEATURES_FOR_TOKEN_ATTENTION):
+            logger.warning(
+                "SKIP %s: %d features > %d feasibility cap for O(n^2) token "
+                "attention (would OOM). Reduce feature dim upstream to enable.",
+                model_name, n_features_full, _MAX_FEATURES_FOR_TOKEN_ATTENTION,
+            )
+            continue
         for seed in args.seeds:
             logger.info("Fitting %s (seed=%d) ...", model_name, seed)
             t0 = time.time()
