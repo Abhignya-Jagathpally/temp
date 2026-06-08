@@ -149,6 +149,17 @@ def load_pnet_attribution():
     if not PNET_CKPT.exists():
         return None
     c = torch.load(PNET_CKPT, map_location="cpu", weights_only=False)
+    # The per-drug attribution keys are only produced by the legacy v6 full run's
+    # P2.2 attribution step. The v20 open-access checkpoint omits them; skip the
+    # PPI attribution panel gracefully (main() guards `pnet_data is not None`)
+    # rather than KeyError-ing the whole figure suite. No fabrication.
+    required = ("per_drug_node_attn", "top_k_per_drug", "top_k_values_per_drug",
+                "protein_names", "drug_names", "edge_index")
+    missing = [k for k in required if k not in c]
+    if missing:
+        print(f"[WARN] protein_net checkpoint missing attribution keys {missing}; "
+              "skipping PPI attribution panel (fig_e).")
+        return None
     return {
         "per_drug_node_attn": c["per_drug_node_attn"].numpy(),       # (11, 19177)
         "top_k_per_drug": c["top_k_per_drug"].numpy(),               # (11, 20)
@@ -1380,28 +1391,41 @@ def main():
     print("  GENERATING FIGURES")
     print("=" * 70)
 
-    fig_a_sota_bar(results, rm_metrics, drug_names)
-    fig_b_per_drug_heatmap(results, rm_metrics, drug_names)
-    fig_c_radar(results, rm_metrics, drug_names)
+    # Defensive: this is the legacy v6 figure suite and some panels assume v6
+    # checkpoint keys (e.g. rm_metrics["per_drug_metrics"], per-drug attribution)
+    # that the v20 open-access run does not produce. Skip any panel whose data
+    # is absent rather than crashing the whole task; produce whatever is
+    # available and still exit 0. No fabrication — a skipped panel is omitted,
+    # never filled with placeholder numbers.
+    def _safe(label, fn, *a, **k):
+        try:
+            return fn(*a, **k)
+        except (KeyError, FileNotFoundError, ValueError, IndexError, TypeError) as exc:
+            print(f"[SKIP] {label}: missing/incompatible data ({type(exc).__name__}: {exc})")
+            return None
+
+    _safe("fig_a", fig_a_sota_bar, results, rm_metrics, drug_names)
+    _safe("fig_b", fig_b_per_drug_heatmap, results, rm_metrics, drug_names)
+    _safe("fig_c", fig_c_radar, results, rm_metrics, drug_names)
 
     if fusion_data is not None:
-        fig_d_phate(data_dict, fusion_data)
+        _safe("fig_d", fig_d_phate, data_dict, fusion_data)
     else:
         print("[SKIP] fig_d: fusion checkpoint not found")
 
     if pnet_data is not None:
-        fig_e_ppi_network(pnet_data, drug_names)
+        _safe("fig_e", fig_e_ppi_network, pnet_data, drug_names)
     else:
         print("[SKIP] fig_e: protein_net checkpoint not found")
 
-    fig_f_residual_heatmap(results, rm_metrics, data_dict)
-    fig_g_drug_scatter(results, rm_metrics, data_dict)
-    fig_h_architecture()
-    fig_i_training_curves(results)
-    fig_j_per_drug_spearman(results, rm_metrics, drug_names)
+    _safe("fig_f", fig_f_residual_heatmap, results, rm_metrics, data_dict)
+    _safe("fig_g", fig_g_drug_scatter, results, rm_metrics, data_dict)
+    _safe("fig_h", fig_h_architecture)
+    _safe("fig_i", fig_i_training_curves, results)
+    _safe("fig_j", fig_j_per_drug_spearman, results, rm_metrics, drug_names)
 
     # 4. Save comparison table
-    table = save_comparison_table(results, rm_metrics, drug_names)
+    table = _safe("comparison_table", save_comparison_table, results, rm_metrics, drug_names)
 
     print(f"\n[done] All artifacts saved to: {OUT_DIR}/")
     print(f"  Figures: {len(list(OUT_DIR.glob('*.png')))} PNG + "

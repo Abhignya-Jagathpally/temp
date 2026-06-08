@@ -1,13 +1,13 @@
 # ResistanceMap v20 — Combined Results Report
 
-**Generated:** 2026-06-07 16:47
+**Generated:** 2026-06-07 22:42
 **Branch:** v20/lab-first-pivot
 **Data:** Open-access only (GDC open tier + GEO + Zenodo)
 
 ---
 # ResistanceMap v20 — First Baseline Results
 
-Date: 2026-06-07 16:41
+Date: 2026-06-07 22:31
 Data: GDC open-tier MMRF-COMMPASS (no dbGaP)
 Endpoint: Overall Survival (OS)
 Censoring: Properly handled via sksurv structured arrays
@@ -41,26 +41,42 @@ Note: These are CLINICAL-ONLY baselines (2 features). The bar will be higher onc
 - [ ] GSE136337 (426 pts with B2M/Alb/LDH) → PK observation model validation
 
 
+---
+
 ## scVI Integration
 
-*Not yet run. Execute `python scripts/run_scvi_integration.py`*
+- Latent space: 25000 cells × 30 dimensions
+- Model: checkpoints/scvi/scvi_model/
+- Chromatin genes extracted: 21 genes × 25000 cells
+- Biomarker proxies extracted: 20 genes × 25000 cells
 
+---
 
-## PK-SSM
+## PK-SSM Forward Pass (Untrained)
 
-*Not yet run. Execute `python scripts/run_pkssm_forward.py`*
+- Cells processed: 25000
+- Model parameters: 12,312
+- PK priors: FLC half-life 4.0h, IgG half-life 21.0d, B2M half-life 2.5h
 
+**Mechanism distribution (random init — NOT trained):**
+
+- drug_efflux: 25000 (100.0%)
+- clonal_evolution: 0 (0.0%)
+- immune_escape: 0 (0.0%)
+- microenvironmental: 0 (0.0%)
+
+> ⚠ **These are untrained outputs.** The architecture runs end-to-end 
+> on real scRNA-seq data, but mechanism assignments and hazard estimates 
+> are from random initialization. Training requires MMRF Virtual Lab data.
 
 ---
 
 ## What This Report Proves (gated on artifacts produced this run)
 
 1. The corrected baseline cascade runs with proper censoring (sksurv)
-2. All open-access — no IRB, no dbGaP, no gateway registration required
-
-**NOT demonstrated this run (step did not complete):**
-- scVI integrates MM scRNA-seq into batch-corrected latents + extracts chromatin / biomarker-proxy expression
-- The PK-SSM architecture runs end-to-end on real biological data
+2. scVI integrates MM scRNA-seq into batch-corrected latents + extracts chromatin / biomarker-proxy expression
+3. The PK-SSM architecture runs end-to-end on real biological data
+4. All open-access — no IRB, no dbGaP, no gateway registration required
 
 ## What Remains Data-Blocked
 

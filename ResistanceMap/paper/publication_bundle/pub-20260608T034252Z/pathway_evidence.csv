@@ -1,0 +1,201 @@
+edge_id,p_resistance_baseline,p_resistance_under_knockout,p_resistance_under_amplify,delta,note,source_raw,target_raw,edge_type,source_hgnc,target_hgnc,depmap_target_gene_effect_median,target_frac_essential,target_is_common_essential,drug_target_target_support,drug_target_source_support,drug_target_either_endpoint,target_pathway_count,target_top_pathway
+2.1.1.320::4701::ppi,0.34375,0.28125,0.4375,0.15625,,2.1.1.320,4701,ppi,NDUFAF7,NDUFA7,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+2B6H::1HUR::ppi,0.34375,0.25,0.375,0.125,,2B6H,1HUR,ppi,ARF5,ARF1,,,False,False,False,False,39,Adaptive Immune System
+2.1.1.320::51079::ppi,0.34375,0.28125,0.40625,0.125,,2.1.1.320,51079,ppi,NDUFAF7,NDUFA13,,,False,False,False,False,6,Aerobic respiration and respiratory electron transport
+1N1A::23239::ppi,0.34375,0.28125,0.375,0.09375,,1N1A,23239,ppi,FKBP4,PHLPP1,,,False,False,False,False,4,Intracellular signaling by second messengers
+2B6H::2D1X::ppi,0.34375,0.3125,0.40625,0.09375,,2B6H,2D1X,ppi,ARF5,CTTN,,,False,False,False,False,8,Clathrin-mediated endocytosis
+1N1A::1HDJ::ppi,0.34375,0.3125,0.40625,0.09375,,1N1A,1HDJ,ppi,FKBP4,DNAJB1,,,False,False,False,False,10,Attenuation phase
+1N1A::1BYQ::ppi,0.34375,0.28125,0.375,0.09375,,1N1A,1BYQ,ppi,FKBP4,HSP90AA1,,,False,True,False,True,119,AURKA Activation by TPX2
+1N1A::3306::ppi,0.34375,0.3125,0.40625,0.09375,,1N1A,3306,ppi,FKBP4,HSPA2,,,False,False,False,False,16,Antimicrobial mechanism of IFN-stimulated genes
+1080::5172::ppi,0.34375,0.3125,0.40625,0.09375,,1080,5172,ppi,CFTR,SLC26A4,,,False,False,True,True,8,Defective SLC26A4 causes Pendred syndrome (PDS)
+1080::5'-AMP-activated protein kinase subunit gamma-3::ppi,0.34375,0.3125,0.40625,0.09375,,1080,5'-AMP-activated protein kinase subunit gamma-3,ppi,CFTR,PRKAG3,,,False,False,True,True,33,AMPK-induced ERAD and lysosome mediated degradation of PD-L1(CD274)
+1080::2EEI::ppi,0.34375,0.3125,0.40625,0.09375,,1080,2EEI,ppi,CFTR,PDZK1,,,False,False,True,True,0,
+1ZRH::26035::ppi,0.34375,0.34375,0.4375,0.09375,,1ZRH,26035,ppi,HS3ST1,GLCE,,,False,False,False,False,5,Glycosaminoglycan metabolism
+1.14.13.-::1.14.14.1::ppi,0.34375,0.34375,0.4375,0.09375,,1.14.13.-,1.14.14.1,ppi,CYP26B1,CYP4F3,,,False,False,False,False,11,Arachidonate metabolism
+2.1.1.320::25880::ppi,0.34375,0.28125,0.375,0.09375,,2.1.1.320,25880,ppi,NDUFAF7,TMEM186,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1N1A::1M2Z::ppi,0.34375,0.28125,0.375,0.09375,,1N1A,1M2Z,ppi,FKBP4,NR3C1,,,False,True,False,True,28,Cellular responses to stimuli
+2.1.1.320::1.3.8.-::ppi,0.34375,0.28125,0.34375,0.0625,,2.1.1.320,1.3.8.-,ppi,NDUFAF7,ACAD11,,,False,False,False,False,4,Fatty acid metabolism
+1N1A::2QAB::ppi,0.34375,0.28125,0.34375,0.0625,,1N1A,2QAB,ppi,FKBP4,ESR1,,,False,True,False,True,43,Cellular responses to stimuli
+1N1A::10540::ppi,0.34375,0.3125,0.375,0.0625,,1N1A,10540,ppi,FKBP4,DCTN2,,,False,False,False,False,34,AURKA Activation by TPX2
+1N1A::2LDU::ppi,0.34375,0.34375,0.40625,0.0625,,1N1A,2LDU,ppi,FKBP4,HSF1,,,False,False,False,False,12,Aggrephagy
+2B6H::1I49::ppi,0.34375,0.34375,0.40625,0.0625,,2B6H,1I49,ppi,ARF5,ARFIP2,,,False,False,False,False,4,Intra-Golgi and retrograde Golgi-to-ER traffic
+1080::3.4.-.-::ppi,0.34375,0.34375,0.40625,0.0625,,1080,3.4.-.-,ppi,CFTR,PRSS16,,,False,False,True,True,0,
+6405::2QQJ::ppi,0.34375,0.3125,0.375,0.0625,,6405,2QQJ,ppi,SEMA3F,NRP2,,,False,False,False,False,9,Axon guidance
+1080::2.7.11.11::ppi,0.34375,0.28125,0.34375,0.0625,,1080,2.7.11.11,ppi,CFTR,PRKX,,,False,False,True,True,27,ADORA2B mediated anti-inflammatory cytokines production
+1080::115019::ppi,0.34375,0.34375,0.40625,0.0625,,1080,115019,ppi,CFTR,SLC26A9,,,False,False,True,True,4,Inorganic anion exchange by SLC26 transporters
+1.14.13.-::1.1.1.300::ppi,0.34375,0.34375,0.40625,0.0625,,1.14.13.-,1.1.1.300,ppi,CYP26B1,RDH10,,,False,False,False,False,7,RA biosynthesis pathway
+"1.14.13.-::1,4-cineole 2-exo-monooxygenase::ppi",0.34375,0.3125,0.375,0.0625,,1.14.13.-,"1,4-cineole 2-exo-monooxygenase",ppi,CYP26B1,CYP2A6,,,False,False,False,False,6,Biological oxidations
+2.1.1.320::25915::ppi,0.34375,0.3125,0.375,0.0625,,2.1.1.320,25915,ppi,NDUFAF7,NDUFAF3,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+2.1.1.320::4705::ppi,0.34375,0.28125,0.34375,0.0625,,2.1.1.320,4705,ppi,NDUFAF7,NDUFA10,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1080::14-3-3 protein beta/alpha::ppi,0.34375,0.34375,0.40625,0.0625,,1080,14-3-3 protein beta/alpha,ppi,CFTR,YWHAB,,,False,False,True,True,72,ARMS-mediated activation
+1080::5GLF::ppi,0.34375,0.3125,0.375,0.0625,,1080,5GLF,ppi,CFTR,DERL1,,,False,False,True,True,19,ABC transporter disorders
+1080::116369::ppi,0.34375,0.28125,0.34375,0.0625,,1080,116369,ppi,CFTR,SLC26A8,,,False,False,True,True,0,
+2B6H::9276::ppi,0.34375,0.28125,0.34375,0.0625,,2B6H,9276,ppi,ARF5,COPB2,,,False,False,False,False,11,Asparagine N-linked glycosylation
+1080::2D11::ppi,0.34375,0.3125,0.375,0.0625,,1080,2D11,ppi,CFTR,SLC9A3R2,,,False,False,True,True,0,
+1080::6558::ppi,0.34375,0.375,0.4375,0.0625,,1080,6558,ppi,CFTR,SLC12A2,,,False,False,True,True,4,Cation-coupled Chloride cotransporters
+1080::1G9O::ppi,0.34375,0.34375,0.40625,0.0625,,1080,1G9O,ppi,CFTR,SLC9A3R1,,,False,False,True,True,0,
+1080::28 kDa heat shock protein::ppi,0.34375,0.28125,0.34375,0.0625,,1080,28 kDa heat shock protein,ppi,CFTR,HSPB1,,,False,False,True,True,12,AUF1 (hnRNP D0) binds and destabilizes mRNA
+1N1A::1AUE::ppi,0.34375,0.34375,0.375,0.03125,,1N1A,1AUE,ppi,FKBP4,MTOR,,,False,True,False,True,45,Adaptive Immune System
+2B6H::92344::ppi,0.34375,0.375,0.40625,0.03125,,2B6H,92344,ppi,ARF5,GORAB,,,False,False,False,False,0,
+2B6H::3JUE::ppi,0.34375,0.34375,0.375,0.03125,,2B6H,3JUE,ppi,ARF5,ACAP1,,,False,False,False,False,0,
+1.14.13.-::1381::ppi,0.34375,0.3125,0.34375,0.03125,,1.14.13.-,1381,ppi,CYP26B1,CRABP1,,,False,False,False,False,4,RA biosynthesis pathway
+1.14.13.-::1.2.1.-::ppi,0.34375,0.34375,0.375,0.03125,,1.14.13.-,1.2.1.-,ppi,CYP26B1,ALDH1A1,,,False,False,False,False,18,Biological oxidations
+"1.14.13.-::1,4-cineole 2-exo-monooxygenase::ppi",0.34375,0.34375,0.375,0.03125,,1.14.13.-,"1,4-cineole 2-exo-monooxygenase",ppi,CYP26B1,CYP2A6,,,False,False,False,False,6,Biological oxidations
+2.1.1.320::1.6.99.3::ppi,0.34375,0.28125,0.3125,0.03125,,2.1.1.320,1.6.99.3,ppi,NDUFAF7,NDUFS7,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1080::2DC2::ppi,0.34375,0.375,0.40625,0.03125,,1080,2DC2,ppi,CFTR,GOPC,,,False,False,True,True,7,RHO GTPase Effectors
+1080::821::ppi,0.34375,0.3125,0.34375,0.03125,,1080,821,ppi,CFTR,CANX,,,False,False,True,True,38,Adaptive Immune System
+2.1.1.320::51295::ppi,0.34375,0.3125,0.34375,0.03125,,2.1.1.320,51295,ppi,NDUFAF7,ECSIT,,,False,False,False,False,19,Aerobic respiration and respiratory electron transport
+2.1.1.320::51103::ppi,0.34375,0.3125,0.34375,0.03125,,2.1.1.320,51103,ppi,NDUFAF7,NDUFAF1,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+2.1.1.320::80224::ppi,0.34375,0.3125,0.34375,0.03125,,2.1.1.320,80224,ppi,NDUFAF7,NUBPL,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1JUQ::10226::ppi,0.34375,0.3125,0.34375,0.03125,,1JUQ,10226,ppi,M6PR,PLIN3,,,False,False,False,False,17,Autophagy
+1N1A::1QZ2::ppi,0.34375,0.34375,0.375,0.03125,,1N1A,1QZ2,ppi,FKBP4,FKBP4,,,False,False,False,False,15,Attenuation phase
+1N1A::2L0P::ppi,0.34375,0.28125,0.3125,0.03125,,1N1A,2L0P,ppi,FKBP4,S100A1,,,False,False,False,False,18,Adaptive Immune System
+2B6H::2P57::ppi,0.34375,0.375,0.40625,0.03125,,2B6H,2P57,ppi,ARF5,ARFGAP2,,,False,False,False,False,16,Asparagine N-linked glycosylation
+2B6H::27236::ppi,0.34375,0.3125,0.34375,0.03125,,2B6H,27236,ppi,ARF5,ARFIP1,,,False,False,False,False,0,
+1N1A::3O5J::ppi,0.34375,0.3125,0.34375,0.03125,,1N1A,3O5J,ppi,FKBP4,FKBP5,,,False,False,False,False,15,Cellular responses to stimuli
+2B6H::84440::ppi,0.34375,0.3125,0.34375,0.03125,,2B6H,84440,ppi,ARF5,RAB11FIP4,,,False,False,False,False,0,
+1080::1UYA::ppi,0.34375,0.3125,0.34375,0.03125,,1080,1UYA,ppi,CFTR,GUCA2B,,,False,False,True,True,2,Digestion
+1080::3308::ppi,0.34375,0.34375,0.375,0.03125,,1080,3308,ppi,CFTR,HSPA4,,,False,False,True,True,4,Cellular response to heat stress
+1080::1QZ2::ppi,0.34375,0.3125,0.34375,0.03125,,1080,1QZ2,ppi,CFTR,FKBP4,,,False,False,True,True,15,Attenuation phase
+1080::2.3.2.26::ppi,0.34375,0.28125,0.3125,0.03125,,1080,2.3.2.26,ppi,CFTR,G2E3,,,False,False,True,True,0,
+1080::23433::ppi,0.34375,0.40625,0.4375,0.03125,,1080,23433,ppi,CFTR,RHOQ,,,False,False,True,True,10,Membrane Trafficking
+1080::1CGI::ppi,0.34375,0.34375,0.375,0.03125,,1080,1CGI,ppi,CFTR,SPINK1,,,False,False,True,True,4,Developmental Biology
+1080::14-3-3 protein gamma::ppi,0.34375,0.375,0.40625,0.03125,,1080,14-3-3 protein gamma,ppi,CFTR,YWHAG,,,False,False,True,True,61,AURKA Activation by TPX2
+1080::14-3-3 protein zeta/delta::ppi,0.34375,0.34375,0.375,0.03125,,1080,14-3-3 protein zeta/delta,ppi,CFTR,YWHAZ,,,False,False,True,True,57,Activation of BAD and translocation to mitochondria 
+1080::3BYH::ppi,0.34375,0.375,0.40625,0.03125,,1080,3BYH,ppi,CFTR,ACTB,,,False,False,True,True,108,ATP-dependent chromatin remodelers
+1080::10134::ppi,0.34375,0.3125,0.34375,0.03125,,1080,10134,ppi,CFTR,BCAP31,,,False,False,True,True,18,Adaptive Immune System
+1080::2V90::ppi,0.34375,0.3125,0.34375,0.03125,,1080,2V90,ppi,CFTR,PDZD3,,,False,False,True,True,5,Bacterial Infection Pathways
+1080::1FXY::ppi,0.34375,0.3125,0.34375,0.03125,,1080,1FXY,ppi,CFTR,PRSS1,,,False,False,True,True,12,Activation of Matrix Metalloproteinases
+1080::375611::ppi,0.34375,0.375,0.40625,0.03125,,1080,375611,ppi,CFTR,SLC26A5,,,False,False,True,True,3,Sensory Perception
+1080::3856::ppi,0.34375,0.34375,0.375,0.03125,,1080,3856,ppi,CFTR,KRT8,,,False,False,True,True,8,Developmental Biology
+1.14.13.-::1.14.14.1::ppi,0.34375,0.34375,0.34375,0.0,,1.14.13.-,1.14.14.1,ppi,CYP26B1,CYP4F3,,,False,False,False,False,11,Arachidonate metabolism
+1.14.13.-::1.14.14.80::ppi,0.34375,0.34375,0.34375,0.0,,1.14.13.-,1.14.14.80,ppi,CYP26B1,CYP4A11,,,False,False,False,False,14,Arachidonate metabolism
+2B6H::3DWD::ppi,0.34375,0.375,0.375,0.0,,2B6H,3DWD,ppi,ARF5,ARFGAP1,,,False,False,False,False,17,Asparagine N-linked glycosylation
+1080::3758::ppi,0.34375,0.375,0.375,0.0,,1080,3758,ppi,CFTR,KCNJ1,,,False,False,True,True,4,Inwardly rectifying K+ channels
+1080::2.7.11.11::ppi,0.34375,0.34375,0.34375,0.0,,1080,2.7.11.11,ppi,CFTR,PRKX,,,False,False,True,True,27,ADORA2B mediated anti-inflammatory cytokines production
+1080::1601::ppi,0.34375,0.34375,0.34375,0.0,,1080,1601,ppi,CFTR,DAB2,,,False,False,True,True,8,Cargo recognition for clathrin-mediated endocytosis
+1080::6340::ppi,0.34375,0.34375,0.34375,0.0,,1080,6340,ppi,CFTR,SCNN1G,,,False,False,True,True,6,Ion channel transport
+1080::2LO1::ppi,0.34375,0.40625,0.40625,0.0,,1080,2LO1,ppi,CFTR,DNAJA1,,,False,False,True,True,4,Cellular responses to stimuli
+1080::2UV4::ppi,0.34375,0.375,0.375,0.0,,1080,2UV4,ppi,CFTR,PRKAG1,,,False,False,True,True,33,AMPK-induced ERAD and lysosome mediated degradation of PD-L1(CD274)
+1080::1HDJ::ppi,0.34375,0.34375,0.34375,0.0,,1080,1HDJ,ppi,CFTR,DNAJB1,,,False,False,True,True,10,Attenuation phase
+1N1A::158::ppi,0.34375,0.375,0.375,0.0,,1N1A,158,ppi,FKBP4,ADSL,,,False,False,False,False,4,Metabolism
+1N1A::1.14.11.18::ppi,0.34375,0.40625,0.40625,0.0,,1N1A,1.14.11.18,ppi,FKBP4,PHYH,,,False,False,False,False,8,Alpha-oxidation of phytanate
+1N1A::11140::ppi,0.34375,0.34375,0.34375,0.0,,1N1A,11140,ppi,FKBP4,CDC37,,,False,False,False,False,36,Constitutive Signaling by EGFRvIII
+1N1A::3308::ppi,0.34375,0.34375,0.34375,0.0,,1N1A,3308,ppi,FKBP4,HSPA4,,,False,False,False,False,4,Cellular response to heat stress
+2B6H::11316::ppi,0.34375,0.375,0.375,0.0,,2B6H,11316,ppi,ARF5,COPE,,,False,False,False,False,11,Asparagine N-linked glycosylation
+1JUQ::1E6F::ppi,0.34375,0.3125,0.3125,0.0,,1JUQ,1E6F,ppi,M6PR,IGF2R,,,False,False,False,False,11,Cargo recognition for clathrin-mediated endocytosis
+1N1A::10598::ppi,0.34375,0.40625,0.40625,0.0,,1N1A,10598,ppi,FKBP4,AHSA1,,,False,False,False,False,0,
+1080::3312::ppi,0.34375,0.40625,0.40625,0.0,,1080,3312,ppi,CFTR,HSPA8,,,False,True,True,True,55,AUF1 (hnRNP D0) binds and destabilizes mRNA
+1080::4CFE::ppi,0.34375,0.375,0.375,0.0,,1080,4CFE,ppi,CFTR,PRKAG1,,,False,False,True,True,33,AMPK-induced ERAD and lysosome mediated degradation of PD-L1(CD274)
+1080::2.3.2.27::ppi,0.34375,0.375,0.375,0.0,,1080,2.3.2.27,ppi,CFTR,UBR7,,,False,False,True,True,0,
+6405::1KEX::ppi,0.34375,0.40625,0.40625,0.0,,6405,1KEX,ppi,SEMA3F,NRP1,,,False,True,False,True,22,Attachment and Entry
+2.1.1.320::509::ppi,0.34375,0.34375,0.34375,0.0,,2.1.1.320,509,ppi,NDUFAF7,ATP5F1C,,,False,False,False,False,8,Aerobic respiration and respiratory electron transport
+1.14.13.-::1.2.1.36::ppi,0.34375,0.375,0.375,0.0,,1.14.13.-,1.2.1.36,ppi,CYP26B1,ALDH1A2,,,False,False,False,False,4,RA biosynthesis pathway
+6405::1UEN::ppi,0.34375,0.34375,0.34375,0.0,,6405,1UEN,ppi,SEMA3F,NRCAM,,,False,False,False,False,7,Axon guidance
+1ZRH::10090::ppi,0.34375,0.34375,0.34375,0.0,,1ZRH,10090,ppi,HS3ST1,UST,,,False,False,False,False,6,CS-GAG biosynthesis
+1.14.13.-::2.4.1.17::ppi,0.34375,0.375,0.375,0.0,,1.14.13.-,2.4.1.17,ppi,CYP26B1,UGT2A3,,,False,False,False,False,6,Aspirin ADME
+1.14.13.-::339345::ppi,0.34375,0.34375,0.34375,0.0,,1.14.13.-,339345,ppi,CYP26B1,NANOS2,,,False,False,False,False,0,
+2.1.1.320::1.6.99.3::ppi,0.34375,0.375,0.375,0.0,,2.1.1.320,1.6.99.3,ppi,NDUFAF7,NDUFS7,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+2.1.1.320::51300::ppi,0.34375,0.34375,0.34375,0.0,,2.1.1.320,51300,ppi,NDUFAF7,TIMMDC1,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+2.1.1.320::1.6.99.3::ppi,0.34375,0.34375,0.34375,0.0,,2.1.1.320,1.6.99.3,ppi,NDUFAF7,NDUFS7,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1.14.13.-::1.17.3.-::ppi,0.34375,0.34375,0.34375,0.0,,1.14.13.-,1.17.3.-,ppi,CYP26B1,AOX1,,,False,False,False,False,4,Metabolism
+1.14.13.-::346673::ppi,0.34375,0.34375,0.34375,0.0,,1.14.13.-,346673,ppi,CYP26B1,STRA8,,,False,False,False,False,0,
+1.14.13.-::1.14.-.-::ppi,0.34375,0.40625,0.40625,0.0,,1.14.13.-,1.14.-.-,ppi,CYP26B1,CYP20A1,,,False,False,False,False,0,
+1.14.13.-::1.14.14.1::ppi,0.34375,0.375,0.375,0.0,,1.14.13.-,1.14.14.1,ppi,CYP26B1,CYP4F3,,,False,False,False,False,11,Arachidonate metabolism
+1.14.13.-::1.14.14.-::ppi,0.34375,0.375,0.375,0.0,,1.14.13.-,1.14.14.-,ppi,CYP26B1,CYP2C9,,,False,False,False,False,17,Arachidonate metabolism
+2B6H::1315::ppi,0.34375,0.40625,0.40625,0.0,,2B6H,1315,ppi,ARF5,COPB1,,,False,False,False,False,14,Asparagine N-linked glycosylation
+1N1A::10963::ppi,0.34375,0.34375,0.34375,0.0,,1N1A,10963,ppi,FKBP4,STIP1,,,False,False,False,False,8,Cellular responses to stimuli
+2B6H::22818::ppi,0.34375,0.28125,0.28125,0.0,,2B6H,22818,ppi,ARF5,COPZ1,,,False,False,False,False,11,Asparagine N-linked glycosylation
+1JUQ::143187::ppi,0.34375,0.375,0.375,0.0,,1JUQ,143187,ppi,M6PR,VTI1A,,,False,False,False,False,5,Intra-Golgi and retrograde Golgi-to-ER traffic
+1JUQ::1MHQ::ppi,0.34375,0.3125,0.3125,0.0,,1JUQ,1MHQ,ppi,M6PR,GGA2,,,False,False,False,False,6,Amyloid fiber formation
+2B6H::26286::ppi,0.34375,0.3125,0.3125,0.0,,2B6H,26286,ppi,ARF5,ARFGAP3,,,False,False,False,False,17,Asparagine N-linked glycosylation
+2B6H::377::ppi,0.34375,0.375,0.34375,-0.03125,,2B6H,377,ppi,ARF5,ARF3,,,False,False,False,False,16,Asparagine N-linked glycosylation
+1080::359845::ppi,0.34375,0.34375,0.3125,-0.03125,,1080,359845,ppi,CFTR,RFLNB,,,False,False,True,True,0,
+1080::3.4.21.4::ppi,0.34375,0.4375,0.40625,-0.03125,,1080,3.4.21.4,ppi,CFTR,PRSS1,,,False,False,True,True,12,Activation of Matrix Metalloproteinases
+1080::6338::ppi,0.34375,0.375,0.34375,-0.03125,,1080,6338,ppi,CFTR,SCNN1B,,,False,False,True,True,6,Ion channel transport
+1080::3875::ppi,0.34375,0.34375,0.3125,-0.03125,,1080,3875,ppi,CFTR,KRT18,,,False,False,True,True,8,Developmental Biology
+1080::NP_075062.2::ppi,0.34375,0.375,0.34375,-0.03125,,1080,NP_075062.2,ppi,CFTR,SLC26A6,,,False,False,True,True,4,Inorganic anion exchange by SLC26 transporters
+1080::10013::ppi,0.34375,0.375,0.34375,-0.03125,,1080,10013,ppi,CFTR,HDAC6,,,False,True,True,True,35,Aggrephagy
+1080::11330::ppi,0.34375,0.375,0.34375,-0.03125,,1080,11330,ppi,CFTR,CTRC,,,False,False,True,True,4,Developmental Biology
+1080::22802::ppi,0.34375,0.3125,0.28125,-0.03125,,1080,22802,ppi,CFTR,CLCA4,,,False,False,True,True,3,Ion channel transport
+1N1A::55664::ppi,0.34375,0.3125,0.28125,-0.03125,,1N1A,55664,ppi,FKBP4,CDC37L1,,,False,False,False,False,4,Hemostasis
+1N1A::1Y9R::ppi,0.34375,0.34375,0.3125,-0.03125,,1N1A,1Y9R,ppi,FKBP4,NR3C2,,,False,True,False,True,12,Cellular responses to stimuli
+1N1A::11146::ppi,0.34375,0.375,0.34375,-0.03125,,1N1A,11146,ppi,FKBP4,GLMN,,,False,False,False,False,4,Adaptive Immune System
+2B6H::23527::ppi,0.34375,0.40625,0.375,-0.03125,,2B6H,23527,ppi,ARF5,ACAP2,,,False,False,False,False,0,
+2B6H::8729::ppi,0.34375,0.375,0.34375,-0.03125,,2B6H,8729,ppi,ARF5,GBF1,,,False,False,False,False,23,Asparagine N-linked glycosylation
+2B6H::3QWM::ppi,0.34375,0.375,0.34375,-0.03125,,2B6H,3QWM,ppi,ARF5,IQSEC1,,,False,False,False,False,0,
+2B6H::1OIV::ppi,0.34375,0.40625,0.375,-0.03125,,2B6H,1OIV,ppi,ARF5,RAB11A,,,False,False,False,False,17,Anchoring of the basal body to the plasma membrane
+2B6H::1Z6X::ppi,0.34375,0.375,0.34375,-0.03125,,2B6H,1Z6X,ppi,ARF5,ARF4,,,False,False,False,False,16,Asparagine N-linked glycosylation
+2B6H::8853::ppi,0.34375,0.375,0.34375,-0.03125,,2B6H,8853,ppi,ARF5,ASAP2,,,False,False,False,False,0,
+1JUQ::1JPL::ppi,0.34375,0.375,0.34375,-0.03125,,1JUQ,1JPL,ppi,M6PR,IGF2R,,,False,False,False,False,11,Cargo recognition for clathrin-mediated endocytosis
+1N1A::40 kDa peptidyl-prolyl cis-trans isomerase::ppi,0.34375,0.3125,0.28125,-0.03125,,1N1A,40 kDa peptidyl-prolyl cis-trans isomerase,ppi,FKBP4,PPID,,,False,False,False,False,3,ESR-mediated signaling
+1N1A::1A28::ppi,0.34375,0.375,0.34375,-0.03125,,1N1A,1A28,ppi,FKBP4,PGR,,,False,True,False,True,25,Cellular responses to stimuli
+1N1A::1H10::ppi,0.34375,0.34375,0.3125,-0.03125,,1N1A,1H10,ppi,FKBP4,AKT1,,,False,True,False,True,113,AKT phosphorylates targets in the cytosol
+1N1A::1179::ppi,0.34375,0.4375,0.40625,-0.03125,,1N1A,1179,ppi,FKBP4,CLCA1,,,False,False,False,False,3,Ion channel transport
+2B6H::1314::ppi,0.34375,0.375,0.34375,-0.03125,,2B6H,1314,ppi,ARF5,COPA,,,False,False,False,False,11,Asparagine N-linked glycosylation
+2B6H::4D0G::ppi,0.34375,0.375,0.34375,-0.03125,,2B6H,4D0G,ppi,ARF5,RAB11FIP1,,,False,False,False,False,0,
+1N1A::1147::ppi,0.34375,0.375,0.34375,-0.03125,,1N1A,1147,ppi,FKBP4,CHUK,,,False,False,False,False,87,AKT phosphorylates targets in the cytosol
+1080::2.7.11.1::ppi,0.34375,0.375,0.34375,-0.03125,,1080,2.7.11.1,ppi,CFTR,MAP4K5,,,False,False,True,True,0,
+1080::2M3O::ppi,0.34375,0.375,0.34375,-0.03125,,1080,2M3O,ppi,CFTR,SCNN1A,,,False,True,True,True,6,Ion channel transport
+1080::2.3.2.27::ppi,0.34375,0.34375,0.3125,-0.03125,,1080,2.3.2.27,ppi,CFTR,UBR7,,,False,False,True,True,0,
+2519::2517::ppi,0.34375,0.34375,0.3125,-0.03125,,2519,2517,ppi,FUCA2,FUCA1,,,False,False,False,False,9,Asparagine N-linked glycosylation
+1ZRH::2.8.2.2::ppi,0.34375,0.375,0.34375,-0.03125,,1ZRH,2.8.2.2,ppi,HS3ST1,SULT2B1,,,False,False,False,False,4,Biological oxidations
+2.1.1.320::E9PJQ6::ppi,0.34375,0.375,0.34375,-0.03125,,2.1.1.320,E9PJQ6,ppi,NDUFAF7,TMEM126B,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1ZRH::2-O-sulfotransferase::ppi,0.34375,0.40625,0.375,-0.03125,,1ZRH,2-O-sulfotransferase,ppi,HS3ST1,HS2ST1,,,False,False,False,False,5,Glycosaminoglycan metabolism
+2.1.1.320::4698::ppi,0.34375,0.40625,0.375,-0.03125,,2.1.1.320,4698,ppi,NDUFAF7,NDUFA5,,,False,False,False,False,9,Aerobic respiration and respiratory electron transport
+6405::4E74::ppi,0.34375,0.375,0.34375,-0.03125,,6405,4E74,ppi,SEMA3F,PLXNA4,,,False,False,False,False,13,Axon guidance
+6405::23129::ppi,0.34375,0.34375,0.3125,-0.03125,,6405,23129,ppi,SEMA3F,PLXND1,,,False,False,False,False,13,Axon guidance
+1080::5'-AMP-activated protein kinase subunit gamma-2::ppi,0.34375,0.40625,0.375,-0.03125,,1080,5'-AMP-activated protein kinase subunit gamma-2,ppi,CFTR,PRKAG2,,,False,False,True,True,39,AMPK inhibits chREBP transcriptional activation activity
+1080::2H2B::ppi,0.34375,0.375,0.34375,-0.03125,,1080,2H2B,ppi,CFTR,TJP1,,,False,False,True,True,25,Apoptosis
+1080::55107::ppi,0.34375,0.375,0.34375,-0.03125,,1080,55107,ppi,CFTR,ANO1,,,False,True,True,True,10,Disease
+1080::2.7.11.1::ppi,0.34375,0.375,0.34375,-0.03125,,1080,2.7.11.1,ppi,CFTR,MAP4K5,,,False,False,True,True,0,
+1080::1BYQ::ppi,0.34375,0.3125,0.28125,-0.03125,,1080,1BYQ,ppi,CFTR,HSP90AA1,,,False,True,True,True,119,AURKA Activation by TPX2
+1080::2984::ppi,0.34375,0.375,0.34375,-0.03125,,1080,2984,ppi,CFTR,GUCY2C,,,False,True,True,True,7,Bacterial Infection Pathways
+2.1.1.320::137682::ppi,0.34375,0.40625,0.34375,-0.0625,,2.1.1.320,137682,ppi,NDUFAF7,NDUFAF6,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1.14.13.-::1.14.14.1::ppi,0.34375,0.375,0.3125,-0.0625,,1.14.13.-,1.14.14.1,ppi,CYP26B1,CYP4F3,,,False,False,False,False,11,Arachidonate metabolism
+1080::1NI2::ppi,0.34375,0.40625,0.34375,-0.0625,,1080,1NI2,ppi,CFTR,EZR,,,False,False,True,True,10,Axon guidance
+1080::1811::ppi,0.34375,0.375,0.3125,-0.0625,,1080,1811,ppi,CFTR,SLC26A3,,,False,False,True,True,8,Defective SLC26A3 causes congenital secretory chloride diarrhea 1 (DIAR1)
+1080::2.7.11.11::ppi,0.34375,0.375,0.3125,-0.0625,,1080,2.7.11.11,ppi,CFTR,PRKX,,,False,False,True,True,27,ADORA2B mediated anti-inflammatory cytokines production
+1080::10598::ppi,0.34375,0.46875,0.40625,-0.0625,,1080,10598,ppi,CFTR,AHSA1,,,False,False,True,True,0,
+1N1A::1HJO::ppi,0.34375,0.375,0.3125,-0.0625,,1N1A,1HJO,ppi,FKBP4,HSPA1B,,,False,False,False,False,20,Antimicrobial mechanism of IFN-stimulated genes
+1N1A::A8K5I0::ppi,0.34375,0.375,0.3125,-0.0625,,1N1A,A8K5I0,ppi,FKBP4,HSPA1B,,,False,False,False,False,20,Antimicrobial mechanism of IFN-stimulated genes
+1JUQ::B0QYS5::ppi,0.34375,0.34375,0.28125,-0.0625,,1JUQ,B0QYS5,ppi,M6PR,GGA1,,,False,False,False,False,6,Amyloid fiber formation
+2B6H::1029::ppi,0.34375,0.375,0.3125,-0.0625,,2B6H,1029,ppi,ARF5,CDKN2A,,,False,False,False,False,58,Apoptosis
+1N1A::3312::ppi,0.34375,0.375,0.3125,-0.0625,,1N1A,3312,ppi,FKBP4,HSPA8,,,False,True,False,True,55,AUF1 (hnRNP D0) binds and destabilizes mRNA
+2B6H::116987::ppi,0.34375,0.375,0.3125,-0.0625,,2B6H,116987,ppi,ARF5,AGAP1,,,False,False,False,False,0,
+1N1A::10728::ppi,0.34375,0.375,0.3125,-0.0625,,1N1A,10728,ppi,FKBP4,PTGES3,,,False,False,False,False,24,Arachidonate metabolism
+1.14.13.-::(R)-limonene 6-monooxygenase::ppi,0.34375,0.4375,0.375,-0.0625,,1.14.13.-,(R)-limonene 6-monooxygenase,ppi,CYP26B1,CYP2C9,,,False,False,False,False,17,Arachidonate metabolism
+1.14.13.-::1.14.14.1::ppi,0.34375,0.40625,0.34375,-0.0625,,1.14.13.-,1.14.14.1,ppi,CYP26B1,CYP4F3,,,False,False,False,False,11,Arachidonate metabolism
+1.14.13.-::1.14.14.1::ppi,0.34375,0.4375,0.375,-0.0625,,1.14.13.-,1.14.14.1,ppi,CYP26B1,CYP4F3,,,False,False,False,False,11,Arachidonate metabolism
+1080::1179::ppi,0.34375,0.40625,0.34375,-0.0625,,1080,1179,ppi,CFTR,CLCA1,,,False,False,True,True,3,Ion channel transport
+1080::3.4.19.12::ppi,0.34375,0.40625,0.34375,-0.0625,,1080,3.4.19.12,ppi,CFTR,USP28,,,False,False,True,True,4,Deubiquitination
+1080::2F15::ppi,0.34375,0.375,0.3125,-0.0625,,1080,2F15,ppi,CFTR,PRKAB2,,,False,False,True,True,39,AMPK inhibits chREBP transcriptional activation activity
+1.14.13.-::10941::ppi,0.34375,0.40625,0.34375,-0.0625,,1.14.13.-,10941,ppi,CYP26B1,UGT2A1,,,False,False,False,False,6,Aspirin ADME
+2.1.1.320::29078::ppi,0.34375,0.4375,0.375,-0.0625,,2.1.1.320,29078,ppi,NDUFAF7,NDUFAF4,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+2.1.1.320::91942::ppi,0.34375,0.34375,0.28125,-0.0625,,2.1.1.320,91942,ppi,NDUFAF7,NDUFAF2,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1ZRH::2.8.2.-::ppi,0.34375,0.4375,0.375,-0.0625,,1ZRH,2.8.2.-,ppi,HS3ST1,GAL3ST2,,,False,False,False,False,0,
+6405::5361::ppi,0.34375,0.4375,0.375,-0.0625,,6405,5361,ppi,SEMA3F,PLXNA1,,,False,False,False,False,14,Axon guidance
+2.1.1.320::1.-.-.-::ppi,0.34375,0.375,0.3125,-0.0625,,2.1.1.320,1.-.-.-,ppi,NDUFAF7,TP53I3,,,False,False,False,False,6,Gene expression (Transcription)
+1.14.13.-::1.2.1.36::ppi,0.34375,0.40625,0.34375,-0.0625,,1.14.13.-,1.2.1.36,ppi,CYP26B1,ALDH1A2,,,False,False,False,False,4,RA biosynthesis pathway
+1.14.13.-::2.4.1.17::ppi,0.34375,0.375,0.3125,-0.0625,,1.14.13.-,2.4.1.17,ppi,CYP26B1,UGT2A3,,,False,False,False,False,6,Aspirin ADME
+1ZRH::2.8.2.-::ppi,0.34375,0.40625,0.34375,-0.0625,,1ZRH,2.8.2.-,ppi,HS3ST1,GAL3ST2,,,False,False,False,False,0,
+2519::2720::ppi,0.34375,0.375,0.3125,-0.0625,,2519,2720,ppi,FUCA2,GLB1,,,False,False,False,False,29,Asparagine N-linked glycosylation
+2B6H::2D7C::ppi,0.34375,0.40625,0.3125,-0.09375,,2B6H,2D7C,ppi,ARF5,RAB11A,,,False,False,False,False,17,Anchoring of the basal body to the plasma membrane
+2B6H::9267::ppi,0.34375,0.4375,0.34375,-0.09375,,2B6H,9267,ppi,ARF5,CYTH1,,,False,False,False,False,4,Intra-Golgi and retrograde Golgi-to-ER traffic
+1N1A::1E3G::ppi,0.34375,0.40625,0.3125,-0.09375,,1N1A,1E3G,ppi,FKBP4,AR,,,False,True,False,True,23,Activated PKN1 stimulates transcription of AR (androgen receptor) regulated genes KLK2 and KLK3
+6405::55558::ppi,0.34375,0.34375,0.25,-0.09375,,6405,55558,ppi,SEMA3F,PLXNA3,,,False,False,False,False,7,Axon guidance
+1.14.13.-::1.14.14.1::ppi,0.34375,0.40625,0.3125,-0.09375,,1.14.13.-,1.14.14.1,ppi,CYP26B1,CYP4F3,,,False,False,False,False,11,Arachidonate metabolism
+1N1A::1BY7::ppi,0.34375,0.40625,0.3125,-0.09375,,1N1A,1BY7,ppi,FKBP4,SERPINB2,,,False,False,False,False,8,Cytokine Signaling in Immune system
+1ZRH::2.8.2.-::ppi,0.34375,0.40625,0.3125,-0.09375,,1ZRH,2.8.2.-,ppi,HS3ST1,GAL3ST2,,,False,False,False,False,0,
+"1.14.13.-::1,4-cineole 2-exo-monooxygenase::ppi",0.34375,0.375,0.28125,-0.09375,,1.14.13.-,"1,4-cineole 2-exo-monooxygenase",ppi,CYP26B1,CYP2A6,,,False,False,False,False,6,Biological oxidations
+1.14.13.-::1.14.13.-::ppi,0.34375,0.4375,0.34375,-0.09375,,1.14.13.-,1.14.13.-,ppi,CYP26B1,CYP26B1,,,False,False,False,False,13,Biological oxidations
+2.1.1.320::4711::ppi,0.34375,0.40625,0.3125,-0.09375,,2.1.1.320,4711,ppi,NDUFAF7,NDUFB5,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+2.1.1.320::5XTI::ppi,0.34375,0.4375,0.34375,-0.09375,,2.1.1.320,5XTI,ppi,NDUFAF7,NDUFB4,,,False,False,False,False,4,Aerobic respiration and respiratory electron transport
+1080::NP_056345.3::ppi,0.34375,0.40625,0.3125,-0.09375,,1080,NP_056345.3,ppi,CFTR,GORASP2,,,False,False,True,True,5,Cell Cycle
+1080::5NJ3::ppi,0.34375,0.4375,0.34375,-0.09375,,1080,5NJ3,ppi,CFTR,ABCG2,,,False,False,True,True,24,Abacavir ADME
+1080::1GNA::ppi,0.34375,0.4375,0.34375,-0.09375,,1080,1GNA,ppi,CFTR,GUCA2A,,,False,False,True,True,2,Digestion
+1JUQ::10618::ppi,0.34375,0.375,0.25,-0.125,,1JUQ,10618,ppi,M6PR,TGOLN2,,,False,False,False,False,12,Cargo recognition for clathrin-mediated endocytosis
+1080::1OIV::ppi,0.34375,0.375,0.25,-0.125,,1080,1OIV,ppi,CFTR,RAB11A,,,False,False,True,True,17,Anchoring of the basal body to the plasma membrane
+1080::15S Mg(2+)-ATPase p97 subunit::ppi,0.34375,0.46875,0.34375,-0.125,,1080,15S Mg(2+)-ATPase p97 subunit,ppi,CFTR,VCP,,,False,False,True,True,62,ABC transporter disorders
+1080::2316::ppi,0.34375,0.46875,0.34375,-0.125,,1080,2316,ppi,CFTR,FLNA,,,False,True,True,True,18,Antimicrobial mechanism of IFN-stimulated genes
+1080::R4GNG2::ppi,0.34375,0.46875,0.3125,-0.15625,,1080,R4GNG2,ppi,CFTR,AMFR,,,False,False,True,True,6,Asparagine N-linked glycosylation
