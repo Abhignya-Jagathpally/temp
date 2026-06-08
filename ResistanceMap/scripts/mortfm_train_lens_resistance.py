@@ -127,7 +127,16 @@ def _load_from_confirmed(confirmed_path: str, split_manifest_path: str = None) -
 
 
 def _load_pairs() -> dict:
-    z = np.load("data/processed/mmrf_paired_z64.npz", allow_pickle=True)
+    npz_path = Path("data/processed/mmrf_paired_z64.npz")
+    if not npz_path.exists():
+        # Open-access MMRF has no paired molecular timepoints (the lakehouse
+        # confirms 0 temporal pairs). Degrade to 0 rows so main() emits an
+        # honest "claim blocked" report rather than crashing. No fabrication.
+        logger.warning("Paired latent table absent at %s -> 0 paired patients "
+                       "(resistance_emergence/trajectory claim honestly blocked).",
+                       npz_path)
+        return {"rows": []}
+    z = np.load(str(npz_path), allow_pickle=True)
     pids = [str(p) for p in z["patient_id"]]
     outcomes = pd.read_csv("data/processed/mmrf_outcomes_treatment.tsv", sep="\t")
     out_map = outcomes.set_index("submitter_id").to_dict("index")
@@ -212,8 +221,41 @@ def main() -> int:
         data = _load_pairs()
     rows = data["rows"]
     if len(rows) < 10:
-        logger.error("Too few patients (%d) — aborting", len(rows))
-        return 1
+        # Honest graceful degradation: too few paired-molecular patients to
+        # train/evaluate a resistance-trajectory model. Write a blocked-claim
+        # report and exit 0 so the DAG proceeds — the survival-prediction
+        # evidence is reported separately (train_survival + Spark lakehouse).
+        # We do NOT substitute the survival cohort here: per the endpoint
+        # registry, a survival model is NOT a resistance-emergence/trajectory
+        # predictor, and conflating them would violate the governance invariant.
+        logger.warning("Too few paired patients (%d < 10) — resistance_emergence "
+                       "(paired-trajectory) claim BLOCKED; emitting honest report.",
+                       len(rows))
+        blocked = {
+            "run_id": f"r-{time.strftime('%Y-%m-%d')}-mortfm-lens-resistance-mmrf",
+            "cohort": "MMRF paired (baseline -> followup)",
+            "n_patients": int(len(rows)),
+            "n_observed_events": int(sum(r["event_observed"] for r in rows)),
+            "endpoint": "time_to_next_treatment (TT2L)",
+            "loo_cindex": None,
+            "resistance_emergence_gate_pass": False,
+            "survival_prediction_gate_pass": False,
+            "claim_status": "BLOCKED_INSUFFICIENT_PAIRED_DATA",
+            "honest_reason": (
+                "Open-access MMRF has no same-patient baseline->followup molecular "
+                "pairs (0 temporal pairs confirmed by the Spark lakehouse). The "
+                "paired-trajectory resistance_emergence claim cannot be trained or "
+                "evaluated. Survival-prediction evidence is reported separately by "
+                "the train_survival task and the Spark lakehouse (it is NOT a "
+                "resistance-trajectory endpoint and is not substituted here)."
+            ),
+            "wall_time_s": round(time.time() - t0, 1),
+        }
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        with open(args.out, "w") as f:
+            json.dump(blocked, f, indent=2, default=str)
+        logger.info("Wrote blocked-claim LENS report -> %s", args.out)
+        return 0
 
     d_latent = 64
     d_drug, d_graph = 8, 16

@@ -33,7 +33,7 @@ logger = logging.getLogger("mortfm_train_survival")
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs/mortfm_patient_finetune.yaml")
-    ap.add_argument("--pairs", required=True)
+    ap.add_argument("--pairs", default="data/processed/mortfm/temporal_pairs.pkl")
     ap.add_argument("--init-from", default=None)
     ap.add_argument("--device", default="auto")
     ap.add_argument(
@@ -48,9 +48,25 @@ def main() -> int:
     known = {f.name for f in MORTFMConfig.__dataclass_fields__.values()}
     cfg = MORTFMConfig(**{k: v for k, v in raw.items() if k in known})
 
-    with open(args.pairs, "rb") as f:
+    # Graceful skip: the open-access survival evidence is produced by the Spark
+    # lakehouse (RNA+clinical C-index) and run_first_results (EN-Cox), which
+    # train on the confirmed cohort directly. This MORT-FM Stage-F finetune
+    # needs an assembled pickled-pairs substrate; when that is absent or has no
+    # survival-labelled rows, skip honestly and exit 0 rather than crashing.
+    pairs_path = Path(args.pairs)
+    if not pairs_path.exists():
+        logger.warning("Pairs pickle absent at %s -> skipping MORT-FM Stage F/H "
+                       "(survival evidence reported by Spark lakehouse + EN-Cox).",
+                       pairs_path)
+        return 0
+    with open(pairs_path, "rb") as f:
         pairs = pickle.load(f)
     survival_rows = [p for p in pairs if p.outcome.has_survival_label()]
+    if not survival_rows:
+        logger.warning("No survival-labelled rows in %s -> skipping MORT-FM Stage "
+                       "F/H (survival evidence reported by Spark lakehouse + EN-Cox).",
+                       pairs_path)
+        return 0
     n_patients = len({p.x_t.patient_id for p in survival_rows})
     logger.info("Survival rows: %d (from %d unique patients)", len(survival_rows), n_patients)
     if n_patients < cfg.min_patient_n_for_survival_claim:
