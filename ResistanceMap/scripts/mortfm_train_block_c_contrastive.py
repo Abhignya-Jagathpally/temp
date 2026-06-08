@@ -141,14 +141,26 @@ def main() -> int:
             all_dataset.append(str(row["dataset_id"]))
     X = np.stack(all_x, axis=0)
     stages = np.asarray(all_stage, dtype=float)
-    # Map raw stage codes -> integer 0..K-1 by sorted unique
     valid = ~np.isnan(stages) & (stages >= 0)
-    X = X[valid]; stages = stages[valid].astype(int)
-    uniq_stages = sorted(set(stages.tolist()))
-    stage_to_idx = {s: i for i, s in enumerate(uniq_stages)}
-    y = np.asarray([stage_to_idx[int(s)] for s in stages], dtype=np.int64)
-    logger.info("n=%d pseudobulks; stage histogram=%s",
-                len(X), dict(zip(*np.unique(y, return_counts=True))))
+    if valid.sum() >= 1 and len(set(stages[valid].astype(int).tolist())) >= 2:
+        # Real disease-stage labels present -> full stage-contrastive training.
+        X = X[valid]; stages = stages[valid].astype(int)
+        uniq_stages = sorted(set(stages.tolist()))
+        stage_to_idx = {s: i for i, s in enumerate(uniq_stages)}
+        y = np.asarray([stage_to_idx[int(s)] for s in stages], dtype=np.int64)
+        recon_only = False
+    else:
+        # No usable disease-stage labels (e.g. an integrated atlas grouped by
+        # donor, with no per-cell stage). Degrade HONESTLY to recon-only training:
+        # still learn a real cell-state encoder, but skip the stage/supcon/ordinal
+        # supervision that requires >=2 stage classes. No fabrication.
+        logger.warning("No usable disease-stage labels -> recon-only block-C "
+                       "training (stage/supcon/ordinal supervision skipped).")
+        uniq_stages = [0]
+        y = np.zeros(len(X), dtype=np.int64)
+        recon_only = True
+    logger.info("n=%d pseudobulks; recon_only=%s; stage histogram=%s",
+                len(X), recon_only, dict(zip(*np.unique(y, return_counts=True))))
 
     # --- 2. Build model + sampler -----------------------------------------
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -169,15 +181,22 @@ def main() -> int:
             xb = X_t[batch_idx]; yb = y_t[batch_idx]
             out = model(xb)
             recon = F.mse_loss(out["recon"], xb)
-            supcon = supcon_loss(out["z"], yb)
-            stage = F.cross_entropy(out["stage"], yb)
-            ordl = pseudotime_ordinal_loss(out["proj"], yb)
-            total = (
-                args.lambda_recon * recon
-                + args.lambda_supcon * supcon
-                + args.lambda_stage * stage
-                + args.lambda_ord * ordl
-            )
+            if recon_only:
+                # Single-class fallback: stage/supcon/ordinal are undefined with
+                # <2 classes; train the autoencoder objective only.
+                zero = torch.zeros((), device=device)
+                supcon, stage, ordl = zero, zero, zero
+                total = args.lambda_recon * recon
+            else:
+                supcon = supcon_loss(out["z"], yb)
+                stage = F.cross_entropy(out["stage"], yb)
+                ordl = pseudotime_ordinal_loss(out["proj"], yb)
+                total = (
+                    args.lambda_recon * recon
+                    + args.lambda_supcon * supcon
+                    + args.lambda_stage * stage
+                    + args.lambda_ord * ordl
+                )
             opt.zero_grad(); total.backward(); opt.step()
             ep_losses["recon"] += float(recon)
             ep_losses["supcon"] += float(supcon)
