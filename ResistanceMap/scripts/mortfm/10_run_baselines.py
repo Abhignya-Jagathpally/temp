@@ -1141,6 +1141,27 @@ def run_patient_longitudinal(args: argparse.Namespace) -> int:
     df = pd.read_parquet(args.confirmed_dataset)
     logger.info("  Loaded dataset: %d rows, %d columns", len(df), len(df.columns))
 
+    # ── Derive model-ready BASELINE clinical covariates ─────────────────────
+    # The confirmed lakehouse dataset carries RAW clinical columns (iss_stage as
+    # I/II/III, gender as string, age in days). Encode the genuine baseline
+    # prognostics into numeric clinical_* columns so the clinical/Cox arms are
+    # not degenerate. n_treatments is deliberately NOT used (it accumulates over
+    # follow-up and would leak). Missing values -> 0 (cohort mean for the z-score).
+    if "iss_stage" in df.columns and "clinical_iss_ordinal" not in df.columns:
+        df["clinical_iss_ordinal"] = (
+            df["iss_stage"].astype(str).str.strip().str.upper()
+            .map({"I": 0.0, "II": 1.0, "III": 2.0})
+        )
+    if "age_at_diagnosis_days" in df.columns and "clinical_age_z" not in df.columns:
+        _age = pd.to_numeric(df["age_at_diagnosis_days"], errors="coerce")
+        df["clinical_age_z"] = ((_age - _age.mean()) / (_age.std() or 1.0)).astype("float64")
+    if "gender" in df.columns and "clinical_gender_male" not in df.columns:
+        df["clinical_gender_male"] = (
+            df["gender"].astype(str).str.lower().eq("male").astype("float64")
+        )
+    for _c in [c for c in df.columns if c.startswith("clinical_")]:
+        df[_c] = pd.to_numeric(df[_c], errors="coerce").fillna(0.0)
+
     # ── Load split manifest ────────────────────────────────────────────────
     with open(args.split_manifest, "r") as f:
         manifest = json.load(f)
@@ -1160,6 +1181,8 @@ def run_patient_longitudinal(args: argparse.Namespace) -> int:
         "baseline_visit_time_days", "followup_visit_time_days", "delta_t_days",
         "has_valid_survival_supervision", "allowed_loss_survival",
         "os_time", "os_event", "pfs_time", "pfs_event", "progression_day",
+        # Raw clinical source columns (now represented by encoded clinical_* cols).
+        "iss_stage", "gender", "age_at_diagnosis_days", "n_treatments",
     }
     clinical_cols = [
         c for c in df.columns
