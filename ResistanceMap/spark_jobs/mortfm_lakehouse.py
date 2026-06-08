@@ -966,6 +966,20 @@ def stage_confirmed(spark: SparkSession, cfg: Dict[str, Any]) -> None:
         .withColumn("allowed_loss_ordinal_transition", F.lit(False))
     )
 
+    # Optional: join baseline RNA features (patient x top-K high-variance genes)
+    # if staged by scripts/build_mmrf_rna_features.py. Left join on submitter_id
+    # so survival baselines (rna_only / rna_plus_clinical) get real features;
+    # absent -> no-op (the dataset stays clinical-only). No fabrication.
+    rna_features_path = "data/processed/mmrf_patient_rna_topk.parquet"
+    if os.path.exists(rna_features_path) and "submitter_id" in joined.columns:
+        rna_df = spark.read.parquet(rna_features_path)
+        n_rna = len([c for c in rna_df.columns if c.startswith("rna_")])
+        joined = joined.join(rna_df, on="submitter_id", how="left")
+        logger.info("Joined %d baseline RNA feature columns from %s", n_rna, rna_features_path)
+    else:
+        logger.info("No RNA feature table at %s — confirmed dataset stays clinical-only.",
+                    rna_features_path)
+
     # Patient-disjoint split assignment (deterministic SHA-based)
     split_udf = F.udf(
         lambda pid: _assign_split(pid, seed, val_frac, test_frac),
