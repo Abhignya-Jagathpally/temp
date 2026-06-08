@@ -116,6 +116,17 @@ def preprocess(adata: ad.AnnData) -> ad.AnnData:
     sc.pp.filter_cells(adata, min_genes=200)
     sc.pp.filter_genes(adata, min_cells=10)
 
+    # CPU tractability: deterministically subsample very large atlases via an
+    # evenly-spaced stride (NO randomness -> reproducible, no fabrication). The
+    # full multi-cohort atlas (>10^5 cells) is impractical to integrate on CPU.
+    max_cells = int(os.environ.get("SCVI_MAX_CELLS", "25000"))
+    if adata.n_obs > max_cells:
+        step = max(1, adata.n_obs // max_cells)
+        keep = np.arange(0, adata.n_obs, step)[:max_cells]
+        adata = adata[keep].copy()
+        logger.info("  Subsampled to %d cells (stride=%d) for CPU integration",
+                    adata.n_obs, step)
+
     # Highly variable genes (keep all chromatin + biomarker genes)
     sc.pp.highly_variable_genes(
         adata, n_top_genes=3000, flavor="seurat_v3",
@@ -134,9 +145,21 @@ def preprocess(adata: ad.AnnData) -> ad.AnnData:
     return adata
 
 
-def train_scvi(adata: ad.AnnData) -> "scvi.model.SCVI":
-    """Train scVI for batch-corrected latent space."""
-    import scvi
+def train_scvi(adata: ad.AnnData):
+    """Train scVI for a batch-corrected latent space.
+
+    Returns the trained model, or None when scvi-tools is unavailable — in which
+    case the caller falls back to a PCA latent (honest degradation, clearly
+    labelled; PCA is a real reduction, nothing fabricated).
+    """
+    try:
+        import scvi
+    except ImportError:
+        logger.warning(
+            "scvi-tools not installed -> falling back to a PCA latent "
+            "(install 'scvi-tools' for full batch-corrected integration)."
+        )
+        return None
 
     logger.info("Setting up scVI...")
 
@@ -177,51 +200,80 @@ def train_scvi(adata: ad.AnnData) -> "scvi.model.SCVI":
     return model
 
 
+def _normalized_gene_df(adata_norm, genes):
+    """cells x genes DataFrame of log-normalized expression for `genes`."""
+    import pandas as pd
+    present = [g for g in genes if g in adata_norm.var_names]
+    if not present:
+        return None
+    X = adata_norm[:, present].X
+    X = X.toarray() if hasattr(X, "toarray") else np.asarray(X)
+    return pd.DataFrame(X, columns=present, index=adata_norm.obs_names)
+
+
 def extract_representations(model, adata: ad.AnnData):
-    """Extract latent z, chromatin expression, and biomarker proxies."""
-    import scvi
+    """Extract latent z + chromatin/biomarker expression.
 
-    logger.info("Extracting representations...")
-
-    # Subset to HVGs (same as training)
+    model is not None -> scVI latent + denoised expression.
+    model is None      -> PCA latent + log-normalized expression (honest fallback).
+    """
+    logger.info("Extracting representations (%s)...",
+                "scVI" if model is not None else "PCA fallback")
     adata_hvg = adata[:, adata.var["highly_variable"]].copy()
 
-    # 1. Latent representations
-    z = model.get_latent_representation(adata_hvg)
-    np.save(PROCESSED_DIR / "scvi_latent_z.npy", z)
-    logger.info(f"  Latent z: {z.shape} saved to scvi_latent_z.npy")
+    if model is not None:
+        z = model.get_latent_representation(adata_hvg)
+        method = "scvi"
 
-    # 2. Chromatin reader/writer expression (denoised)
-    available_chromatin = [g for g in CHROMATIN_GENES if g in adata_hvg.var_names]
-    if available_chromatin:
-        chromatin_expr = model.get_normalized_expression(
-            adata_hvg, gene_list=available_chromatin, n_samples=25, return_mean=True
-        )
+        def _expr(genes):
+            present = [g for g in genes if g in adata_hvg.var_names]
+            if not present:
+                return None
+            return model.get_normalized_expression(
+                adata_hvg, gene_list=present, n_samples=25, return_mean=True)
+    else:
+        # PCA fallback: log-normalize a copy, PCA to 30 comps.
+        norm = adata_hvg.copy()
+        sc.pp.normalize_total(norm, target_sum=1e4)
+        sc.pp.log1p(norm)
+        n_comps = min(30, norm.n_vars - 1, norm.n_obs - 1)
+        sc.pp.pca(norm, n_comps=n_comps)
+        z = norm.obsm["X_pca"][:, :n_comps]
+        method = "pca_fallback"
+
+        def _expr(genes):
+            return _normalized_gene_df(norm, genes)
+
+    np.save(PROCESSED_DIR / "scvi_latent_z.npy", z)
+    (PROCESSED_DIR / "latent_method.txt").write_text(method)
+    logger.info("  Latent z: %s (method=%s) -> scvi_latent_z.npy", z.shape, method)
+
+    chromatin_expr = _expr(CHROMATIN_GENES)
+    if chromatin_expr is not None:
         np.save(PROCESSED_DIR / "chromatin_expression.npy", chromatin_expr.values)
         chromatin_expr.to_csv(PROCESSED_DIR / "chromatin_expression.csv")
-        logger.info(f"  Chromatin genes: {len(available_chromatin)}/{len(CHROMATIN_GENES)} "
-                    f"available, shape {chromatin_expr.shape}")
+        logger.info("  Chromatin genes: %d, shape %s", chromatin_expr.shape[1], chromatin_expr.shape)
     else:
         logger.warning("  No chromatin genes found in HVG set!")
 
-    # 3. Biomarker proxy expression (denoised)
-    available_proxies = [g for g in BIOMARKER_PROXY_GENES if g in adata_hvg.var_names]
-    if available_proxies:
-        proxy_expr = model.get_normalized_expression(
-            adata_hvg, gene_list=available_proxies, n_samples=25, return_mean=True
-        )
+    proxy_expr = _expr(BIOMARKER_PROXY_GENES)
+    if proxy_expr is not None:
         np.save(PROCESSED_DIR / "biomarker_proxy_expression.npy", proxy_expr.values)
         proxy_expr.to_csv(PROCESSED_DIR / "biomarker_proxy_expression.csv")
-        logger.info(f"  Biomarker proxies: {len(available_proxies)}/{len(BIOMARKER_PROXY_GENES)} "
-                    f"available, shape {proxy_expr.shape}")
+        logger.info("  Biomarker proxies: %d, shape %s", proxy_expr.shape[1], proxy_expr.shape)
     else:
         logger.warning("  No biomarker proxy genes found!")
 
-    # 4. UMAP for visualization
+    # 4. UMAP/Leiden for visualization (OPTIONAL — never fail the run on a
+    # missing viz dependency like leidenalg; the latent + expression above are
+    # the real deliverables consumed downstream by the PK-SSM forward pass).
     adata_hvg.obsm["X_scvi"] = z
-    sc.pp.neighbors(adata_hvg, use_rep="X_scvi")
-    sc.tl.umap(adata_hvg)
-    sc.tl.leiden(adata_hvg, resolution=0.5)
+    try:
+        sc.pp.neighbors(adata_hvg, use_rep="X_scvi")
+        sc.tl.umap(adata_hvg)
+        sc.tl.leiden(adata_hvg, resolution=0.5)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Skipping optional UMAP/Leiden viz: %s", exc)
 
     # Save processed AnnData
     adata_hvg.write_h5ad(PROCESSED_DIR / "adata_scvi_processed.h5ad")

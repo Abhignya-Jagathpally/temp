@@ -357,7 +357,13 @@ with DAG(
     prepare_mmrf = PythonOperator(
         task_id="prepare_mmrf",
         python_callable=_run_script,
-        op_args=["scripts/mortfm/03_prepare_mmrf.py"],
+        # 03_prepare_mmrf.py requires --data-dir (the staged MMRF CoMMpass dump).
+        # The task previously passed no args -> argparse exit 2. Wire the staged
+        # data directory + an OS endpoint.
+        op_args=["scripts/mortfm/03_prepare_mmrf.py",
+                 "--data-dir", "data/raw/mmrf_commpass",
+                 "--out-dir", "data/processed/mortfm",
+                 "--endpoint", "os"],
     )
 
     build_snapshots = PythonOperator(

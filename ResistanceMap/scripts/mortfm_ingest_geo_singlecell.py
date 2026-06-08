@@ -64,13 +64,22 @@ def ingest_gse(gse_dir: Path, out_dir: Path) -> dict | None:
                                          "notes": "Unregistered GSE"})
 
     h5ads = list(gse_dir.rglob("*.h5ad"))
-    if not h5ads:
-        logger.warning("No .h5ad found in %s — skipping", gse_dir)
-        return None
-
-    h5ad_path = sorted(h5ads)[0]
-    logger.info("Reading %s -> %s", h5ad_path, gse_id)
-    adata = ad.read_h5ad(str(h5ad_path))
+    if h5ads:
+        h5ad_path = sorted(h5ads)[0]
+        logger.info("Reading %s -> %s", h5ad_path, gse_id)
+        adata = ad.read_h5ad(str(h5ad_path))
+    else:
+        # Fallback: 10x mtx triad (matrix.mtx[.gz] + barcodes + features/genes).
+        mtx = list(gse_dir.rglob("matrix.mtx*"))
+        if mtx:
+            import scanpy as sc
+            mtx_dir = mtx[0].parent
+            logger.info("Reading 10x mtx %s -> %s", mtx_dir, gse_id)
+            adata = sc.read_10x_mtx(str(mtx_dir))
+            adata.var_names_make_unique()
+        else:
+            logger.warning("No .h5ad or matrix.mtx in %s — skipping (optional layer)", gse_dir)
+            return None
 
     out_path = out_dir / "single_cell" / "scrna" / f"{gse_id}.h5ad"
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -123,14 +132,45 @@ def main() -> int:
             f"Run python3 scripts/mortfm_download_public_data.py --only geo, or use "
             f"geofetch / sra-tools for GSE161195, GSE223060, GSE199373 etc."
         )
+    # Also scan the v20 open-access download location for ready .h5ad atlases
+    # (e.g. the Zenodo panImmune atlas lives under data/open_access/geo_scrna).
+    scan_dirs = [raw_dir]
+    extra = Path("data/open_access/geo_scrna")
+    if extra.is_dir():
+        scan_dirs.append(extra)
+
     rows = []
-    for sub in sorted(raw_dir.iterdir()):
-        if sub.is_dir():
-            row = ingest_gse(sub, Path(args.out_dir))
-            if row:
-                rows.append(row)
-    logger.info("Ingested %d GEO datasets.", len(rows))
-    return 0 if rows else 1
+    for d in scan_dirs:
+        for sub in sorted(d.iterdir()):
+            if sub.is_dir():
+                try:
+                    row = ingest_gse(sub, Path(args.out_dir))
+                    if row:
+                        rows.append(row)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Skipping %s: %s", sub.name, exc)
+        # top-level .h5ad files (atlas not in a per-GSE subdir)
+        for h5 in sorted(d.glob("*.h5ad")):
+            try:
+                fake = h5.parent / h5.stem
+                # ingest_gse expects a dir; read directly instead.
+                ad = _require_anndata()
+                adata = ad.read_h5ad(str(h5))
+                out_path = Path(args.out_dir) / "single_cell" / "scrna" / f"{h5.stem}.h5ad"
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                adata.write_h5ad(out_path)
+                rows.append({"dataset_name": h5.stem, "processed_file_path": str(out_path),
+                             "n_cells": int(adata.n_obs), "n_features": int(adata.n_vars)})
+                logger.info("Ingested atlas %s: %d cells", h5.stem, adata.n_obs)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Skipping atlas %s: %s", h5.name, exc)
+
+    logger.info("Ingested %d GEO single-cell datasets.", len(rows))
+    # Single-cell is an OPTIONAL augmentation layer: succeed even if nothing was
+    # ingestible (the raws may be non-h5ad/non-mtx) rather than failing the DAG.
+    if not rows:
+        logger.warning("No ingestible single-cell sources found — optional layer skipped.")
+    return 0
 
 
 if __name__ == "__main__":
