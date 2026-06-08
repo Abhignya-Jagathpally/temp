@@ -410,8 +410,11 @@ class PKSSM(nn.Module):
         self.hazard = LatentHazardHead(config)
         self.mechanism = MechanismClassifier(config)
 
-        # Baseline features integration (ISS, age, gender, etc.)
-        self.baseline_proj = nn.Linear(17, config.latent_dim)  # ml_mmrf baseline dim
+        # Baseline features integration (ISS, age, gender, etc.). Added to the
+        # ENCODER hidden state `h` (hidden_dim), so it must project to hidden_dim
+        # — projecting to latent_dim caused a (hidden_dim vs latent_dim) shape
+        # mismatch in encode().
+        self.baseline_proj = nn.Linear(17, config.hidden_dim)  # ml_mmrf baseline dim
 
     def encode(self, y_0: torch.Tensor, baseline: Optional[torch.Tensor] = None
                ) -> Tuple[torch.Tensor, torch.Tensor]:

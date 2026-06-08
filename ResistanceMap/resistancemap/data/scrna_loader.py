@@ -165,7 +165,19 @@ def build_snapshots_from_h5ad(
     ad = _require_anndata()
     adata = ad.read_h5ad(str(p))
     if patient_obs_col not in adata.obs.columns:
-        raise KeyError(f"{patient_obs_col!r} not in adata.obs.columns")
+        # Fall back to common patient/donor identifiers (e.g. integrated atlases
+        # use donor_id/sample_id rather than patient_id) before giving up.
+        for alt in ("patient_id", "donor_id", "donor", "sample_id", "subject_id", "study_id"):
+            if alt in adata.obs.columns:
+                logger.warning("patient_obs_col %r absent; falling back to %r",
+                               patient_obs_col, alt)
+                patient_obs_col = alt
+                break
+        else:
+            raise KeyError(
+                f"{patient_obs_col!r} not in adata.obs.columns and no known "
+                f"patient/donor fallback present (have {list(adata.obs.columns)[:12]})"
+            )
 
     snapshots: List[PatientCellSnapshot] = []
     grouping_cols = [patient_obs_col]

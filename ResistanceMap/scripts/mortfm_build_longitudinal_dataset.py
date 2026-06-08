@@ -62,6 +62,11 @@ def main() -> int:
     ap.add_argument("--engine", choices=["pandas", "spark"], default="pandas",
                     help="Processing engine (default: pandas). Use 'spark' for "
                          "large-scale runs via PySpark.")
+    # Accepted for DAG compatibility (the evidence DAG calls this with
+    # --mode snapshots/pairs); this builder emits the full temporal-pairs
+    # dataset regardless, so the flag is informational.
+    ap.add_argument("--mode", default=None,
+                    help="(accepted for DAG compatibility; output is the same)")
     args = ap.parse_args()
 
     # ----- Spark engine path ------------------------------------------------
@@ -87,7 +92,19 @@ def main() -> int:
         return 0
 
     # ----- Pandas engine path (default) ------------------------------------
-    pairs = build_pairs_from_mmrf(paired_tsv=args.paired, outcomes_tsv=args.outcomes)
+    # Graceful degradation: open-access MMRF has no paired molecular timepoints
+    # (the Spark lakehouse confirms 0 temporal pairs). When the paired/outcomes
+    # inputs are absent, emit an EMPTY temporal-pairs dataset and let the gates
+    # FAIL honestly, rather than crashing the DAG. No fabrication.
+    if not Path(args.paired).exists() or not Path(args.outcomes).exists():
+        logger.warning(
+            "Paired/outcomes inputs absent (%s / %s) -> EMPTY temporal-pairs "
+            "dataset; longitudinal/trajectory claim is honestly blocked.",
+            args.paired, args.outcomes,
+        )
+        pairs = []
+    else:
+        pairs = build_pairs_from_mmrf(paired_tsv=args.paired, outcomes_tsv=args.outcomes)
     ds = LongitudinalDataset(pairs)
     ds.to_parquet(args.out_parquet)
     s = summarise_pairs(pairs)
