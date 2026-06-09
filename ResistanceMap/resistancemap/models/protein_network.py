@@ -412,8 +412,18 @@ class ESM2Embedder(nn.Module):
             Tensor of shape (len(sequences), 1280) with embeddings.
         """
         if self.model is None:
-            logger.warning("ESM-2 model not loaded, returning random embeddings")
-            return torch.randn(len(sequences), self.embedding_dim, device=self.device)
+            # No-synthetic-data invariant: silently returning torch.randn here
+            # would cache noise to disk (checkpoints/esm2_raw_*.pt) and feed it
+            # downstream as if it were real ESM-2 output. Fail loudly instead so
+            # the protein-net stage cannot train on fabricated embeddings.
+            raise RuntimeError(
+                "ESM2Embedder.embed_proteins called but the ESM-2 model is not "
+                "loaded (transformers missing or model failed to load). Refusing "
+                "to return random embeddings. Install `transformers` and ensure "
+                f"'{getattr(self, 'model_name', 'facebook/esm2_t33_650M_UR50D')}' "
+                "is reachable, or run the protein-net stage in abundance-only mode "
+                "(use_esm2_sequences=False)."
+            )
 
         # Check cache for hits
         embeddings = []

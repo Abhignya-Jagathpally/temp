@@ -280,3 +280,65 @@ def encode_longitudinal_labs(
         patient_ids=list(patient_ids),
         interval_days=int(interval_days),
     )
+
+
+def encode_for_lens_full(
+    outcomes_tsv: str,
+    patient_ids: Sequence[str],
+    *,
+    visit_csv: Optional[str] = None,
+    patient_col: str = "PUBLIC_ID",
+    day_col: Optional[str] = "VISITDY",
+    max_timepoints: int = 33,
+    interval_days: int = 60,
+) -> ClinicalEncoding:
+    """Flat ``(N, 21)`` clinical vector for the lab-first LENS SDE path.
+
+    Layout is ``FULL_CLINICAL_FEATURE_NAMES`` order — the 16 longitudinal-lab
+    features (15 direct ``D_LAB_*`` + derived kappa/lambda ratio) followed by the
+    5 baseline covariates — so it matches ``config.d_clinical = 21``.
+
+    Lab values come from the **earliest observed visit per patient** in
+    ``visit_csv`` (a PER_PATIENT_VISIT-style table). When ``visit_csv`` is None,
+    or a lab column is absent, or a patient has no visit row, that lab stays 0
+    with ``mask=False`` — never imputed or fabricated. The 5 baseline covariates
+    always carry real signal, so this is a strict superset of ``encode_for_lens``
+    that activates the lab dimensions the moment a visit table is supplied.
+
+    Use with a model built at ``config.d_clinical = 21`` (which requires an SDE
+    retrain — old 5-wide checkpoints will not load at width 21).
+    """
+    baseline = encode_for_lens(outcomes_tsv, patient_ids)  # (N, 5)
+    n = len(patient_ids)
+    n_lab = len(LONGITUDINAL_LAB_FEATURES)  # 16
+    lab_feats = np.zeros((n, n_lab), dtype=np.float32)
+    lab_mask = np.zeros((n, n_lab), dtype=bool)
+
+    if visit_csv is not None:
+        long = encode_longitudinal_labs(
+            visit_csv,
+            patient_ids,
+            patient_col=patient_col,
+            day_col=day_col,
+            max_timepoints=max_timepoints,
+            interval_days=interval_days,
+        )
+        for i in range(n):
+            observed_bins = np.flatnonzero(long.time_mask[i])
+            if observed_bins.size == 0:
+                continue
+            t0 = int(observed_bins[0])  # earliest observed timepoint = baseline
+            lab_feats[i] = long.features[i, t0]
+            lab_mask[i] = long.mask[i, t0]
+
+    features = np.concatenate([lab_feats, baseline.features], axis=1).astype(np.float32)
+    mask = np.concatenate([lab_mask, baseline.mask], axis=1)
+    assert features.shape[1] == len(FULL_CLINICAL_FEATURE_NAMES)
+    return ClinicalEncoding(
+        features=features,
+        mask=mask,
+        feature_names=list(FULL_CLINICAL_FEATURE_NAMES),
+        patient_ids=list(patient_ids),
+        age_mean_days=baseline.age_mean_days,
+        age_std_days=baseline.age_std_days,
+    )

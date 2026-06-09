@@ -169,8 +169,21 @@ def build() -> Path:
     if gate:
         try:
             g = json.loads(gate)
-            allowed = g.get("claims_allowed") or g.get("allowed") or []
-            scores.append(("Claim-gate · levels allowed", len(allowed) if isinstance(allowed, list) else str(allowed)))
+            granted = g.get("granted") or g.get("claims_allowed") or g.get("allowed") or []
+            n_granted = g.get("n_granted", len(granted) if isinstance(granted, list) else granted)
+            scores.append(("Claim-gate · levels granted", n_granted))
+        except Exception:
+            pass
+    cev = _read(ROOT / "logs/mortfm/causal_evidence_v2_summary.json")
+    if cev:
+        try:
+            c = json.loads(cev)
+            gate_str = (
+                f"{c.get('causal_mechanism_gate_n_supporting','?')}/"
+                f"{c.get('causal_mechanism_gate_n_total','?')} "
+                f"{'PASS' if c.get('causal_mechanism_gate_pass') else 'FAIL'}"
+            )
+            scores.append(("Causal k-of-N gate", gate_str))
         except Exception:
             pass
     if scores:
@@ -210,6 +223,102 @@ def build() -> Path:
     if links:
         parts.append(section("Multi-Agent Review (PhD fleet)", "".join(links),
                              "Consolidated code-change plan + honest SOTA comparison."))
+
+    # --- v20 GDC-OS survival baselines (with bootstrap CIs) ---
+    v20bj = _read(ROOT / "results/v20_first_baselines/v20_first_baselines.json")
+    if v20bj:
+        try:
+            d = json.loads(v20bj)
+            rows = ["| Model | C-index | 95% CI |", "|---|---|---|"]
+            for name, m in d.get("baselines", {}).items():
+                ci = f"{m.get('c_index_ci_low', float('nan')):.3f}-{m.get('c_index_ci_high', float('nan')):.3f}"
+                rows.append(f"| {name} | {m.get('c_index', float('nan')):.3f} | {ci} |")
+            sub = (f"{d.get('dataset', '')} - endpoint={d.get('endpoint', '')} - "
+                   f"N={d.get('n_patients', '?')} pts / {d.get('n_events', '?')} events - "
+                   "censoring-aware, bootstrap CI")
+            parts.append(section("v20 GDC-OS Survival Baselines", md_table_to_html("\n".join(rows)), sub))
+        except Exception:
+            pass
+
+    # --- registry baseline leaderboard (drug-response) ---
+    lb = ROOT / "results/baselines/baseline_leaderboard.csv"
+    if lb.exists():
+        parts.append(section("Registry Baseline Leaderboard (drug-response)",
+                             csv_to_html(lb),
+                             "test_mse / mean_spearman vs ResistanceMap (delta_vs_rm). "
+                             "Leakage-safe train-fit PCA-256 features."))
+
+    # --- SOTA benchmark figures ---
+    sota = ROOT / "paper/v8_artifacts/sota_benchmark"
+    sota_figs = figures_block(sota)
+    if sota_figs:
+        parts.append(section("SOTA Benchmark Figures", sota_figs,
+                             "Only panels backed by available checkpoints render; v6-only panels are "
+                             "omitted (per-panel degrade), never fabricated."))
+
+    # --- PK-SSM forward pass (UNTRAINED — architecture provenance only) ---
+    pkj = _read(ROOT / "results/v20_pkssm/forward_pass_results.json")
+    if pkj:
+        try:
+            d = json.loads(pkj)
+            note = d.get("note", "")
+            rest = {k: v for k, v in d.items() if k != "note"}
+            body = (f"<p style='color:#ffb454;font-weight:600'>&#9888; {html.escape(note)}</p>"
+                    f"<pre>{html.escape(json.dumps(rest, indent=2))}</pre>")
+            parts.append(section("PK-SSM Forward Pass (UNTRAINED — not predictions)", body,
+                                 "Untrained model: mechanism assignments are random initialisation. "
+                                 "Shown for architecture provenance only; training needs MMRF Virtual Lab data."))
+        except Exception:
+            pass
+
+    # --- causal evidence v2 (k-of-N gate) ---
+    cj = _read(ROOT / "logs/mortfm/causal_evidence_v2_summary.json")
+    if cj:
+        try:
+            d = json.loads(cj)
+            enr = d.get("pathway_enrichment", {})
+            items = [
+                ("k-of-N gate",
+                 f"{d.get('causal_mechanism_gate_n_supporting', '?')}/"
+                 f"{d.get('causal_mechanism_gate_n_total', '?')} "
+                 f"{'PASS' if d.get('causal_mechanism_gate_pass') else 'FAIL'}"),
+                ("Reactome enrichment p", f"{enr.get('p_value', float('nan')):.4f}"),
+                ("Edges scored", d.get("n_edges", "?")),
+                ("Top-k drug-target", d.get("top_k_drug_target_either_endpoint", "?")),
+            ]
+            ce = ROOT / "results/mortfm/causal_edge_evidence_v2.csv"
+            tbl = csv_to_html(ce, max_rows=20) if ce.exists() else ""
+            parts.append(section("Causal Evidence v2 (k-of-N gate)", kv_scores(items) + tbl,
+                                 "Channels: CRISPR essentiality, ChEMBL drug-target, Reactome pathway "
+                                 "enrichment. Gate is advisory, not a causal claim."))
+        except Exception:
+            pass
+
+    # --- claim-gate revalidation (12 levels) ---
+    gj = _read(ROOT / "logs/mortfm/v17_gate_revalidate.json")
+    if gj:
+        try:
+            d = json.loads(gj)
+            granted = d.get("granted", []) or []
+            blocked = d.get("blocked", []) or []
+            body = (f"<p><b>Granted ({len(granted)}):</b> {html.escape(', '.join(map(str, granted)))}</p>"
+                    f"<p><b>Blocked ({len(blocked)}):</b> {html.escape(', '.join(map(str, blocked)))}</p>")
+            parts.append(section("Claim-Gate Revalidation (12 levels)", body,
+                                 "Honest governance: which claim levels the current artifacts do / don't support."))
+        except Exception:
+            pass
+
+    # --- latest publication bundle ---
+    bundle_root = ROOT / "paper/publication_bundle"
+    bundles = sorted(bundle_root.glob("pub-*")) if bundle_root.exists() else []
+    if bundles:
+        latest = bundles[-1]
+        man = _read(latest / "run_manifest.json") or _read(latest / "bundle_manifest.json") or ""
+        body = figures_block(latest / "figures")
+        if man:
+            body += f"<details><summary>manifest</summary><pre>{html.escape(man[:2000])}</pre></details>"
+        parts.append(section(f"Publication Bundle - {latest.name}", body,
+                             "Self-contained paper bundle emitted by this DAG run."))
 
     # --- provenance ---
     import subprocess

@@ -224,35 +224,34 @@ class CanonicalMORTFMTrainer:
         # Canonical entry point — DO NOT call forward_legacy from here.
         return self.model(batch, clinical=clinical, drug=drug, graph_emb=graph_emb)
 
-    @staticmethod
-    def _drug_padded(batch: MORTBatch) -> Optional[torch.Tensor]:
-        """LENS SDE expects 8-wide drug context. Clip or right-pad with zeros.
+    def _drug_padded(self, batch: MORTBatch) -> Optional[torch.Tensor]:
+        """Match the LENS SDE drug width (model.d_drug). Clip or right-pad zeros.
 
         NaN cells in the raw drug tensor are zeroed so the SDE input stays
         well-conditioned; per-row presence is already encoded via
         ``batch.modality_mask['drug']``.
         """
-        d = batch.drug
-        if d is None:
-            return None
-        if d.shape[-1] > 8:
-            d = d[..., :8]
-        elif d.shape[-1] < 8:
-            pad = d.new_zeros((d.shape[0], 8 - d.shape[-1]))
-            d = torch.cat([d, pad], dim=-1)
-        return torch.nan_to_num(d, nan=0.0, posinf=0.0, neginf=0.0)
+        return self._fit_width(batch.drug, int(getattr(self.model, "d_drug", 8)))
+
+    def _clean_clinical(self, clinical: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
+        """Match the LENS SDE clinical width (model.d_clinical); clip/pad, zero NaN.
+
+        Width is read from the model so it tracks ``config.d_clinical`` (default
+        5; 21 for the lab-first panel) instead of the old hardcoded 5.
+        """
+        return self._fit_width(clinical, int(getattr(self.model, "d_clinical", 5)))
 
     @staticmethod
-    def _clean_clinical(clinical: Optional[torch.Tensor]) -> Optional[torch.Tensor]:
-        """LENS SDE expects exactly 5 clinical features; clip/pad and zero NaN."""
-        if clinical is None:
+    def _fit_width(t: Optional[torch.Tensor], width: int) -> Optional[torch.Tensor]:
+        """Clip/right-pad ``t`` to exactly ``width`` along the last dim, zero NaN."""
+        if t is None:
             return None
-        if clinical.shape[-1] > 5:
-            clinical = clinical[..., :5]
-        elif clinical.shape[-1] < 5:
-            pad = clinical.new_zeros((clinical.shape[0], 5 - clinical.shape[-1]))
-            clinical = torch.cat([clinical, pad], dim=-1)
-        return torch.nan_to_num(clinical, nan=0.0, posinf=0.0, neginf=0.0)
+        if t.shape[-1] > width:
+            t = t[..., :width]
+        elif t.shape[-1] < width:
+            pad = t.new_zeros((t.shape[0], width - t.shape[-1]))
+            t = torch.cat([t, pad], dim=-1)
+        return torch.nan_to_num(t, nan=0.0, posinf=0.0, neginf=0.0)
 
     def _trajectory_step(
         self,

@@ -671,6 +671,20 @@ class MORTFMConfig:
     sde_n_mc_samples: int = 16
     use_graph_conditioning: bool = True
 
+    # LENS conditioning widths consumed by GraphEnergyResistanceSDE.
+    # d_clinical was previously hardcoded to 5 at three chokepoints
+    # (SDE constructor, forward() zero-fill, trainer._clean_clinical),
+    # which silently clipped the lab-first 21-feature vocabulary
+    # (FULL_CLINICAL_FEATURE_NAMES) back to the baseline 5. It is now
+    # config-driven: default 5 keeps existing checkpoints loadable; set
+    # to 21 (and supply a visit-level lab table via
+    # encode_for_lens(..., include_labs=True)) to consume the full panel.
+    # NOTE: changing d_clinical changes the SDE drift's first Linear
+    # in_features, so an SDE retrain is required — old checkpoints will
+    # not load at a different width.
+    d_clinical: int = 5
+    d_drug: int = 8
+
     # Waddington landscape.
     use_potential: bool = True
     potential_hidden: int = 256

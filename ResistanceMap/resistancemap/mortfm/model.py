@@ -176,11 +176,15 @@ class MORTFM(nn.Module):
         # leaving them silently de-synced. The pin is asserted at the end
         # of __init__ to fail fast at construction time.
         _D_GRAPH = 16
+        # Config-driven LENS conditioning widths (previously hardcoded 5/8 at
+        # three chokepoints). Default 5/8 preserves existing checkpoints.
+        self.d_clinical = int(getattr(config, "d_clinical", 5))
+        self.d_drug = int(getattr(config, "d_drug", 8))
         self.lens_sde = GraphEnergyResistanceSDE(
             d_latent=config.d_latent,
             d_graph=_D_GRAPH,
-            d_drug=8,
-            d_clinical=5,
+            d_drug=self.d_drug,
+            d_clinical=self.d_clinical,
             n_basins=5,
             n_mc_samples=4,
             time_grid_config=self._canonical_time_grid_config,
@@ -202,7 +206,7 @@ class MORTFM(nn.Module):
         # check, then equality-test against the projector's last Linear
         # out_features (also LayerNorm normalized_shape).
         _sde_in = self.lens_sde.drift.net[0].in_features
-        _sde_d_graph = _sde_in - config.d_latent - 8 - 5
+        _sde_d_graph = _sde_in - config.d_latent - self.d_drug - self.d_clinical
         _proj_out = self.lens_graph_projector.net[-1].out_features
         assert _sde_d_graph == _D_GRAPH == _proj_out, (
             f"v19 Bug B19 — GraphEnergyResistanceSDE expects d_graph="
@@ -425,9 +429,11 @@ class MORTFM(nn.Module):
         Parameters
         ----------
         batch : MORTBatch (used only for encoding to z0)
-        clinical : (B, 5) clinical covariates from encode_for_lens, or None
-                   (then zero-filled). MUST match d_clinical=5.
-        drug : (B, 8) drug context (one-hot-ish), or None.
+        clinical : (B, d_clinical) clinical covariates from encode_for_lens,
+                   or None (then zero-filled). MUST match config.d_clinical
+                   (default 5; 21 for the lab-first panel).
+        drug : (B, d_drug) drug context (one-hot-ish), or None. MUST match
+                   config.d_drug (default 8).
         graph_emb : (B, 16) precomputed biological graph embedding, or
                     None — in which case use_graph_projector decides
                     whether to learn graph_emb = projector(z0) or feed zeros.
@@ -451,9 +457,9 @@ class MORTFM(nn.Module):
         z0 = state.z0
         B = z0.shape[0]
         if drug is None:
-            drug = z0.new_zeros((B, 8))
+            drug = z0.new_zeros((B, self.d_drug))
         if clinical is None:
-            clinical = z0.new_zeros((B, 5))
+            clinical = z0.new_zeros((B, self.d_clinical))
         if graph_emb is None:
             graph_emb = (
                 self.lens_graph_projector(z0)
