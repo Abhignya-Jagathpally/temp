@@ -2,14 +2,14 @@
   "n_cells": 25000,
   "pk_ssm_params": 12312,
   "mechanism_distribution": {
-    "drug_efflux": 25000,
+    "drug_efflux": 0,
     "clonal_evolution": 0,
-    "immune_escape": 0,
+    "immune_escape": 25000,
     "microenvironmental": 0
   },
   "mean_hazard": {
-    "biochemical": 0.3674185276031494,
-    "clinical": 0.5280017852783203
+    "biochemical": 0.4782281517982483,
+    "clinical": 0.4320753514766693
   },
   "model_config": {
     "latent_dim": 5,

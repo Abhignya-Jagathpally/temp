@@ -1,0 +1,10 @@
+model,test_mse,mean_spearman,delta_vs_rm,delta_ci_lo,delta_ci_hi,p_value
+elasticnet,0.70906,0.304442,-0.010084,,,
+cnn_feature_order,0.718768,0.052189,-0.000376,,,
+mlp,0.722792,0.289798,0.003647,,,
+xgboost,0.728521,0.386596,0.009377,,,
+random_forest,0.740391,0.424369,0.021247,,,
+lstm_visits,0.772556,0.256267,0.053411,,,
+ft_transformer,0.793215,0.147436,0.074071,,,
+gru_visits,1.0752,0.213594,0.356056,,,
+ridge,1.344496,0.146471,0.625352,,,

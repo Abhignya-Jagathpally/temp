@@ -1,0 +1,218 @@
+{
+  "claim_gate_registry": {
+    "claim_levels_ordered": [
+      "technical",
+      "static_drug_response",
+      "hematologic_specimen_drug_response",
+      "single_cell_state",
+      "sequence_aware",
+      "pathway_context",
+      "drug_target_mechanism",
+      "survival_prediction",
+      "patient_level_clinical_prediction",
+      "longitudinal_trajectory",
+      "resistance_emergence",
+      "causal_mechanism"
+    ],
+    "specs": {
+      "technical": {
+        "name": "technical",
+        "required_artifacts": [],
+        "required_gates": [],
+        "required_endpoint_types": [],
+        "forbidden_endpoint_types": [],
+        "blocks_until": [],
+        "description": "Pipeline runs end-to-end on real data without fabrication. No biological claim."
+      },
+      "static_drug_response": {
+        "name": "static_drug_response",
+        "required_artifacts": [
+          "A_cellline_foundation"
+        ],
+        "required_gates": [
+          "gate_static_drug_response"
+        ],
+        "required_endpoint_types": [
+          "drug_response"
+        ],
+        "forbidden_endpoint_types": [
+          "overall_survival"
+        ],
+        "blocks_until": [],
+        "description": "Static cell-line drug-response ranking (GDSC/PRISM/CCLE). No patient claim."
+      },
+      "hematologic_specimen_drug_response": {
+        "name": "hematologic_specimen_drug_response",
+        "required_artifacts": [
+          "A_cellline_foundation",
+          "B_beataml_finetuned"
+        ],
+        "required_gates": [
+          "gate_beataml_specimen_drug_response",
+          "gate_static_drug_response"
+        ],
+        "required_endpoint_types": [
+          "drug_response"
+        ],
+        "forbidden_endpoint_types": [],
+        "blocks_until": [],
+        "description": "Specimen-level ex-vivo drug-response ranking on hematologic cancers (BeatAML)."
+      },
+      "single_cell_state": {
+        "name": "single_cell_state",
+        "required_artifacts": [
+          "C_scrna_state_encoder"
+        ],
+        "required_gates": [
+          "gate_single_cell_state_pretraining"
+        ],
+        "required_endpoint_types": [
+          "disease_stage_ordinal"
+        ],
+        "forbidden_endpoint_types": [
+          "overall_survival",
+          "longitudinal_molecular_state"
+        ],
+        "blocks_until": [],
+        "description": "Disease-state representation learning on public scRNA atlases. Pseudotime only."
+      },
+      "sequence_aware": {
+        "name": "sequence_aware",
+        "required_artifacts": [
+          "D_esm2_embeddings"
+        ],
+        "required_gates": [
+          "gate_sequence_aware"
+        ],
+        "required_endpoint_types": [],
+        "forbidden_endpoint_types": [],
+        "blocks_until": [],
+        "description": "Protein sequences (ESM-2) consumed by downstream heads."
+      },
+      "pathway_context": {
+        "name": "pathway_context",
+        "required_artifacts": [
+          "D_esm2_embeddings",
+          "A_cellline_foundation"
+        ],
+        "required_gates": [
+          "gate_pathway_context"
+        ],
+        "required_endpoint_types": [],
+        "forbidden_endpoint_types": [],
+        "blocks_until": [],
+        "description": "Reactome pathway membership + STRING PPI + drug-target edges form biological *context* for predictions. NOT a causal mechanism claim."
+      },
+      "drug_target_mechanism": {
+        "name": "drug_target_mechanism",
+        "required_artifacts": [
+          "D_esm2_embeddings"
+        ],
+        "required_gates": [
+          "gate_drug_target_mechanism",
+          "gate_pathway_mechanism"
+        ],
+        "required_endpoint_types": [],
+        "forbidden_endpoint_types": [],
+        "blocks_until": [],
+        "description": "Drug-target ChEMBL coverage above gate threshold. Permits drug-class attribution, not causal pathway routing."
+      },
+      "survival_prediction": {
+        "name": "survival_prediction",
+        "required_artifacts": [],
+        "required_gates": [
+          "gate_survival_claim"
+        ],
+        "required_endpoint_types": [
+          "progression_free_survival",
+          "relapse",
+          "refractory_status",
+          "mrd_conversion",
+          "overall_survival"
+        ],
+        "forbidden_endpoint_types": [],
+        "blocks_until": [],
+        "description": "Patient-level survival head technical validation (C-index, Brier, KM)."
+      },
+      "patient_level_clinical_prediction": {
+        "name": "patient_level_clinical_prediction",
+        "required_artifacts": [
+          "A_cellline_foundation",
+          "B_beataml_finetuned"
+        ],
+        "required_gates": [
+          "gate_patient_level_clinical_prediction"
+        ],
+        "required_endpoint_types": [
+          "progression_free_survival",
+          "relapse",
+          "refractory_status",
+          "mrd_conversion"
+        ],
+        "forbidden_endpoint_types": [
+          "disease_stage_ordinal",
+          "drug_response"
+        ],
+        "blocks_until": [],
+        "description": "Full clinical-outcome prediction with external/temporal holdout AND clinical-only baseline. Requires MORT-FM to add calibrated value beyond a clinical-only Cox."
+      },
+      "longitudinal_trajectory": {
+        "name": "longitudinal_trajectory",
+        "required_artifacts": [
+          "E_integrated"
+        ],
+        "required_gates": [
+          "gate_longitudinal_trajectory"
+        ],
+        "required_endpoint_types": [
+          "longitudinal_molecular_state"
+        ],
+        "forbidden_endpoint_types": [
+          "disease_stage_ordinal",
+          "overall_survival"
+        ],
+        "blocks_until": [],
+        "description": "Same-patient baseline\u2192followup molecular pairs with real calendar-time labels. Pseudotime is forbidden as a substitute."
+      },
+      "resistance_emergence": {
+        "name": "resistance_emergence",
+        "required_artifacts": [
+          "E_integrated"
+        ],
+        "required_gates": [
+          "gate_resistance_claim",
+          "gate_time_to_resistance"
+        ],
+        "required_endpoint_types": [
+          "progression_free_survival",
+          "relapse",
+          "refractory_status",
+          "mrd_conversion",
+          "ex_vivo_resistance_shift",
+          "longitudinal_molecular_state"
+        ],
+        "forbidden_endpoint_types": [
+          "overall_survival",
+          "drug_response",
+          "disease_stage_ordinal"
+        ],
+        "blocks_until": [],
+        "description": "Time-to-resistance prediction under treatment pressure. OS is explicitly forbidden as the sole endpoint."
+      },
+      "causal_mechanism": {
+        "name": "causal_mechanism",
+        "required_artifacts": [
+          "E_integrated",
+          "D_esm2_embeddings"
+        ],
+        "required_gates": [
+          "gate_causal_pathway_mechanism"
+        ],
+        "required_endpoint_types": [],
+        "forbidden_endpoint_types": [],
+        "blocks_until": [],
+        "description": "Pathway attribution + drug-target edges + CRISPR-perturbation consistency + counterfactual edge ablation + negative controls. The highest bar in the registry."
+      }
+    }
+  }
+}

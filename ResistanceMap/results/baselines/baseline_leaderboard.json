@@ -1,0 +1,88 @@
+{
+  "generated": "2026-06-09T05:29:56",
+  "rm_test_mse": 0.7191442251205444,
+  "n_baselines": 9,
+  "results": [
+    {
+      "model": "elasticnet",
+      "test_mse": 0.70906,
+      "mean_spearman": 0.304442,
+      "delta_vs_rm": -0.010084,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "cnn_feature_order",
+      "test_mse": 0.718768,
+      "mean_spearman": 0.052189,
+      "delta_vs_rm": -0.000376,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "mlp",
+      "test_mse": 0.722792,
+      "mean_spearman": 0.289798,
+      "delta_vs_rm": 0.003647,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "xgboost",
+      "test_mse": 0.728521,
+      "mean_spearman": 0.386596,
+      "delta_vs_rm": 0.009377,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "random_forest",
+      "test_mse": 0.740391,
+      "mean_spearman": 0.424369,
+      "delta_vs_rm": 0.021247,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "lstm_visits",
+      "test_mse": 0.772556,
+      "mean_spearman": 0.256267,
+      "delta_vs_rm": 0.053411,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "ft_transformer",
+      "test_mse": 0.793215,
+      "mean_spearman": 0.147436,
+      "delta_vs_rm": 0.074071,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "gru_visits",
+      "test_mse": 1.0752,
+      "mean_spearman": 0.213594,
+      "delta_vs_rm": 0.356056,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    },
+    {
+      "model": "ridge",
+      "test_mse": 1.344496,
+      "mean_spearman": 0.146471,
+      "delta_vs_rm": 0.625352,
+      "delta_ci_lo": null,
+      "delta_ci_hi": null,
+      "p_value": null
+    }
+  ]
+}

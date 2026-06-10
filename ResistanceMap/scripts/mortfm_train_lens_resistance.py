@@ -47,7 +47,10 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from resistancemap.mortfm.longitudinal.clinical_features import encode_for_lens
+from resistancemap.mortfm.longitudinal.clinical_features import (
+    encode_for_lens,
+    encode_for_lens_full,
+)
 from resistancemap.mortfm.survival import (
     CompetingRiskHead, SurvivalCalibration,
     concordance_index_bootstrap_ci, discrete_time_grid,
@@ -201,6 +204,14 @@ def main() -> int:
     ap.add_argument("--t-max-days", type=float, default=1600.0)
     ap.add_argument("--use-clinical", action="store_true",
                     help="Encode ISS+age+gender+bort_1L+n_treatments as clinical context.")
+    ap.add_argument("--visit-lab-csv", type=str, default=None,
+                    help="Optional PER_PATIENT_VISIT-style table with D_LAB_* columns "
+                         "(MMRF Virtual Lab). When supplied with --use-clinical, the "
+                         "lab-first 21-feature panel (16 baseline-visit labs + 5 baseline "
+                         "covariates) is encoded via encode_for_lens_full and the SDE's "
+                         "d_clinical auto-widens to match. Absent -> the default 5-feature "
+                         "baseline path (no behavioural change). Missing labs stay masked, "
+                         "never fabricated.")
     ap.add_argument("--use-graph-projector", action="store_true",
                     help="Learn graph_emb from z0 via LatentToGraphProjector "
                          "instead of feeding a zero tensor.")
@@ -259,22 +270,33 @@ def main() -> int:
 
     d_latent = 64
     d_drug, d_graph = 8, 16
-    d_clin = 5 if args.use_clinical else 4
+    # d_clin is derived from the encoder output below when clinical is used, so
+    # the lab-first 21-feature panel auto-widens the SDE. Default 4 (no clinical).
+    d_clin = 4
     t_grid = discrete_time_grid(args.t_max_days, args.n_bins)
 
     # Optional clinical features (deterministic, no imputation).
     clinical_feats = None
     clinical_index = None
     if args.use_clinical:
-        enc = encode_for_lens(
-            "data/processed/mmrf_outcomes_treatment.tsv",
-            patient_ids=[r["patient_id"] for r in rows],
-        )
+        pids = [r["patient_id"] for r in rows]
+        outcomes_tsv = "data/processed/mmrf_outcomes_treatment.tsv"
+        visit_csv = args.visit_lab_csv
+        if visit_csv and Path(visit_csv).exists():
+            # Lab-first 21-feature panel (16 labs + 5 baseline), masked where absent.
+            enc = encode_for_lens_full(outcomes_tsv, pids, visit_csv=visit_csv)
+            logger.info("Lab-first clinical panel active (visit table: %s)", visit_csv)
+        else:
+            if visit_csv:
+                logger.warning("--visit-lab-csv %s not found; falling back to the "
+                               "5-feature baseline panel.", visit_csv)
+            enc = encode_for_lens(outcomes_tsv, patient_ids=pids)
         clinical_feats = enc.features
         clinical_index = {pid: i for i, pid in enumerate(enc.patient_ids)}
-        logger.info("Encoded clinical features: shape=%s (mean ISS=%.2f, %% bort_1L=%.1f%%)",
-                    clinical_feats.shape, clinical_feats[:, 0].mean(),
-                    100 * clinical_feats[:, 3].mean())
+        # Derive width from the encoder so the SDE matches the actual panel (5 or 21).
+        d_clin = int(clinical_feats.shape[1])
+        logger.info("Encoded clinical features: shape=%s d_clinical=%d (features: %s)",
+                    clinical_feats.shape, d_clin, ", ".join(enc.feature_names[:6]))
 
     # Per-patient event-bin assignment.
     bin_edges = t_grid.numpy()

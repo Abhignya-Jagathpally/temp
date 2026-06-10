@@ -1,0 +1,61 @@
+{
+  "data_sha": "see checkpoints/data_ready.pt",
+  "n_train": 622,
+  "n_val": 132,
+  "n_test": 132,
+  "n_features_p": 19177,
+  "n_features_e": 42,
+  "n_drugs": 11,
+  "drugs": [
+    "Bortezomib",
+    "Cyclophosphamide",
+    "Dinaciclib",
+    "Doxorubicin",
+    "Etoposide",
+    "Lenalidomide",
+    "Palbociclib",
+    "Panobinostat",
+    "Romidepsin",
+    "Venetoclax",
+    "Vorinostat"
+  ],
+  "results": [
+    {
+      "method": "A. Naive concat -> Ridge",
+      "test_mse": 2.9578909873962402,
+      "val_mse": 2.096181869506836,
+      "wall_seconds": 1.06
+    },
+    {
+      "method": "B. PCA(256/20) per-modality -> Ridge",
+      "test_mse": 3.1307106018066406,
+      "val_mse": 2.3276257514953613,
+      "wall_seconds": 0.85
+    },
+    {
+      "method": "C. MOFA+-like shared factors(64) -> Ridge",
+      "test_mse": 3.6835455894470215,
+      "val_mse": 2.728660821914673,
+      "wall_seconds": 176.43
+    },
+    {
+      "method": "D. Late fusion (avg)",
+      "test_mse": 2.839909553527832,
+      "val_mse": 1.9971716403961182,
+      "wall_seconds": 1.0
+    },
+    {
+      "method": "ResistanceMap CrossModalFusionNet (v6)",
+      "test_mse": 2.8449559211730957,
+      "val_mse": null,
+      "notes": "from checkpoints/pipeline_validated.pt"
+    }
+  ],
+  "batch_effect_proxy": {
+    "kBET_mean_chi2": 0.18273393916407607,
+    "iLISI_mean": 3.4249156060964854,
+    "silhouette_by_batch": -0.008796751499176025,
+    "n_batches": 4,
+    "note": "kBET reported as mean chi^2 (lower=better integrated); iLISI close to n_batches=better"
+  }
+}

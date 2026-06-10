@@ -1,13 +1,13 @@
 # ResistanceMap v20 — Combined Results Report
 
-**Generated:** 2026-06-07 22:42
+**Generated:** 2026-06-09 05:30
 **Branch:** v20/lab-first-pivot
 **Data:** Open-access only (GDC open tier + GEO + Zenodo)
 
 ---
 # ResistanceMap v20 — First Baseline Results
 
-Date: 2026-06-07 22:31
+Date: 2026-06-09 05:18
 Data: GDC open-tier MMRF-COMMPASS (no dbGaP)
 Endpoint: Overall Survival (OS)
 Censoring: Properly handled via sksurv structured arrays
@@ -60,9 +60,9 @@ Note: These are CLINICAL-ONLY baselines (2 features). The bar will be higher onc
 
 **Mechanism distribution (random init — NOT trained):**
 
-- drug_efflux: 25000 (100.0%)
+- drug_efflux: 0 (0.0%)
 - clonal_evolution: 0 (0.0%)
-- immune_escape: 0 (0.0%)
+- immune_escape: 25000 (100.0%)
 - microenvironmental: 0 (0.0%)
 
 > ⚠ **These are untrained outputs.** The architecture runs end-to-end 
