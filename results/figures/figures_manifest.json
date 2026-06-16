@@ -1,0 +1,13 @@
+{
+  "n": 769,
+  "events": 323,
+  "manifold_method": "PHATE",
+  "n_lines_ph_p": 3.2826957024881984e-05,
+  "figures": [
+    "fig_leakage_audit.png",
+    "fig_nonph_schoenfeld.png",
+    "fig_patient_manifold.png",
+    "fig_risk_stratification.png",
+    "fig_tdauc_over_time.png"
+  ]
+}

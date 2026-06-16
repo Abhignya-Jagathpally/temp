@@ -1,0 +1,56 @@
+{
+  "iteration": 4,
+  "mechanism": "path-signature (level<=2) of treatment control path; CDE theory",
+  "channels": [
+    "time",
+    "PI",
+    "IMiD",
+    "CD38"
+  ],
+  "landmarks": {
+    "180": {
+      "n_atrisk": 648,
+      "n_events": 270,
+      "tdauc_base_ISS_gep70": 0.6602,
+      "tdauc_+sig1": 0.662,
+      "tdauc_+sig12": 0.6635,
+      "delta_sig12_over_base": [
+        0.0036,
+        -0.0218,
+        0.0317
+      ],
+      "sig_adds_over_strong": false,
+      "delta_ordering_lvl2_over_lvl1": [
+        0.0018,
+        -0.0209,
+        0.0274
+      ],
+      "ordering_adds": false
+    },
+    "365": {
+      "n_atrisk": 535,
+      "n_events": 207,
+      "tdauc_base_ISS_gep70": 0.619,
+      "tdauc_+sig1": NaN,
+      "tdauc_+sig12": NaN,
+      "delta_sig12_over_base": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "sig_adds_over_strong": false,
+      "delta_ordering_lvl2_over_lvl1": [
+        NaN,
+        NaN,
+        NaN
+      ],
+      "ordering_adds": false
+    }
+  },
+  "verdict": {
+    "signature_adds_over_strong_baseline": false,
+    "treatment_ordering_adds": false,
+    "conclusion": "path-signature (incl. treatment ordering) does NOT add over Cox(ISS+gep70) -> honest negative; ordering is not prognostic here; switch theory"
+  },
+  "gate_beats_sota": "BLOCKED"
+}

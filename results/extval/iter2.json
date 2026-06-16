@@ -1,0 +1,52 @@
+{
+  "iteration": 2,
+  "purpose": "within-IA12 domain-generalization robustness (GBS programs-only)",
+  "shifts": {
+    "amp1q": {
+      "n_A": 566,
+      "n_B": 203,
+      "ev_A": 243,
+      "ev_B": 80,
+      "gbs_indist_A": 0.589,
+      "gbs_indist_B": 0.63,
+      "gbs_trainamp1q-_testamp1q+": 0.679,
+      "ci_BgivenA": [
+        0.613,
+        0.745
+      ],
+      "gbs_trainamp1q+_testamp1q-": 0.581,
+      "ci_AgivenB": [
+        0.544,
+        0.619
+      ],
+      "degradation_to_B": -0.049,
+      "degradation_to_A": 0.009,
+      "gep70_ref_A": 0.598,
+      "gep70_ref_B": 0.704
+    },
+    "ISS": {
+      "n_A": 436,
+      "n_B": 177,
+      "ev_A": 182,
+      "ev_B": 104,
+      "gbs_indist_A": 0.58,
+      "gbs_indist_B": 0.583,
+      "gbs_trainISS_low(1-2)_testISS_high(3)": 0.586,
+      "ci_BgivenA": [
+        0.516,
+        0.647
+      ],
+      "gbs_trainISS_high(3)_testISS_low(1-2)": 0.576,
+      "ci_AgivenB": [
+        0.531,
+        0.621
+      ],
+      "degradation_to_B": -0.003,
+      "degradation_to_A": 0.003,
+      "gep70_ref_A": 0.578,
+      "gep70_ref_B": 0.631
+    }
+  },
+  "worst_group_degradation": 0.009,
+  "verdict": "GBS(programs) degrades by up to +0.009 C-index under stratum shift; small strata -> wide CIs. Honest read: cross-stratum generalization is at/near the ceiling band with notable worst-group drop; no method robustly exceeds gep70 under shift."
+}

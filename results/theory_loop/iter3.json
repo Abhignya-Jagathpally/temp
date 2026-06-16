@@ -1,0 +1,25 @@
+{
+  "iteration": 3,
+  "mechanism": "score-based diffusion SDE (DSM potential) on program latents",
+  "latent_dim": 16,
+  "chosen_risk_type_per_fold": [
+    "energy+",
+    "energy+",
+    "energy+",
+    "energy+",
+    "energy+"
+  ],
+  "diffusion_energy_cindex": 0.5702,
+  "diffusion_ci": [
+    0.537,
+    0.6028
+  ],
+  "sota_gep70_cindex": 0.6242,
+  "sota_sky92_cindex": 0.62,
+  "strong_baseline_ISS_gep70_cindex": 0.6528,
+  "strong_plus_diffusion_cindex": 0.6536,
+  "diffusion_beats_sota": false,
+  "diffusion_adds_to_strong": false,
+  "verdict": "diffusion energy carries weak signal but does NOT beat SOTA (static ceiling) \u2014 honest tie/parity",
+  "gate_beats_sota": "BLOCKED"
+}

@@ -1,0 +1,64 @@
+{
+  "iteration": 1,
+  "hypothesis": "first-order LTI treatment-state x(L;a) controllability feature",
+  "design": "immortal-time-safe landmark + nested CV (inner picks a,penalizer)",
+  "a_grid": [
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ],
+  "landmarks": {
+    "180": {
+      "n_atrisk": 648,
+      "n_events": 270,
+      "base_cox_iss_tdauc": 0.5923,
+      "lti_tdauc": 0.6635,
+      "delta_lti_minus_base": 0.0717,
+      "ci_lo": 0.0169,
+      "ci_hi": 0.1251,
+      "ci_separated_above_zero": true,
+      "p_two_sided": 0.0147,
+      "sota_ref_gep70": 0.6317,
+      "sota_ref_sky92": 0.6439,
+      "lti_beats_sota_ref": true,
+      "chosen_time_constants_a": [
+        "x_4.0",
+        "x_2.0",
+        "x_2.0",
+        "x_4.0",
+        "x_2.0"
+      ]
+    },
+    "365": {
+      "n_atrisk": 535,
+      "n_events": 207,
+      "base_cox_iss_tdauc": NaN,
+      "lti_tdauc": NaN,
+      "delta_lti_minus_base": NaN,
+      "ci_lo": NaN,
+      "ci_hi": NaN,
+      "ci_separated_above_zero": false,
+      "p_two_sided": 0.0,
+      "sota_ref_gep70": NaN,
+      "sota_ref_sky92": NaN,
+      "lti_beats_sota_ref": false,
+      "chosen_time_constants_a": [
+        "x_1.0",
+        "x_1.0",
+        "x_1.0",
+        "x_1.0",
+        "x_1.0"
+      ]
+    }
+  },
+  "gate_lti_adds_over_base": "PASS",
+  "gate_beats_sota": "PASS",
+  "VERIFICATION_STATUS": "UNVERIFIED \u2014 DO NOT CLAIM",
+  "caveats": [
+    "L=365 forward td-AUC is NaN: forward-horizon grid bug (horizons below the landmark -> negative forward time). Only L=180 evaluated.",
+    "+0.072 td-AUC from one treatment feature exceeds the proven ~0.62 static ceiling -> RED FLAG for residual immortal-time / reverse-causation leakage.",
+    "Base comparator is Cox(ISS) only (0.592)=weak; gate must also test LTI vs a STRONG baseline (Cox(ISS+gep70)) and vs a NEGATIVE-CONTROL treatment feature + permutation test before any beats-SOTA claim.",
+    "gate_beats_sota=PASS here is an UNVERIFIED nominal flag, NOT a claim. Adversarial verification is Iteration 2."
+  ]
+}

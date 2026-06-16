@@ -1,0 +1,48 @@
+{
+  "iteration": 1,
+  "purpose": "external-validation data contract + leakage-OOD test",
+  "ia18_n": 86,
+  "ia18_relapse_events": 64,
+  "ood_cindex": {
+    "GuanScore": {
+      "cindex": 1.0,
+      "ci_lo": 1.0,
+      "ci_hi": 1.0,
+      "n": 86,
+      "ia12_in_sample": 1.0
+    },
+    "miner_risk": {
+      "cindex": 0.612,
+      "ci_lo": 0.531,
+      "ci_hi": 0.6922,
+      "n": 86,
+      "ia12_in_sample": null
+    },
+    "risk_auc": {
+      "cindex": 0.6551,
+      "ci_lo": 0.5981,
+      "ci_hi": 0.715,
+      "n": 86,
+      "ia12_in_sample": 0.846
+    },
+    "clin_risk": {
+      "cindex": 0.7739,
+      "ci_lo": 0.7186,
+      "ci_hi": 0.8231,
+      "n": 86,
+      "ia12_in_sample": null
+    }
+  },
+  "guanscore_collapses_ood": false,
+  "ia18_program_features_available": false,
+  "verdict": "REFUTED (informatively): GuanScore stayed 1.000 on IA18 -> the IA18 table's GuanScore is ALSO in-sample/outcome-fit; leakage is in BOTH published cohort tables, not just IA12",
+  "hypothesis_preregistered": "GuanScore would COLLAPSE ~1.0 -> ~0.6 OOD on IA18",
+  "hypothesis_outcome": "REFUTED (informatively): GuanScore stayed 1.000 on IA18 -> the IA18 table's GuanScore is ALSO in-sample/outcome-fit; leakage is in BOTH published cohort tables, not just IA12",
+  "honest_findings": [
+    "GuanScore C=1.000 on IA18 too -> published mmSYGNAL risk tables carry outcome-fit scores in both cohorts; using them as 'predictions' is leakage in both (stronger leakage finding than pre-registered).",
+    "miner_risk (the genuine prediction) C=0.612 [0.531,0.692] OOD -> at the ~0.62 ceiling; mmSYGNAL's real generalizable signal sits at the ceiling.",
+    "risk_auc collapses 0.846 (IA12 in-sample) -> 0.655 [0.598,0.715] (IA18 OOD) -> partly leaky, lands at ceiling.",
+    "clin_risk 0.774 [0.719,0.823] is SUSPICIOUS on this small (n=86), relapse-enriched (74%) cohort (selection/construction effects) -> NOT claimed.",
+    "IA18 program features for the _2 (relapse-timepoint) samples are NOT present (0/881 cols) -> full train-IA12->test-IA18 not possible; pivot to within-IA12 robustness + conformal."
+  ]
+}

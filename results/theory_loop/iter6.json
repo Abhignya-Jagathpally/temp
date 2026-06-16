@@ -1,0 +1,29 @@
+{
+  "iteration": 6,
+  "mechanism": "ego-centric patient-similarity kNN graph (transductive KM risk)",
+  "k_grid": [
+    15,
+    30,
+    50
+  ],
+  "chosen_k_per_fold": [
+    50,
+    50,
+    50,
+    50,
+    50
+  ],
+  "graph_cindex": 0.5985,
+  "graph_ci": [
+    0.5635,
+    0.6325
+  ],
+  "sota_gep70": 0.6242,
+  "sota_sky92": 0.62,
+  "strong_baseline": 0.6528,
+  "strong_plus_graph": 0.6537,
+  "graph_beats_sota": false,
+  "graph_adds_to_strong": false,
+  "verdict": "ego-centric patient-graph ties/below SOTA, no add to strong base -> honest negative; ceiling holds in the graph family too",
+  "gate_beats_sota": "BLOCKED"
+}

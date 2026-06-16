@@ -1,0 +1,124 @@
+{
+  "iteration": 2,
+  "purpose": "adversarial verification of Iter-1 LTI (leakage check)",
+  "forward_grid_fix": "horizons are days-after-landmark (relative); Iter-1 used absolute (bug)",
+  "landmarks": {
+    "180": {
+      "n_atrisk": 648,
+      "n_events": 270,
+      "chosen_a": [
+        2.0,
+        2.0,
+        2.0,
+        4.0,
+        2.0
+      ],
+      "tdauc_ISS": 0.5906,
+      "tdauc_ISS+x": 0.6417,
+      "delta_x_over_ISS": [
+        0.051,
+        0.0113,
+        0.0886
+      ],
+      "ci_sep_weak": true,
+      "tdauc_ISS+gep70": 0.6591,
+      "tdauc_ISS+gep70+x": 0.6726,
+      "delta_x_over_STRONG": [
+        0.0135,
+        -0.0045,
+        0.0306
+      ],
+      "ci_sep_strong": false,
+      "spearman_x_vs_fwdtime": [
+        0.304,
+        0.0
+      ],
+      "spearman_x_vs_event": [
+        0.011,
+        0.779
+      ]
+    },
+    "365": {
+      "n_atrisk": 535,
+      "n_events": 207,
+      "chosen_a": [
+        2.0,
+        1.0,
+        1.0,
+        4.0,
+        1.0
+      ],
+      "tdauc_ISS": 0.5712,
+      "tdauc_ISS+x": 0.563,
+      "delta_x_over_ISS": [
+        -0.0076,
+        -0.0365,
+        0.0227
+      ],
+      "ci_sep_weak": false,
+      "tdauc_ISS+gep70": 0.6286,
+      "tdauc_ISS+gep70+x": 0.6264,
+      "delta_x_over_STRONG": [
+        -0.002,
+        -0.0192,
+        0.0148
+      ],
+      "ci_sep_strong": false,
+      "spearman_x_vs_fwdtime": [
+        0.163,
+        0.0002
+      ],
+      "spearman_x_vs_event": [
+        -0.024,
+        0.575
+      ]
+    },
+    "730": {
+      "n_atrisk": 301,
+      "n_events": 85,
+      "chosen_a": [
+        2.0,
+        2.0,
+        4.0,
+        4.0,
+        2.0
+      ],
+      "tdauc_ISS": 0.5342,
+      "tdauc_ISS+x": 0.5279,
+      "delta_x_over_ISS": [
+        -0.0061,
+        -0.0362,
+        0.0233
+      ],
+      "ci_sep_weak": false,
+      "tdauc_ISS+gep70": 0.6348,
+      "tdauc_ISS+gep70+x": 0.6176,
+      "delta_x_over_STRONG": [
+        -0.017,
+        -0.0393,
+        -0.0011
+      ],
+      "ci_sep_strong": false,
+      "spearman_x_vs_fwdtime": [
+        0.094,
+        0.1018
+      ],
+      "spearman_x_vs_event": [
+        -0.017,
+        0.7733
+      ]
+    }
+  },
+  "negative_control_L180": {
+    "real_ISS+x_tdauc": 0.6417,
+    "shuffled_null_mean": 0.6065,
+    "shuffled_null_max": 0.6599,
+    "p_perm_real_le_null": 0.05,
+    "interpretation": "LEAKAGE/ARTIFACT if null \u2248 real (shuffling treatment doesn't hurt); REAL signal if real >> null"
+  },
+  "verdict": {
+    "strong_baseline_gate_pass": false,
+    "survives_negative_control": true,
+    "conclusion": "LEAKAGE/ARTIFACT or no add over strong baseline \u2014 Iter-1 win NOT credible; record as negative, switch theory"
+  }
+}

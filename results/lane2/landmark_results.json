@@ -1,0 +1,226 @@
+{
+  "cohort": {
+    "n_patients": 712,
+    "n_events": 311,
+    "n_programs": 141,
+    "n_clinical": 10,
+    "timeline_summary": {
+      "n_rows_raw": 7184,
+      "n_rows_no_patient_key": 0,
+      "n_rows_no_line_number": 3,
+      "n_rows_no_start_day": 1021,
+      "n_patient_line_records": 1339,
+      "n_unique_patients": 919,
+      "max_lines_observed": 8
+    }
+  },
+  "landmarks": [
+    180.0,
+    365.0,
+    730.0
+  ],
+  "horizons": [
+    180.0,
+    365.0,
+    730.0
+  ],
+  "summary_table": [
+    {
+      "landmark": 180.0,
+      "model": "static_cox",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.6442865515,
+      "td_auc_std": 0.063165606,
+      "ibs_mean": 0.1697418599,
+      "ibs_std": 0.0179118904,
+      "cindex_mean": 0.6224740188,
+      "cindex_std": 0.0537559068,
+      "n_atrisk": 615,
+      "n_events_total": 263
+    },
+    {
+      "landmark": 180.0,
+      "model": "timevarying_cox",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.6564838128,
+      "td_auc_std": 0.0650528787,
+      "ibs_mean": 0.168629577,
+      "ibs_std": 0.0177939407,
+      "cindex_mean": 0.6315879503,
+      "cindex_std": 0.0532951419,
+      "n_atrisk": 615,
+      "n_events_total": 263
+    },
+    {
+      "landmark": 180.0,
+      "model": "treatment_basin",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.5,
+      "td_auc_std": 0.0,
+      "ibs_mean": 0.1786830644,
+      "ibs_std": 0.0092429384,
+      "cindex_mean": 0.5238764132,
+      "cindex_std": 0.0461208503,
+      "n_atrisk": 615,
+      "n_events_total": 263
+    },
+    {
+      "landmark": 365.0,
+      "model": "static_cox",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.5720231222,
+      "td_auc_std": 0.0679302687,
+      "ibs_mean": 0.1803686109,
+      "ibs_std": 0.0133091287,
+      "cindex_mean": 0.5789567526,
+      "cindex_std": 0.066143664,
+      "n_atrisk": 523,
+      "n_events_total": 204
+    },
+    {
+      "landmark": 365.0,
+      "model": "timevarying_cox",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.5817190291,
+      "td_auc_std": 0.0682291799,
+      "ibs_mean": 0.1795254554,
+      "ibs_std": 0.013186142,
+      "cindex_mean": 0.5872913682,
+      "cindex_std": 0.0626857789,
+      "n_atrisk": 523,
+      "n_events_total": 204
+    },
+    {
+      "landmark": 365.0,
+      "model": "treatment_basin",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.5,
+      "td_auc_std": 0.0,
+      "ibs_mean": 0.1852333275,
+      "ibs_std": 0.0167090438,
+      "cindex_mean": 0.5040930451,
+      "cindex_std": 0.069139612,
+      "n_atrisk": 523,
+      "n_events_total": 204
+    },
+    {
+      "landmark": 730.0,
+      "model": "static_cox",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.5184803045,
+      "td_auc_std": 0.0327035997,
+      "ibs_mean": 0.1911631578,
+      "ibs_std": 0.0230845674,
+      "cindex_mean": 0.542658534,
+      "cindex_std": 0.0712295015,
+      "n_atrisk": 300,
+      "n_events_total": 84
+    },
+    {
+      "landmark": 730.0,
+      "model": "timevarying_cox",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.4945826849,
+      "td_auc_std": 0.0156170173,
+      "ibs_mean": 0.1921552029,
+      "ibs_std": 0.0218470549,
+      "cindex_mean": 0.5278916434,
+      "cindex_std": 0.0721933645,
+      "n_atrisk": 300,
+      "n_events_total": 84
+    },
+    {
+      "landmark": 730.0,
+      "model": "treatment_basin",
+      "n_folds_scored": 4,
+      "td_auc_mean": 0.5,
+      "td_auc_std": 0.0,
+      "ibs_mean": 0.1824873307,
+      "ibs_std": 0.0174768418,
+      "cindex_mean": 0.4953775397,
+      "cindex_std": 0.0546292802,
+      "n_atrisk": 300,
+      "n_events_total": 84
+    }
+  ],
+  "grambsch_therneau": {
+    "tests": [
+      {
+        "covariate": "n_lines_total",
+        "test_statistic": 19.10784404478793,
+        "p": 1.235361127404923e-05,
+        "model": "n_lines_total_only",
+        "violates_ph": true
+      }
+    ],
+    "notes": "n_lines is used here ONLY as a PH diagnostic. Its predictive use is immortal-time-biased and is handled time-varyingly in the landmark CV.",
+    "clinical_baseline_n_covariates": 10,
+    "clinical_baseline_n_ph_violations": 0
+  },
+  "basin_collapse_diagnostic": {
+    "collapsed_at_landmarks": [
+      180,
+      365,
+      730
+    ],
+    "note": "A basin td-AUC pinned at ~0.500 with near-zero fold variance is the single-basin collapse documented in docs/LANE2_TREATMENT_NONPH.md: the partial-log-rank objective on this wide, low-signal substrate puts all soft mass on one basin, yielding a constant risk. Reported honestly, not hidden."
+  },
+  "gate": {
+    "name": "treatment_nonph_beats_static",
+    "criterion": "a treatment model (timevarying_cox or treatment_basin) beats static_cox on forward td-AUC at >=1 landmark with paired-fold bootstrap CI of the delta strictly > 0",
+    "per_landmark": [
+      {
+        "landmark": 180.0,
+        "timevarying_cox": {
+          "delta_mean": 0.012197261343537213,
+          "ci_lo": 4.726939843324729e-06,
+          "ci_hi": 0.018940545112262064,
+          "frac_folds_positive": 0.987,
+          "ci_separated_above_zero": true
+        },
+        "treatment_basin": {
+          "delta_mean": -0.14428655145841676,
+          "ci_lo": -0.20058606065070772,
+          "ci_hi": -0.08411963344117879,
+          "frac_folds_positive": 0.0,
+          "ci_separated_above_zero": false
+        }
+      },
+      {
+        "landmark": 365.0,
+        "timevarying_cox": {
+          "delta_mean": 0.009695906934187273,
+          "ci_lo": 0.0035519347235954263,
+          "ci_hi": 0.01428835014855892,
+          "frac_folds_positive": 1.0,
+          "ci_separated_above_zero": true
+        },
+        "treatment_basin": {
+          "delta_mean": -0.07202312221529465,
+          "ci_lo": -0.13156667803634042,
+          "ci_hi": 0.0016796050761248987,
+          "frac_folds_positive": 0.03,
+          "ci_separated_above_zero": false
+        }
+      },
+      {
+        "landmark": 730.0,
+        "timevarying_cox": {
+          "delta_mean": -0.02389761960300392,
+          "ci_lo": -0.04453537347899775,
+          "ci_hi": -0.0032598657270100917,
+          "frac_folds_positive": 0.0,
+          "ci_separated_above_zero": false
+        },
+        "treatment_basin": {
+          "delta_mean": -0.018480304519050944,
+          "ci_lo": -0.050739328779089266,
+          "ci_hi": 0.013778719740987377,
+          "frac_folds_positive": 0.0625,
+          "ci_separated_above_zero": false
+        }
+      }
+    ],
+    "verdict": "PASS"
+  }
+}

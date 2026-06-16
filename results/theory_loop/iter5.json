@@ -1,0 +1,38 @@
+{
+  "iteration": 5,
+  "mechanism": "selective diagonal SSM over treatment events",
+  "timescales": [
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ],
+  "landmarks": {
+    "180": {
+      "n_atrisk": 648,
+      "n_events": 270,
+      "tdauc_base": 0.6602,
+      "tdauc_+ssm": 0.6715,
+      "delta_ssm_over_strong": [
+        0.0114,
+        -0.0162,
+        0.0396
+      ],
+      "ssm_adds": false
+    },
+    "365": {
+      "n_atrisk": 535,
+      "n_events": 207,
+      "tdauc_base": 0.619,
+      "tdauc_+ssm": 0.6035,
+      "delta_ssm_over_strong": [
+        -0.0155,
+        -0.0346,
+        0.0014
+      ],
+      "ssm_adds": false
+    }
+  },
+  "verdict": "selective SSM treatment-state does NOT add over Cox(ISS+gep70) -> honest negative; ceiling holds across the state-space family too",
+  "gate_beats_sota": "BLOCKED"
+}

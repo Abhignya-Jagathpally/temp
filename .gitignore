@@ -14,3 +14,10 @@ Thumbs.db
 # manifest (README.md, SHA256SUMS) is still tracked.
 artifacts/*.tar.zst
 artifacts/*.tar.zst.part-*
+
+# Third-party reference clones (each carries its own .git; ~1.3 GB) — never vendor in
+_external/
+
+# Open-data edition is its own repository (Abhignya-Jagathpally/resistancemap-);
+# embedded here as a working checkout, not tracked by the parent.
+/resistancemap/

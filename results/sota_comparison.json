@@ -1,0 +1,124 @@
+{
+  "endpoint": "PFS (MMRF-CoMMpass IA12, days)",
+  "n": 769,
+  "n_events": 323,
+  "k_folds": 5,
+  "leakage_audit": [
+    {
+      "score": "gep70",
+      "kind": "honest_published",
+      "cindex": 0.6242,
+      "is_leaky": false
+    },
+    {
+      "score": "sky92",
+      "kind": "honest_published",
+      "cindex": 0.62,
+      "is_leaky": false
+    },
+    {
+      "score": "GuanScore",
+      "kind": "mmSYGNAL_internal",
+      "cindex": 1.0,
+      "is_leaky": true
+    },
+    {
+      "score": "risk_auc",
+      "kind": "mmSYGNAL_internal",
+      "cindex": 0.8462,
+      "is_leaky": false
+    }
+  ],
+  "rows": [
+    {
+      "model": "gep70(SOTA)",
+      "cindex": 0.6241,
+      "ci_lo": 0.589,
+      "ci_hi": 0.6592,
+      "ibs": 0.1769,
+      "td_auc": 0.6452,
+      "ece_365": 0.0149,
+      "ece_730": 0.0656
+    },
+    {
+      "model": "sky92(SOTA)",
+      "cindex": 0.6203,
+      "ci_lo": 0.5857,
+      "ci_hi": 0.6551,
+      "ibs": 0.1806,
+      "td_auc": 0.6472,
+      "ece_365": 0.018,
+      "ece_730": 0.0537
+    },
+    {
+      "model": "Cox(prog+clin)",
+      "cindex": 0.6324,
+      "ci_lo": 0.5991,
+      "ci_hi": 0.6667,
+      "ibs": 0.1818,
+      "td_auc": 0.6593,
+      "ece_365": 0.0476,
+      "ece_730": 0.0489
+    },
+    {
+      "model": "RSF(prog+clin)",
+      "cindex": 0.6312,
+      "ci_lo": 0.5967,
+      "ci_hi": 0.6651,
+      "ibs": 0.1792,
+      "td_auc": 0.6611,
+      "ece_365": 0.0211,
+      "ece_730": 0.0586
+    },
+    {
+      "model": "GBS(prog+clin)",
+      "cindex": 0.6427,
+      "ci_lo": 0.6089,
+      "ci_hi": 0.6752,
+      "ibs": 0.1772,
+      "td_auc": 0.6772,
+      "ece_365": 0.0238,
+      "ece_730": 0.0591
+    },
+    {
+      "model": "Stacked(+gep70+sky92)",
+      "cindex": 0.6442,
+      "ci_lo": 0.61,
+      "ci_hi": 0.6776,
+      "ibs": 0.1765,
+      "td_auc": 0.6806,
+      "ece_365": 0.0473,
+      "ece_730": 0.0568
+    },
+    {
+      "model": "ResistanceBasin-LR(novel)",
+      "cindex": 0.4817,
+      "ci_lo": 0.4476,
+      "ci_hi": 0.5161,
+      "ibs": 0.1931,
+      "td_auc": 0.4976,
+      "ece_365": 0.0113,
+      "ece_730": 0.0612
+    }
+  ],
+  "paired_tests": {
+    "novel_vs_gep70_cindex": [
+      -0.14193785661998515,
+      -0.19341798745408378,
+      -0.09245995178637754,
+      0.0
+    ],
+    "novel_vs_gep70_ibs": [
+      0.016101976297728093,
+      0.008251292746782168,
+      0.023255439465780216,
+      0.0
+    ]
+  },
+  "non_ph_test": {
+    "n_covariates_tested": 20,
+    "n_PH_violations_p<0.05": 0,
+    "global_interpretation": "PH holds"
+  },
+  "note": "SOTA bar = gep70/sky92 (honest). GuanScore/risk_auc excluded as leaky."
+}
